@@ -4,7 +4,7 @@ test:
   sfr: 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))'
   sfr_params: [0.15, 1.1, 3.4, 0.]
   ssp_type: 'SB99'
-  path_SSP: '/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/ssp/final run.spectrum'
+  path_SSP: 'ssp/final run.spectrum'
   dust_abs_model: 'no_abs'
   lmin: 1e-2
   lmax: 3e3

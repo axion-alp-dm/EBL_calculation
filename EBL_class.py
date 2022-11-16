@@ -27,6 +27,7 @@ class EBL_model(object):
                  axion_decay=True
                  ):
 
+        self._t2z = None
         self._z_cube = None
         self._cube = None
         self._log_t_SSP  = None
@@ -38,7 +39,6 @@ class EBL_model(object):
         self._log_integr_t_cube = None
         self._emi_spline = None
         self._ebl_spline = None
-        self.t2z = None
 
         self._z_array = z_array
         self._z_max = z_max
@@ -139,11 +139,6 @@ class EBL_model(object):
 
     def calc_emissivity(self):
         init_time = time.time()
-        print(self._z_cube)
-        print('time')
-        print(np.log10((self._LookbackTime_cube).to(u.yr).value))
-        print('after')
-        print(np.log10((self._cosmo.lookback_time(self._z_max) - self._LookbackTime_cube).to(u.yr).value))
         log_t_SSP_intcube = np.log10((self._cosmo.lookback_time(self._z_max) - self._LookbackTime_cube).to(u.yr).value)
         log_t_SSP_intcube[log_t_SSP_intcube > self._log_t_SSP[-1]] = self._log_t_SSP[-1]
 
@@ -170,37 +165,14 @@ class EBL_model(object):
         lem[np.invert(np.isfinite(lem))] = -43.
         self._emi_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lem, kx=1, ky=1)
 
-        fig, (ax, ax2, ax3) = plt.subplots(3, 1)
-        plt.subplot(311)
-        aaa = 125
+
         def lookback(zz):
             return self._cosmo.lookback_time(zz).to(u.Gyr).value #np.log10(np.maximum(, 1e-70))
         def t2zwolog(tt):
             return 10**self._t2z(np.log10(tt*1e9))
-        print(np.shape(log_t_SSP_intcube))
-        plt.xlim(self._z_array[0], self._z_array[-1])
-        plt.plot(self._z_array, 10. ** ssp_spline.ev(self._log_freq_cube[aaa, :, -1], log_t_SSP_intcube[aaa, :, -1]))
-        plt.yscale('log')
-        plt.ylabel('L(t(z) - t(z^))')
-        #ax.secondary_xaxis('top', functions=(lookback, t2zwolog))
-        plt.suptitle('Lookback time [Gyr]')
-        plt.subplot(312)
-        plt.xlim(self._z_array[0], self._z_array[-1])
-        plt.plot(self._z_array, log_t_SSP_intcube[aaa, :, -1])
-        plt.ylabel('t(z) - t(z^)')
-        #plt.yscale('log')
-        plt.subplot(313)
-        plt.xlim(self._z_array[0], self._z_array[-1])
-        plt.plot(self._z_array, self._sfr(10. ** self._t2z(np.log10(self._LookbackTime_cube.value + 10. ** log_t_SSP_intcube)))[aaa, :, 0])
-        plt.ylabel('sfr(z)')
-        plt.xlabel('z')
-        plt.yscale('log')
-        plt.savefig('test.png')
-
 
         plt.figure()
         wv1 = np.where(abs(self._wv_SSP-1)<0.002)
-        print(self._wv_SSP[wv1], wv1[0][0])
         plt.plot(self._log_t_SSP, self._log_em_SSP[wv1[0][0], :])
         plt.savefig('ssp_age.png')
 
@@ -233,7 +205,7 @@ class EBL_model(object):
         plt.legend(title='z')
         #plt.xlim(z_axis[wv, aaa[0], 0], z_axis[wv, aaa[-1], -1])
         plt.xlim(1e-8, 18)
-        #ax.secondary_xaxis('top', functions=(lookback, t2zwolog))
+        ax.secondary_xaxis('top', functions=(lookback, t2zwolog))
         plt.suptitle('Lookback time [Gyr]')
 
         plt.subplot(312)
@@ -265,6 +237,7 @@ class EBL_model(object):
 
         del log_t_SSP_intcube, kernel_emiss, s, self._t2z, ssp_spline, em, lem
 
+        plt.show()
         end_time = time.time()
         print('   Calculation time for emissivity: %.2fs' % (end_time - init_time))
         return
