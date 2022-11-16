@@ -1,0 +1,11 @@
+prefix=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs
+exec_prefix=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs
+libdir=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs/lib
+includedir=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs/include
+
+Name: uuid
+Description: Universally unique id library
+Version: 2.32.1
+Requires:
+Cflags: -I${includedir}/uuid
+Libs: -L${libdir} -luuid

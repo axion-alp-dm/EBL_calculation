@@ -1,0 +1,19 @@
+#
+# Author: Lasse Collin
+#
+# This file has been put into the public domain.
+# You can do whatever you want with this file.
+#
+
+prefix=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs
+exec_prefix=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs
+libdir=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs/lib
+includedir=/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/envs/include
+
+Name: liblzma
+Description: General purpose data compression library
+URL: https://tukaani.org/xz/
+Version: 5.2.6
+Cflags: -I${includedir}
+Libs: -L${libdir} -llzma
+Libs.private: -pthread -lpthread
