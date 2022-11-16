@@ -174,52 +174,55 @@ class EBL_model(object):
         plt.figure()
         wv1 = np.where(abs(self._wv_SSP-1)<0.002)
         plt.plot(self._log_t_SSP, self._log_em_SSP[wv1[0][0], :])
-        plt.savefig('ssp_age.png')
+        plt.savefig('outputs/ssp_age.png')
 
-        fig, (ax, ax2, ax3) = plt.subplots(3, 1)
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
         wv = 125
         aaa = [1, 18, 54, -1]
         mark = ['^', 'v', '+', 'x']
-        #mark = ['solid', 'dotted', 'dashdot']
-        i=0
-        z_axis = 10. ** self._t2z(np.log10(self._LookbackTime_cube.value + 10. ** log_t_SSP_intcube)) # 10**self._t2z(log_t_SSP_intcube)#
+        z_axis = 10. ** self._t2z(np.log10(self._LookbackTime_cube.value + 10. ** log_t_SSP_intcube))
         for i in range(4):
             plt.subplot(311)
             plt.plot(z_axis[wv, aaa[i], :],
                      10. ** ssp_spline.ev(self._log_freq_cube[wv, aaa[i], :],
                                           log_t_SSP_intcube)[wv, aaa[i], :],
-                                          #np.log10(self._LookbackTime_cube.value-10**log_t_SSP_intcube)[wv, aaa[i], :]),
                      marker=mark[i], label=r'%.2f' % self._z_array[aaa[i]])
             plt.subplot(312)
-            plt.plot(z_axis[wv, aaa[i], :],#log_t_SSP_intcube[wv, aaa[i], :],
+            plt.plot(z_axis[wv, aaa[i], :],
                      (log_t_SSP_intcube[wv, aaa[i], :]),
                      marker=mark[i])
             plt.subplot(313)
-            plt.plot(z_axis[wv, aaa[i], :],#10**self._t2z(log_t_SSP_intcube[wv, aaa[i], :]),
+            plt.plot(z_axis[wv, aaa[i], :],
                      self._sfr(10. ** self._t2z(np.log10(self._LookbackTime_cube.value + 10. ** log_t_SSP_intcube)))[wv, aaa[i], :],
                      marker=mark[i])
+
+        all_xlims = [-0.2, 18]
 
         plt.subplot(311)
         plt.yscale('log')
         plt.ylabel('L(t(z) - t(z^))')
         plt.legend(title='z')
-        #plt.xlim(z_axis[wv, aaa[0], 0], z_axis[wv, aaa[-1], -1])
-        plt.xlim(1e-8, 18)
-        ax.secondary_xaxis('top', functions=(lookback, t2zwolog))
-        plt.suptitle('Lookback time [Gyr]')
+        plt.xlim(all_xlims)
 
         plt.subplot(312)
         #plt.yscale('log')
         plt.ylabel('log10(t(z) - t(z^))')
-        plt.xlim(1e-8, 18)
+        plt.xlim(all_xlims)
 
         plt.subplot(313)
         plt.ylabel('sfr(z)')
         plt.xlabel('z')
         plt.yscale('log')
-        #plt.xlim(z_axis[wv, aaa[0], 0], z_axis[wv, aaa[-1], -1])
-        plt.xlim(1e-8, 18)
-        plt.savefig('test2.png')
+        plt.xlim(all_xlims)
+
+        ax_lookback = ax1.twiny()
+        lookback_labels = [2, 4, 6, 8, 10, 12, 13]
+        ax_lookback.set_xticks(10**self._t2z(9+np.log10(lookback_labels)))
+        ax_lookback.set_xlim(all_xlims)
+        ax_lookback.set_xticklabels(lookback_labels)
+        ax_lookback.set_xlabel("Lookback time (Gyr)")
+
+        plt.savefig('outputs/test2.png')
 
         plt.figure()
         for i in range(4):
@@ -230,7 +233,7 @@ class EBL_model(object):
         plt.xlabel('z')
         plt.title('Emissivity')
         #plt.ylim(1e26, 6.7e27)
-        plt.savefig('Emissivity.png')
+        plt.savefig('outputs/Emissivity.png')
 
         #plt.figure()
         #plt.plot()
@@ -316,7 +319,7 @@ class EBL_model(object):
         plt.ylabel(r'EBL SED (nW / m$^2$ sr)')
         plt.xlim([.1, 1E3])
         plt.ylim([1E-6, 1.5*np.max(ebl_axion[:, i * 10] + ebl_SSP[:, i * 10])])
-        plt.savefig('ebl.png')
+        plt.savefig('outputs/ebl.png')
 
         # Calculation of the whole EBL
         lebl = np.log10(ebl_SSP + ebl_axion)

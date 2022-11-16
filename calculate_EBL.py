@@ -1,11 +1,12 @@
 # IMPORTS --------------------------------------------#
+import os
 import yaml
 import numpy as np
 
 from EBL_class import EBL_model
 
 
-# Configuration file reading and data input ---------#
+# Configuration file reading and data input/output ---------#
 
 def read_config_file(ConfigFile):
     with open(ConfigFile, 'r') as stream:
@@ -15,6 +16,10 @@ def read_config_file(ConfigFile):
             print(exc)
     return parsed_yaml
 
+
+if not os.path.exists("outputs/"):
+    # if the directory for outputs is not present, create it.
+    os.makedirs("outputs/")
 
 # Calculations of emissivity and EBL ----------------#
 
@@ -32,4 +37,4 @@ for key in config_data.keys():
 
     test_stuff = EBL_model(z_array, freq_array, sfr, sfr_params, path_SSP, dust_abs_model=dust_abs)
     test_stuff.calc_emissivity()
-    #test_stuff.calc_ebl()
+    test_stuff.calc_ebl()
