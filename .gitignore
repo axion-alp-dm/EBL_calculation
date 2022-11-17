@@ -1,3 +1,5 @@
 # ignore all outputs that are created during the process
 /*.png
 outputs/
+envs/
+venv/
