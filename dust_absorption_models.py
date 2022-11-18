@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def calculate_dust(wv_array, z_array=0., model_combined=False, models=None, **kwargs):
+def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
     """
     Function to calculate the fraction of photons which will escape absorption by dust. Dependencies both with
     wavelength and redshift, but can decide to be redshift independent as well.
@@ -14,19 +14,19 @@ def calculate_dust(wv_array, z_array=0., model_combined=False, models=None, **kw
     :param z_array: float or array
         Redshift values at which to calculate the dust absorption.
 
-    :param model_combined: boolean
-        Whether wavelength and redshift dependencies are defined in one model or they are separately applied.
-
-    :param models: list of strings
+    :param models: list of strings or None
         Models of dust fraction as a function of wavelength and redshift.
 
-        -> If model_combined is False, 2 strings are expected, the first one for wavelength and the second for
+        -> If 2 strings are given, the first model is applied for wavelength and the second for
             redshift dependence. The models will usually assume that these two dependencies are multiplied.
             If either of them does not correspond to any listed models, no dust absorption will be calculated.
             - Wavelength accepted values: kneiste2002, razzaque2009
             - Redshift accepted values: abdollahi2018
-        -> If model_combined is True, 1 string is expected, one wavelength and redshift combined model will be applied.
+
+        -> If 1 string is given, a combined wavelength and redshift model will be applied.
             - Accepted values: finke2022
+
+        -> If the number of strings is neither 1 nor 2, no dust absorption model will be applied.
 
     :param kwargs: individual floats
         Desired parameters for any of the listed functions of dust absorption. Be careful when adding new functions,
@@ -41,26 +41,21 @@ def calculate_dust(wv_array, z_array=0., model_combined=False, models=None, **kw
 
     dust_att = np.zeros(np.shape(wv_array))
 
-    if models is None:
-        models = ['None', 'None']
-
     # The absorption models are defined in one definition
-    if model_combined:
+    if len(models) == 1:
         if models[0] == 'finke2022':
             dust_att = finke2022(wv_array, z_array)
 
         else:
             print('No dust absorption dependency with either wavelength or redshift.')
 
-        return dust_att
-
     # The absorption models for wavelength and redshift are not defined together
-    else:
+    elif len(models) == 2:
         # Wavelength dependency
         if models[0] == 'kneiste2002':
             dust_att = kneiste2002(wv_array, **kwargs)
 
-        if models[0] == 'razzaque2009':
+        elif models[0] == 'razzaque2009':
             dust_att = razzaque2009(wv_array)
 
         else:
@@ -73,7 +68,12 @@ def calculate_dust(wv_array, z_array=0., model_combined=False, models=None, **kw
         else:
             print('   -> No dust absorption dependency with redshift.')
 
-        return dust_att
+    else:
+        print('   -> No dust absorption model chosen.')
+
+    dust_att[np.isnan(dust_att)] = 0.
+    dust_att[np.invert(np.isfinite(dust_att))] = 0.
+    return dust_att
 
 
 def kneiste2002(wv, Ebv=0.15, R=3.2):
@@ -177,9 +177,7 @@ plt.legend()
 plt.ylabel('A(z)')
 plt.xlabel('z')
 
-print('stop')
-yyy = calculate_dust(x_lambda, 0, models=['aaa', 'abdollahi2018'])
-print(yyy)
+yyy = calculate_dust(x_lambda, 0, models=['aaa', 'abdollahi2018', 'aaa'])
 plt.show()
 '''
 

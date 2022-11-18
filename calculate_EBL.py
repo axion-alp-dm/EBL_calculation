@@ -33,8 +33,8 @@ for key in config_data.keys():
     sfr = config_data[key]['sfr']
     sfr_params = config_data[key]['sfr_params']
     path_SSP = config_data[key]['path_SSP']
-    dust_abs = config_data[key]['dust_abs_model']
+    dust_abs = config_data[key]['dust_abs_models']
 
-    test_stuff = EBL_model(z_array, freq_array, sfr, sfr_params, path_SSP, dust_abs_model=dust_abs)
+    test_stuff = EBL_model(z_array, freq_array, sfr, sfr_params, path_SSP, dust_abs_models=dust_abs)
     test_stuff.calc_emissivity()
     test_stuff.calc_ebl()

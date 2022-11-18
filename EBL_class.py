@@ -24,7 +24,7 @@ class EBL_model(object):
                  path_SSP, ssp_type='SB99',
                  t_intsteps=201,
                  z_max=35, h=0.7, omegaM=0.3, omegaBar=0.0222/0.7**2.,
-                 dust_abs_model='att_kn2002',
+                 dust_abs_models='att_kn2002',
                  axion_decay=True
                  ):
 
@@ -48,15 +48,17 @@ class EBL_model(object):
         self._t_intsteps = t_intsteps
 
         self.read_SSP_file(path_SSP, ssp_type)
-        self.dust_abs_model = dust_abs_model
+        self.dust_abs_models = dust_abs_models
         self.dust_att()
 
         self._h = h
         self._omegaM = omegaM
         self._omegaB0 = omegaBar
         self._cosmo = FlatLambdaCDM(H0=h*100., Om0=omegaM, Ob0=omegaBar)
+
         self._sfr = lambda x: eval(sfr)(sfr_params, x)
         self._sfr_params = sfr_params
+
         self.intcubes()
 
         self._axion_decay = axion_decay
@@ -142,15 +144,25 @@ class EBL_model(object):
         return
 
     def dust_att(self):
-        self._log_em_SSP += 0.15 * dust_abs.calculate_dust(self.dust_abs_model, self._wv_SSP)[:, np.newaxis]
+        print('Calculating dust absorption')
+        init_time = time.time()
+
+        self._log_em_SSP += dust_abs.calculate_dust(self._wv_SSP, models=self.dust_abs_models, z_array=0.)[:, np.newaxis]
+
+        dust_time = time.time()
+        print('   Set dust absorption: %.2fs' % (dust_time - init_time))
 
     def intcubes(self):
+        print('Calculating integration cubes')
+        init_time = time.time()
         self._cube = np.ones([self._lambda_array.shape[0], self._z_array.shape[0], self._t_intsteps])
         self._log_integr_t_cube     = self._cube * np.linspace(0., 1., self._t_intsteps)
         self._log_freq_cube         = self._cube * self._freq_array[:, np.newaxis, np.newaxis]
         self._z_cube                = self._cube * self._z_array[np.newaxis, :, np.newaxis]
         self._LookbackTime_cube     = self._cube * self._cosmo.lookback_time(
                                                                     self._z_array).to(u.yr)[np.newaxis, :, np.newaxis]
+        int_time = time.time()
+        print('   Calculate the cubes: %.2fs' % (int_time - init_time))
         return
 
     def plot_sfr(self):
