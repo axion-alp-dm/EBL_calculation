@@ -1,27 +1,32 @@
 import numpy as np
 
 
-def calculate_dust(model_lambda, model_z, wv_array, z_array, **kwargs):
+def calculate_dust(wv_array, z_array=0., model_combined=False, models=None, **kwargs):
     """
     Function to calculate the fraction of photons which will escape absorption by dust. Dependencies both with
     wavelength and redshift, but can decide to be redshift independent as well.
+    The result is given in units of log10(absorption) because of its use in the EBL_class.
 
     Parameters:
-    :param model_lambda: string
-        Model of dust fraction as a function of wavelength. If it does not correspond to any listed model,
-        no dust absorption will be calculated.
-        Accepted values: kneiste2002, razzaque2009
-
-    :param model_z: string
-        Model of dust absorption as a function of redshift. If it does not correspond to any listed model,
-        dust absorption will not have redshift dependency.
-        Accepted values: abdollahi2018
-
-    :param wv_array: float or array
+    :param wv_array: float or array  [microns]
         Wavelength values at which to calculate the dust absorption.
 
     :param z_array: float or array
         Redshift values at which to calculate the dust absorption.
+
+    :param model_combined: boolean
+        Whether wavelength and redshift dependencies are defined in one model or they are separately applied.
+
+    :param models: list of strings
+        Models of dust fraction as a function of wavelength and redshift.
+
+        -> If model_combined is False, 2 strings are expected, the first one for wavelength and the second for
+            redshift dependence. The models will usually assume that these two dependencies are multiplied.
+            If either of them does not correspond to any listed models, no dust absorption will be calculated.
+            - Wavelength accepted values: kneiste2002, razzaque2009
+            - Redshift accepted values: abdollahi2018
+        -> If model_combined is True, 1 string is expected, one wavelength and redshift combined model will be applied.
+            - Accepted values: finke2022
 
     :param kwargs: individual floats
         Desired parameters for any of the listed functions of dust absorption. Be careful when adding new functions,
@@ -30,36 +35,52 @@ def calculate_dust(model_lambda, model_z, wv_array, z_array, **kwargs):
 
     Outputs:
     :return: 1D array with len(wv_array)
-        For now, the function returns a 1D array. Redshift variability is implemented just as a float.
+        Result of the calculation in log10(absorption) since it is the variable output for EBL_class.
+        For now, the function returns a 1D array. Redshift variability is implemented just as a float in the EBL class.
     """
 
     dust_att = np.zeros(np.shape(wv_array))
 
-    # Wavelength dependency
-    if model_lambda == 'kneiste2002':
-        dust_att = kneiste2002(wv_array, **kwargs)
+    if models is None:
+        models = ['None', 'None']
 
-    if model_lambda == 'razzaque2009':
-        dust_att = razzaque2009(wv_array)
+    # The absorption models are defined in one definition
+    if model_combined:
+        if models[0] == 'finke2022':
+            dust_att = finke2022(wv_array, z_array)
 
+        else:
+            print('No dust absorption dependency with either wavelength or redshift.')
+
+        return dust_att
+
+    # The absorption models for wavelength and redshift are not defined together
     else:
-        print('   -> No dust absorption definition dependency with lambda.')
+        # Wavelength dependency
+        if models[0] == 'kneiste2002':
+            dust_att = kneiste2002(wv_array, **kwargs)
 
-    # Redshift dependency
-    if model_z == 'absA_finke2022':
-        dust_att *= abdollahi2018(z_array, **kwargs)
+        if models[0] == 'razzaque2009':
+            dust_att = razzaque2009(wv_array)
 
-    else:
-        print('   -> No dust absorption definition dependency with redshift.')
+        else:
+            print('   -> No dust absorption dependency with wavelength.')
 
-    return dust_att
+        # Redshift dependency
+        if models[1] == 'abdollahi2018':
+            dust_att += abdollahi2018(z_array, **kwargs)
+
+        else:
+            print('   -> No dust absorption dependency with redshift.')
+
+        return dust_att
 
 
 def kneiste2002(wv, Ebv=0.15, R=3.2):
     """
     Dust attenuation as a function of wavelength following Kneiste02 or 0202104
 
-    :param wv: float or array
+    :param wv: float or array  [microns]
         Wavelength values to compute dust absorption.
     :param Ebv: float
         E(B-V) or color index
@@ -73,24 +94,24 @@ def razzaque2009(lambda_array):
     """
     Dust attenuation as a function of wavelength following Razzaque09 or 0807.4294
 
-    :param lambda_array: float or array
+    :param lambda_array: float or array  [microns]
         Wavelength values to compute dust absorption.
     """
-    # lambda has to be input in microns.
     yy  = np.zeros(np.shape(lambda_array))
     yy += (0.688 + 0.556 * np.log10(lambda_array)) * (lambda_array < 0.165)
     yy += (0.151 - 0.136 * np.log10(lambda_array)) * (lambda_array < 0.220) * (lambda_array > 0.165)
     yy += (1.000 + 1.148 * np.log10(lambda_array)) * (lambda_array < 0.422) * (lambda_array > 0.220)
     yy += (0.728 + 0.422 * np.log10(lambda_array)) * (lambda_array > 0.422)
-    return yy
+    return np.log10(yy)
 
 
 def abdollahi2018(z_array, md=1.49, nd=0.64, pd=3.4, qd=3.54):
     """
     Dust attenuation as a function of redshift following Abdollahi18 or 1812.01031, in the supplementary material.
-    (supplement in https://pubmed.ncbi.nlm.nih.gov/30498122/)
+    (supplement in https://pubmed.ncbi.nlm.nih.gov/30498122/).
+    Result in log10(dust_att).
 
-    :param z_array:float or array
+    :param z_array: float or array
         Redshift values to compute dust absorption.
     :param md: float
         Parameter following the fitting of the paper.
@@ -101,4 +122,64 @@ def abdollahi2018(z_array, md=1.49, nd=0.64, pd=3.4, qd=3.54):
     :param qd: float
         Parameter following the fitting of the paper.
     """
-    return md * (1. + z_array)**nd / (1. + ((1. + z_array) / pd)**qd)
+    return np.log10(md * (1. + z_array)**nd / (1. + ((1. + z_array) / pd)**qd))
+
+
+def finke2022(lambda_array, z_array):
+    """
+    Dust attenuation as a function of wavelength and redshift following Finke22 or 2210.01157
+
+    :param lambda_array:  float or array  [microns]
+        Wavelength values to compute dust absorption.
+    :param z_array:  float or array
+        Redshift values to compute dust absorption.
+    :return:
+    """
+    yy  = -0.4 * 10**abdollahi2018(z_array)
+    yy += razzaque2009(lambda_array) - razzaque2009(0.15)
+    return yy
+
+
+# TESTS FOR DIFFERENT DUST MODELS
+'''
+import matplotlib.pyplot as plt
+plt.figure()
+x_lambda = np.logspace(-2, 1, num=5000)
+x_zetas  = np.linspace(1e-6, 6, num=7)
+
+alpha = 1.
+plt.plot(x_lambda, 10**calculate_dust(x_lambda, z_array=x_zetas[0], models=['finke2022'], model_combined=True),
+         'k', alpha=alpha, label=r'Finke2022 z=%.2f' % x_zetas[0])
+for i in range(1, len(x_zetas)-1):
+    alpha -= 0.15
+    plt.plot(x_lambda, 10**calculate_dust(x_lambda, z_array=x_zetas[i], models=['finke2022'], model_combined=True),
+             'k', alpha=alpha)
+
+alpha -= 0.15
+plt.plot(x_lambda, 10**calculate_dust(x_lambda, z_array=x_zetas[-1], models=['finke2022'], model_combined=True),
+         'k', alpha=alpha, label=r'Finke2022 z=%.2f' % x_zetas[-1])
+
+plt.plot(x_lambda, 10**calculate_dust(x_lambda, models=['razzaque2009', 'aaa']), 'r', label='Razzaque2009')
+plt.plot(x_lambda, 10**kneiste2002(x_lambda), 'limegreen', label='Kneiste2002')
+
+plt.ylabel('Escape fraction of photons')
+plt.xlabel('lambda (microns)')
+plt.legend()
+plt.xscale('log')
+plt.ylim(0., 1.2)
+plt.xlim(0.05, 10)
+
+plt.figure()
+aaa = np.linspace(0, 6)
+plt.plot(aaa, 10**abdollahi2018(aaa), label='A(z) in Finke2022')
+plt.plot(x_zetas, 10**abdollahi2018(x_zetas), 'or', label='Chosen redshifts')
+plt.legend()
+plt.ylabel('A(z)')
+plt.xlabel('z')
+
+print('stop')
+yyy = calculate_dust(x_lambda, 0, models=['aaa', 'abdollahi2018'])
+print(yyy)
+plt.show()
+'''
+
