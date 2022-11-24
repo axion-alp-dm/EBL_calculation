@@ -112,8 +112,13 @@ class EBL_model(object):
         self._sfr = self._sfr(sfr_params)
         return
 
-    #@property
-    #def
+    @property
+    def emi_spline(self):
+        return self._emi_spline
+
+    @property
+    def ebl_spline(self):
+        return self._ebl_spline
 
 
     def read_SSP_file(self, datfile, ssp_type):
