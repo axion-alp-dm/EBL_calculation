@@ -49,7 +49,7 @@ class EBL_model(object):
 
         self.read_SSP_file(path_SSP, ssp_type)
         self.dust_abs_models = dust_abs_models
-        self.dust_att()
+        #self.dust_att()
 
         self._h = h
         self._omegaM = omegaM
@@ -109,7 +109,7 @@ class EBL_model(object):
     @sfr_params.setter
     def sfr_params(self, sfr_params):
         self._sfr_params = sfr_params
-        self._sfr = lambda x: eval(self._sfr)(sfr_params, x)
+        self._sfr = self._sfr(sfr_params)
         return
 
     #@property
@@ -155,6 +155,7 @@ class EBL_model(object):
     def intcubes(self):
         print('Calculating integration cubes')
         init_time = time.time()
+
         self._cube = np.ones([self._lambda_array.shape[0], self._z_array.shape[0], self._t_intsteps])
         self._log_integr_t_cube     = self._cube * np.linspace(0., 1., self._t_intsteps)
         self._log_freq_cube         = self._cube * self._freq_array[:, np.newaxis, np.newaxis]
@@ -210,13 +211,22 @@ class EBL_model(object):
 
         # Calculate emissivity
         em = simpson(kernel_emiss, x=log_t_ssp_intcube, axis=-1)  # [erg s^-1 Hz^-1 Mpc^-3]
+
+        print('Calculating dust absorption')
+        init_time = time.time()
+
         lem = np.log10(em)
+        lem += dust_abs.calculate_dust(self._lambda_array, models=self.dust_abs_models, z_array=self._z_array)
+
+        dust_time = time.time()
+        print('   Set dust absorption: %.2fs' % (dust_time - init_time))
+
         lem[np.invert(np.isfinite(lem))] = -43.
         self._emi_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lem, kx=1, ky=1)
 
         calc_emissivity = time.time()
         print('   Calculation time for emissivity: %.2fs' % (calc_emissivity - calc_kernel))
-
+        '''
         plt.figure()
         wv1 = np.where(abs(self._wv_SSP-1)<0.002)
         plt.plot(self._log_t_SSP, self._log_em_SSP[wv1[0][0], :])
@@ -279,12 +289,12 @@ class EBL_model(object):
         plt.title('Emissivity')
         #plt.ylim(1e26, 6.7e27)
         plt.savefig('outputs/Emissivity.png')
-
+        '''
         del log_t_ssp_intcube, kernel_emiss, s, self._t2z, ssp_spline, em, lem
 
         end_time = time.time()
         print('   Calculation time figures: %.2fs' % (end_time - init_time))
-        return
+        return self._emi_spline
 
     def calc_ebl(self):
         print('EBL')

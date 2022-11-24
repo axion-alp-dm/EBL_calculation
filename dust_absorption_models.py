@@ -39,7 +39,10 @@ def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
         For now, the function returns a 1D array. Redshift variability is implemented just as a float in the EBL class.
     """
 
-    dust_att = np.zeros(np.shape(wv_array))
+    if np.shape(z_array) == ():
+        dust_att = np.zeros([np.shape(wv_array)[0], 1])
+    else:
+        dust_att = np.zeros([np.shape(wv_array)[0], np.shape(z_array)[0]])
 
     # The absorption models are defined in one definition
     if len(models) == 1:
@@ -53,17 +56,17 @@ def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
     elif len(models) == 2:
         # Wavelength dependency
         if models[0] == 'kneiste2002':
-            dust_att = kneiste2002(wv_array, **kwargs)
+            dust_att += kneiste2002(wv_array[:, np.newaxis], **kwargs)
 
         elif models[0] == 'razzaque2009':
-            dust_att = razzaque2009(wv_array)
+            dust_att += razzaque2009(wv_array[:, np.newaxis])
 
         else:
             print('   -> No dust absorption dependency with wavelength.')
 
         # Redshift dependency
         if models[1] == 'abdollahi2018':
-            dust_att += abdollahi2018(z_array, **kwargs)
+            dust_att += abdollahi2018(z_array[np.newaxis, :], **kwargs)
 
         else:
             print('   -> No dust absorption dependency with redshift.')
@@ -71,8 +74,8 @@ def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
     else:
         print('   -> No dust absorption model chosen.')
 
-    dust_att[np.isnan(dust_att)] = 0.
-    dust_att[np.invert(np.isfinite(dust_att))] = 0.
+    dust_att[np.isnan(dust_att)] = -43.
+    dust_att[np.invert(np.isfinite(dust_att))] = -43.
     return dust_att
 
 
@@ -122,7 +125,7 @@ def abdollahi2018(z_array, md=1.49, nd=0.64, pd=3.4, qd=3.54):
     :param qd: float
         Parameter following the fitting of the paper.
     """
-    return np.log10(md * (1. + z_array)**nd / (1. + ((1. + z_array) / pd)**qd))
+    return -0.4 * md * (1. + z_array)**nd / (1. + ((1. + z_array) / pd)**qd)
 
 
 def finke2022(lambda_array, z_array):
@@ -135,13 +138,17 @@ def finke2022(lambda_array, z_array):
         Redshift values to compute dust absorption.
     :return:
     """
-    yy  = -0.4 * 10**abdollahi2018(z_array)
-    yy += razzaque2009(lambda_array) - razzaque2009(0.15)
+    if np.shape(z_array) == ():
+        yy = np.zeros([np.shape(lambda_array)[0], 1])
+    else:
+        yy = np.zeros([np.shape(lambda_array)[0], np.shape(z_array)[0]])
+    yy += abdollahi2018(z_array)
+    yy += razzaque2009(lambda_array)[:, np.newaxis] - razzaque2009(0.15)
     return yy
 
 
 # TESTS FOR DIFFERENT DUST MODELS
-'''
+
 import matplotlib.pyplot as plt
 plt.figure()
 x_lambda = np.logspace(-2, 1, num=5000)
@@ -171,13 +178,13 @@ plt.xlim(0.05, 10)
 
 plt.figure()
 aaa = np.linspace(0, 6)
-plt.plot(aaa, 10**abdollahi2018(aaa), label='A(z) in Finke2022')
+plt.plot(aaa, 10**abdollahi2018(aaa), label='g(z) in Finke22')
 plt.plot(x_zetas, 10**abdollahi2018(x_zetas), 'or', label='Chosen redshifts')
 plt.legend()
-plt.ylabel('A(z)')
+plt.ylabel('g(z) = 10**(-0.4 A(z))')
 plt.xlabel('z')
 
 yyy = calculate_dust(x_lambda, 0, models=['aaa', 'abdollahi2018', 'aaa'])
-plt.show()
-'''
+#plt.show()
+
 
