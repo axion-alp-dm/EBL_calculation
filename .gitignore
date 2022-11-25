@@ -4,3 +4,4 @@ outputs/
 envs/
 venv/
 .idea/
+models_tests/
