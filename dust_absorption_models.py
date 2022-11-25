@@ -186,5 +186,3 @@ plt.xlabel('z')
 
 yyy = calculate_dust(x_lambda, 0, models=['aaa', 'abdollahi2018', 'aaa'])
 #plt.show()
-
-
