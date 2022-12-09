@@ -74,8 +74,8 @@ def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
     else:
         print('   -> No dust absorption model chosen.')
 
-    dust_att[np.isnan(dust_att)] = -43.
-    dust_att[np.invert(np.isfinite(dust_att))] = -43.
+    dust_att[np.isnan(dust_att)] = 0#-43.
+    dust_att[np.invert(np.isfinite(dust_att))] = 0#-43.
     return dust_att
 
 
@@ -90,7 +90,7 @@ def kneiste2002(wv, Ebv=0.15, R=3.2):
     :param R: float
         Random index
     """
-    return -.4 * Ebv * .68 * R * (1. / wv - .35)
+    return np.minimum(-.4 * Ebv * .68 * R * (1. / wv - .35), 0)
 
 
 def razzaque2009(lambda_array):
@@ -144,7 +144,7 @@ def finke2022(lambda_array, z_array):
         yy = np.zeros([np.shape(lambda_array)[0], np.shape(z_array)[0]])
     yy += abdollahi2018(z_array)
     yy += razzaque2009(lambda_array)[:, np.newaxis] - razzaque2009(0.15)
-    return yy
+    return np.minimum(yy, 0)
 
 
 # TESTS FOR DIFFERENT DUST MODELS
