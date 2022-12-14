@@ -142,7 +142,7 @@ plot_ebl_measurement_collection('EBL_measurements/EBL_measurements.yml')
 plt.yscale('log')
 plt.xscale('log')
 plt.xlabel(r'Wavelength ($\mu$m)')
-plt.ylabel(r'$\nu$ (nW / m$^2$ sr)')
+plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
 
 lines = axes2.get_lines()
 legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
