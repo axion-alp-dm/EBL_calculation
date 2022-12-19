@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 from EBL_class import EBL_model
 from EBL_measurements.EBL_measurs_plot import plot_ebl_measurement_collection
 
+from astropy.constants import h as h_plank
+from astropy import units as u
+
+
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 plt.rc('font', size=20)
@@ -73,13 +77,26 @@ models = ['solid', 'dashed', 'dotted', 'dashdot']
 colors = ['b', 'r', 'k', 'g', 'orange']
 j = 0
 
-axion_mac2 = np.logspace(-2, 1, num=20)
-axion_gamma = np.logspace(-26, -22, num=20)
-values_array = np.zeros((len(axion_mac2), len(axion_gamma)))
-freq_Driver16 = np.log10(3e8*1e6/np.array([0.471900519751, 0.6190494643, 0.748572101049,
-               0.904957124161, 1.03626837678, 1.25260698788, 1.66465227795, 2.15280842939, 3.36374217832, 4.65274441363]))
-ebl_Driver16 = np.array([5.14360495045, 7.34847435842, 9.37197207554, 10, 10.3296238484,
-          10.1634757088, 9.83915373687, 8.64210857596, 5.40000753964, 3.4293457049])
+
+def gamma_from_rest(mass, gay):
+    return ((mass*u.eV)**3. * (gay*u.GeV**-1)**2. / 32. / h_plank.to(u.eV * u.s)).to(u.s**-1).value
+axion_mac2 = np.logspace(np.log10(3), 1, num=15)
+axion_gay = np.logspace(np.log10(5e-11), -9, num=20)
+#axion_mac2 = np.array([7., 10.])
+#axion_gay = np.array([1e-10, 7e-10, 1e-9])
+axion_gamma = np.logspace(np.log10(gamma_from_rest(axion_mac2[0], axion_gay[0])),
+        np.log10(gamma_from_rest(axion_mac2[-1], axion_gay[-1])), num=len(axion_gay))
+
+values_gamma_array = np.zeros((len(axion_mac2), len(axion_gamma)))
+values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
+
+freq_Driver16 = np.log10(3e8*1e6/np.array([0.470, 0.618, 0.749, 0.895, 1.021, 1.252, 1.643, 2.150, 3.544, 4.487]))
+ebl_Driver16 = np.array([5.36-0.93, 7.47, 9.55, 10.15, 10.44, 10.38, 10.12, 8.72, 5.17, 3.60])
+
+#[0.153, 0.225, 0.356, 0.470, 0.618, 0.749, 0.895, 1.021, 1.252, 1.643, 2.150, 3.544, 4.487, 7.841, 23.675,
+#               70.890, 101.000, 161.000, 161.000, 249.000, 357.000, 504.000]
+#    'ebl': [1.45, 3.15, 4.03, 5.36, 7.47, 9.55, 10.15, 10.44, 10.38, 10.12, 8.72, 5.17, 3.60, 2.45, 3.01, 6.90, 10.22,
+#            16.47, 13.14, 10.00, 5.83, 2.46]0.470, 0.618, 0.749, 0.895, 1.021, 1.252, 1.643, 2.150, 3.544, 4.487
 
 fig1 = plt.figure()
 axes1 = fig1.gca()
@@ -87,8 +104,6 @@ axes1 = fig1.gca()
 fig2 = plt.figure(figsize=(14, 8))
 axes2 = fig2.gca()
 
-fig3 = plt.figure()
-axes3 = fig3.gca()
 
 for key in config_data.keys():
     print('EBL model: ', key)
@@ -106,8 +121,8 @@ for key in config_data.keys():
              color=colors[j], label=config_data[key]['name'])
     plt.plot(waves_ebl, 10**test_stuff.ebl_ssp_spline(freq_array_ebl, 0., grid=False), linestyle=models[1],
              color=colors[j])
-    # plt.plot(waves_ebl, 10**test_stuff.ebl_intra_spline(freq_array_ebl, 0., grid=False), linestyle=models[2],
-    #          color=colors[j])
+    plt.plot(waves_ebl, 10**test_stuff.ebl_intra_spline(freq_array_ebl, 0., grid=False), linestyle=models[2],
+             color=colors[j])
     plt.plot(waves_ebl, 10**test_stuff.ebl_axion_spline(freq_array_ebl, 0., grid=False), linestyle=models[3],
              color=colors[j])
     j += 1
@@ -120,7 +135,16 @@ for key in config_data.keys():
             ebl_ourvalues = 10**test_stuff.ebl_total_spline(freq_Driver16, 0., grid=False)
             if np.all(ebl_ourvalues > ebl_Driver16) and\
                     10**test_stuff.ebl_total_spline(np.log10(3e8/0.608*1e6), 0.) < 16.37:
-                values_array[aa, bb] = 1.
+                values_gamma_array[aa, bb] = 1.
+
+            #--------------
+            test_stuff.axion_gamma = gamma_from_rest(axion_mac2[aa], axion_gay[bb])
+
+            ebl_ourvalues = 10**test_stuff.ebl_total_spline(freq_Driver16, 0., grid=False)
+            if np.all(ebl_ourvalues > ebl_Driver16) and\
+                    10**test_stuff.ebl_total_spline(np.log10(3e8/0.608*1e6), 0.) < 16.37:
+                values_gay_array[aa, bb] = 1.
+
 
 
 plt.figure(fig1)
@@ -146,7 +170,7 @@ plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
 
 lines = axes2.get_lines()
 legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
-legend22 = plt.legend([lines[i] for i in range(3)], ['Total', 'SSP', 'Axion decay', 'IHL'], loc=3, title=r'Component')
+legend22 = plt.legend([lines[i] for i in range(4)], ['Total', 'SSP', 'IHL', 'Axion decay'], loc=3, title=r'Component')
 axes2.add_artist(legend11)
 axes2.add_artist(legend22)
 
@@ -155,20 +179,44 @@ plt.ylim(1E-4, 1.1e2)  # 1.5 * np.max(ebl_axion[:, i * 10] + ebl_SSP[:, i * 10])
 plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 
 
-plt.figure(fig3)
+plt.subplots(2,1, figsize=(10, 8))
 
-aaa = plt.pcolor(axion_mac2, axion_gamma, values_array.T)
+plt.subplot(211)
+aaa = plt.pcolor(axion_mac2, axion_gamma, values_gamma_array.T)
 
 plt.colorbar(aaa)
 
 plt.xscale('log')
 plt.yscale('log')
 
-plt.xlabel(r'log$_{10}$(m$_a\,$c$^2$/eV)')
-plt.ylabel(r'log$_{10}$($\Gamma_a$/s$^{-1}$)')
+plt.ylabel(r'$\Gamma_{a}$ [s$^{-1}$]')
 
 plt.xlim(axion_mac2[0], axion_mac2[-1])
 plt.ylim(axion_gamma[0], axion_gamma[-1])
+
+
+plt.subplot(212)
+
+bbb = plt.pcolor(axion_mac2, axion_gay, values_gay_array.T)
+print(values_gamma_array[0], values_gamma_array[-1])
+plt.colorbar(bbb)
+
+plt.xscale('log')
+plt.yscale('log')
+
+plt.xlabel(r'm$_a\,$c$^2$ [eV]')
+plt.ylabel(r'$g_{a\gamma}$ [GeV$^{-1}$]')
+
+plt.xlim(axion_mac2[0], axion_mac2[-1])
+plt.ylim(axion_gay[0], axion_gay[-1])
+
+
+aaa = open('data.txt', 'w')
+
+np.savetxt(aaa, axion_mac2.reshape(1, axion_mac2.shape[0]))
+np.savetxt(aaa, axion_gay.reshape(1, axion_gay.shape[0]))
+np.savetxt(aaa, values_gay_array)
+aaa.close()
 
 
 # plt.figure()
@@ -186,3 +234,5 @@ plt.ylim(axion_gamma[0], axion_gamma[-1])
 # plt.xlabel(r'Wavelength ($\mu$m)')
 # plt.ylabel(r'EBL SED (nW / m$^2$ sr)')
 plt.show()
+#plt.close('all')
+

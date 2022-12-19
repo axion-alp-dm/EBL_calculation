@@ -147,6 +147,9 @@ def finke2022(lambda_array, z_array):
     return np.minimum(yy, 0)
 
 
+
+
+'''
 # TESTS FOR DIFFERENT DUST MODELS
 
 import matplotlib.pyplot as plt
@@ -186,3 +189,6 @@ plt.xlabel('z')
 
 yyy = calculate_dust(x_lambda, 0, models=['aaa', 'abdollahi2018', 'aaa'])
 #plt.show()
+'''
+
+

@@ -13,6 +13,7 @@ from astropy import units as u
 
 import dust_absorption_models as dust_abs
 
+from hmf import MassFunction
 
 # EBL class definition --------------------------#
 
@@ -44,6 +45,7 @@ class EBL_model(object):
         self._ebl_ssp_spline = None
         self._ebl_axion_spline = None
         self._ebl_SSP = None
+        self._ebl_intrahalo = None
 
         self._z_array = z_array
         self._z_max = z_max
@@ -58,7 +60,7 @@ class EBL_model(object):
         self._h = h
         self._omegaM = omegaM
         self._omegaB0 = omegaBar
-        self._cosmo = FlatLambdaCDM(H0=h * 100., Om0=omegaM, Ob0=omegaBar)
+        self._cosmo = FlatLambdaCDM(H0=h * 100., Om0=omegaM, Ob0=omegaBar, Tcmb0=2.7255)
 
         self._sfr = lambda x: eval(sfr)(sfr_params, x)
         self._sfr_params = sfr_params
@@ -69,7 +71,7 @@ class EBL_model(object):
         self._axion_gamma = axion_gamma * u.s ** -1
         self._massc2_axion = massc2_axion * u.eV
 
-        self._intrahalo_light = False
+        self._intrahalo_light = True
 
     @property
     def z_array(self):
@@ -335,127 +337,52 @@ class EBL_model(object):
 
             del eblzintcube, eblintcube, lebl
 
-        if self._intrahalo_light and self._ebl_intra_spline is None:
-            print('init debug')
+        if self._intrahalo_light:
+            if self._ebl_intra_spline is None:
 
-            m_min = np.log10(1e9)# / self._h)
-            print(m_min)
-            m_max = np.log10(1e15)# / self._h)
-            alpha = 1.
+                m_min = np.log10(1e9)# / self._h)
+                m_max = np.log10(1e15)# / self._h)
+                alpha = 1.
 
-            Aihl = -3.23
-            f_ihl = lambda x: Aihl * (x / 1e12) ** 0.1
+                Aihl = 10**-3.23
+                f_ihl = lambda x: Aihl * (x / 1e12) ** 0.1
 
-            old_spectrum = np.loadtxt('Swire_library/Ell13_template_norm.sed')
-            position5500 = abs(old_spectrum[:, 0] - 5500).argmin()
-            position2200 = abs(old_spectrum[:, 0] - 2200).argmin()
-            old_spectrum[:, 0] *= 1e-10
-            old_spectrum[:, 1] *= old_spectrum[position5500, 1] / old_spectrum[position2200, 1]
-            old_spectrum_spline = UnivariateSpline(old_spectrum[:, 0], old_spectrum[:, 1], k=1)
+                old_spectrum = np.loadtxt('Swire_library/Ell13_template_norm.sed')
+                old_spline = UnivariateSpline(old_spectrum[:, 0], old_spectrum[:, 1],s=0, k=1, ext=1)
+                old_spectrum[:, 0] *= 1e-4
+                old_spectrum[:, 1] *= old_spline(5500) / old_spline(2200)
+                old_spectrum_spline = UnivariateSpline(old_spectrum[:, 0], old_spectrum[:, 1], s=0, k=1, ext=1)
 
-            new_cube = np.ones((np.shape(self._z_array)[0], self._t_intsteps, self._t_intsteps))
-            new_z_cube = new_cube * self._z_array[:, np.newaxis, np.newaxis]
-            mass_cube = new_cube * np.linspace(0., 1., self._t_intsteps)[np.newaxis, :,  np.newaxis]
-            mass_cube = m_min + (m_max - m_min) * mass_cube
+                mf = MassFunction(cosmo_model=self._cosmo, Mmin=m_min, Mmax=m_max)
 
-            L22 = (5.64e12 * (self._h / 0.7) ** (-2) * (10 ** mass_cube / (2.7e14 / (self._h / 0.7))) ** 0.72
-                   / 2.2 * 1e-6)
+                L22 = (5.64e12 * (self._h / 0.7) ** (-2) * (mf.m / (2.7e14 / (self._h / 0.7))) ** 0.72
+                   / 2.2)# * 1e-6)
+            
+                self._ebl_intrahalo = np.zeros((len(self._freq_array), len(self._z_array)))
 
-            def ff(sigma, AA0=0.186, aa0=1.47, bb0=2.57, cc0=1.19, delta=200):
-                AA = AA0 * (1. + new_z_cube[:,:,0])**-0.14
-                aa = aa0 * (1. + new_z_cube[:,:,0])**-0.06
-                alpha_z = 10**(-(0.75 / np.log10(delta/75))**1.2)
-                bb = bb0 * (1. + new_z_cube[:,:,0])**(-alpha_z)
+                for nzi, zi in enumerate(self._z_array):
 
-                return AA * ((sigma/bb)**(-aa) + 1.) * np.exp(-cc0 / sigma**2.)
-
-            def top_hat(x):
-                return 3./x**3 * (np.sin(x) - x * np.cos(x))
-
-            def power_spectrum(x):
-                return x**(-3)
-
-            def radius(M):
-                return ((3./(4.*np.pi) * 10**M * u.Msun.to(u.g)*u.g /
-                         (self._cosmo.critical_density(new_z_cube)*self._omegaM))**(1./3.)).to(u.Mpc)
-
-            radius_array = radius(mass_cube)
-
-            kk = new_cube * np.logspace(-1, np.log10(7), num=self.t_intsteps)
-
-            sigma_array = np.sqrt(1./(2*np.pi**2.)
-                                  * simpson(power_spectrum(kk) * top_hat(kk * radius_array.value)*kk**2., x=kk, axis=-1))
-            print('sigma array')
-            print(sigma_array)
-
-            dlogSdlogM = abs(np.diff(np.log(sigma_array), n=1, axis=-1)
-                             / np.diff(np.log(10**mass_cube[:,:,0]), n=1, axis=-1))
-            print(np.shape(np.diff(mass_cube[:,:,0], n=1, axis=-1)))
-            print(np.shape(np.diff(sigma_array, n=1, axis=-1)))
-            print(np.shape(dlogSdlogM))
-            print(dlogSdlogM)
-            print('diff mass')
-            print(np.diff(np.log(sigma_array), n=1, axis=-1))
-            xm = (mass_cube[:, 1:, 0] + mass_cube[:, :-1, 0]) / 2.
-            dSdM = np.zeros((np.shape(self._z_array)[0], self._t_intsteps))
-
-            for i in range(1):#len(self._z_array)):
-                sm_spline = UnivariateSpline(xm[i, :], dlogSdlogM[i, :], s=0, k=1)
-                dSdM[i, :] = sm_spline(mass_cube[0, :, 0])
-
-            dndM = (np.sqrt(2./np.pi) * 1.69 / sigma_array
-                    * dSdM #* ff(sigma_array)
-                    * np.exp(-1.69**2. / (2. * sigma_array**2.))
-            )
-            # dndM = (ff(sigma_array) * self._cosmo.critical_density(new_z_cube[:,:,0])
-            #         / 10**mass_cube[:,:,0] * u.Msun.to(u.g)*u.g * dSdM
-            #         )
-
-            nn = np.zeros(len(mass_cube[0,:,0]))
-            for i in range(len(nn)):
-                nn[i] = simpson(x=mass_cube[0,i:, 0], y=dndM[0,i:])
-
-            plt.figure()
-            plt.plot(mass_cube[0,:,0], nn)
-            plt.yscale('log')
-            print(nn)
-            print(dndM)
-            plt.figure()
-            plt.plot(mass_cube[0,:,0], sigma_array[0,:])
-
-            plt.figure()
-            plt.title('dndM')
-            plt.plot(mass_cube[0,:,0], np.log10(dndM[0, :]), label='dndM')
-            plt.plot(mass_cube[0,:,0], np.log10(np.sqrt(2./np.pi) * 1.69 / sigma_array[0,:]), label='line 1')
-            plt.plot(mass_cube[0, :, 0], np.log10(dSdM[0, :]), label='dSdM')
-            plt.plot(mass_cube[0,:,0], np.log10(np.exp(-1.69**2. / (2. * sigma_array[0,:]**2.))), label='exp')
-            plt.legend()
-            plt.show()
-
-
-            print('lets stop')
-            # NOT CHECKED FOR GOOD
-            lambda_luminosity = (f_ihl(10 ** mass_cube) * L22 * (1 + new_z_cube[:,:,0]) ** alpha
-                          * old_spectrum_spline(c / 10 ** self._log_freq_cube)
+                    mf.update(z=zi)
+                
+                    lambda_luminosity = ((f_ihl(mf.m)* L22 * (1 + zi) ** alpha)[:, np.newaxis] 
+                    * old_spectrum_spline(self._lambda_array[np.newaxis, :])
                           )
-            nu_luminosity = lambda_luminosity * c.value / (10**self._log_freq_cube)**2.
+                    nu_luminosity = lambda_luminosity * c.value / (10** self._freq_array[np.newaxis, :])**2.
 
-            kernel = (10. ** mass_cube * np.log(10.)  # Variable change, integration over log10(M)
+                    kernel = ( mf.m[:, np.newaxis] * np.log(10.)  # Variable change, integration over log10(M)
                       * nu_luminosity
-                      * dndM[:, :, np.newaxis]
+                      * mf.dndm[:, np.newaxis]
                       )
 
-            print('kernel')
-            print(kernel)
+                    self._ebl_intrahalo[:, nzi] = simpson(kernel, x=mf.m, axis=0)
+            
 
-            ebl_intrahalo = simpson(kernel, x=mass_cube, axis=-1)
-
-            lebl = np.log10(ebl_intrahalo)
+            lebl = np.log10(self._ebl_intrahalo)
             lebl[np.isnan(lebl)] = -43.
             lebl[np.invert(np.isfinite(lebl))] = -43.
             self._ebl_intra_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lebl, kx=1, ky=1)
         else:
-            ebl_intrahalo = 0.
+            self._ebl_intrahalo = 0.
 
         if self._axion_decay:
             start_ebl_axion = time.time()
@@ -487,7 +414,7 @@ class EBL_model(object):
 
         # Calculation of the whole EBL
         start_ebl_total = time.time()
-        lebl = np.log10(self._ebl_SSP + ebl_axion + ebl_intrahalo)
+        lebl = np.log10(self._ebl_SSP + ebl_axion + self._ebl_intrahalo)
         lebl[np.isnan(lebl)] = -43.
         lebl[np.invert(np.isfinite(lebl))] = -43.
         self._ebl_tot_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lebl, kx=1, ky=1)
