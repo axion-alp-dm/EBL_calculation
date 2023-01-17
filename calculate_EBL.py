@@ -198,7 +198,6 @@ plt.ylim(axion_gamma[0], axion_gamma[-1])
 plt.subplot(212)
 
 bbb = plt.pcolor(axion_mac2, axion_gay, values_gay_array.T)
-print(values_gamma_array[0], values_gamma_array[-1])
 plt.colorbar(bbb)
 
 plt.xscale('log')
