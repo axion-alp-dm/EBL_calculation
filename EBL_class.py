@@ -1,4 +1,5 @@
 # IMPORTS -----------------------------------#
+import logging
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,7 +27,8 @@ class EBL_model(object):
                  t_intsteps=201,
                  z_max=35, h=0.7, omegaM=0.3, omegaBar=0.0222 / 0.7 ** 2.,
                  dust_abs_models='att_kn2002',
-                 axion_decay=True, axion_gamma=1e-24, massc2_axion=1.
+                 axion_decay=True, axion_gamma=1e-24, massc2_axion=1.,
+                 log_prints=True
                  ):
 
         self._ebl_intra_spline = None
@@ -46,6 +48,11 @@ class EBL_model(object):
         self._ebl_axion_spline = None
         self._ebl_SSP = None
         self._ebl_intrahalo = None
+
+        self._process_time = time.process_time()
+        logging.basicConfig(level='INFO',
+                            format='%(asctime)s - %(levelname)s - %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S')
 
         self._z_array = z_array
         self._z_max = z_max
@@ -67,11 +74,13 @@ class EBL_model(object):
 
         self.intcubes()
 
-        self._axion_decay = True
+        self._axion_decay = axion_decay
         self._axion_gamma = axion_gamma * u.s ** -1
-        self._massc2_axion = massc2_axion * u.eV
+        self._axion_massc2 = massc2_axion * u.eV
 
-        self._intrahalo_light = True
+        self._intrahalo_light = False
+
+        self._log_prints = True
 
     @property
     def z_array(self):
@@ -159,11 +168,11 @@ class EBL_model(object):
 
     @property
     def axion_mass(self):
-        return self._massc2_axion
+        return self._axion_massc2
 
     @axion_mass.setter
     def axion_mass(self, new_mass):
-        self._massc2_axion = new_mass * u.eV
+        self._axion_massc2 = new_mass * u.eV
         self.calc_ebl()
         return
 
@@ -177,6 +186,19 @@ class EBL_model(object):
         self.calc_ebl()
         return
 
+    @property
+    def logging_prints(self):
+        return self._log_prints
+
+    @logging_prints.setter
+    def logging_prints(self, new_print):
+        self._log_prints = new_print
+        return
+
+    def logging_info(self, text):
+        if self._log_prints:
+            logging.info('%.2fs: %r' % (time.process_time() - self._process_time, text))
+            self._process_time = time.process_time()
     
     def read_SSP_file(self, datfile, ssp_type):
         """
@@ -197,28 +219,28 @@ class EBL_model(object):
         self._log_t_SSP = np.log10(t)  # log(time/yrs)
         self._wv_SSP = l[::-1] * 1e-4
         self._log_fr_SSP = np.log10(c.value / l[::-1] / 1E-10)  # log(frequency/Hz)
-        self._log_em_SSP = (dd[::-1] - 6. + np.log10(1E10 * c.value) - 2. * self._log_fr_SSP[:,
-                                                                            np.newaxis])  # log(em [erg/s/Hz/M_solar])
+        self._log_em_SSP = (dd[::-1] - 6. + np.log10(1E10 * c.value)
+                            - 2. * self._log_fr_SSP[:, np.newaxis])  # log(em[erg/s/Hz/M_solar])
         # Sanity check
         self._log_em_SSP[np.invert(np.isfinite(self._log_em_SSP))] = -43.
 
-        end_time = time.time()
-        print('   Reading SSP file: %.2fs' % (end_time - init_time))
+        #self.logging_info('Reading SSP file')
         return
 
     def dust_att(self):
+        self.logging_info('Calculating dust absorption')
         print('Calculating dust absorption')
         init_time = time.time()
 
-        self._log_em_SSP += dust_abs.calculate_dust(self._wv_SSP, models=self._dust_abs_models, z_array=0.)[:,
-                            np.newaxis]
+        self._log_em_SSP += dust_abs.calculate_dust(
+            self._wv_SSP, models=self._dust_abs_models, z_array=0.)[:, np.newaxis]
 
         dust_time = time.time()
+        self.logging_info('   Set dust absorption')
         print('   Set dust absorption: %.2fs' % (dust_time - init_time))
 
     def intcubes(self):
-        print('Calculating integration cubes')
-        init_time = time.time()
+        #self.logging_info('Calculating integration cubes')
 
         self._cube = np.ones([self._lambda_array.shape[0], self._z_array.shape[0], self._t_intsteps])
         self._log_integr_t_cube = self._cube * np.linspace(0., 1., self._t_intsteps)
@@ -226,8 +248,8 @@ class EBL_model(object):
         self._z_cube = self._cube * self._z_array[np.newaxis, :, np.newaxis]
         self._LookbackTime_cube = self._cube * self._cosmo.lookback_time(
             self._z_array).to(u.yr)[np.newaxis, :, np.newaxis]
-        int_time = time.time()
-        print('   Calculate the cubes: %.2fs' % (int_time - init_time))
+
+        #self.logging_info('Calculate the cubes')
         return
 
     def plot_sfr(self):
@@ -240,103 +262,88 @@ class EBL_model(object):
 
     def calc_emissivity_ssp(self):
         print('Emissivity')
-        init_time = time.time()
+
         log_t_ssp_intcube = np.log10((self._cosmo.lookback_time(self._z_max) - self._LookbackTime_cube).to(u.yr).value)
         log_t_ssp_intcube[log_t_ssp_intcube > self._log_t_SSP[-1]] = self._log_t_SSP[-1]
 
         # Array of time values that we are going to integrate over (in log10)
         log_t_ssp_intcube = (log_t_ssp_intcube - self._log_t_SSP[0]) * self._log_integr_t_cube + self._log_t_SSP[0]
 
-        set_tssp_cube = time.time()
-        print('   Set log_t_ssp_intcube: %.2fs' % (set_tssp_cube - init_time))
+        self.logging_info('Set log_t_ssp_intcube')
 
         # Two interpolations, transforming t->z (using log10 for both of them) and a spline with the SSP data
         self._t2z = UnivariateSpline(
             np.log10(self._cosmo.lookback_time(self._z_array).to(u.yr).value), np.log10(self._z_array), s=0, k=1)
         ssp_spline = RectBivariateSpline(x=self._log_fr_SSP, y=self._log_t_SSP, z=self._log_em_SSP, kx=1, ky=1)
 
-        calc_splines = time.time()
-        print('   Set splines: %.2fs' % (calc_splines - set_tssp_cube))
+        self.logging_info('Set splines')
 
-        # Initialise mask to limit integration range to SSP data
+        # Initialise mask to limit integration range to SSP data (in wavelength/frequency)
         s = (self._log_freq_cube >= self._log_fr_SSP[0]) * (self._log_freq_cube <= self._log_fr_SSP[-1])
 
-        calc_s = time.time()
-        print('   Set frequency mask: %.2fs' % (-calc_splines + calc_s))
+        self.logging_info('Set frequency mask')
 
         # Interior of emissivity integral: L{t(z)-t(z')} * dens(z') * |dt'/dz'|
         kernel_emiss = self._cube * 1E-43
-        kernel_emiss[s] = (10. ** ssp_spline.ev(self._log_freq_cube[s], log_t_ssp_intcube[s])  # L(t)
-                           * 10. ** log_t_ssp_intcube[s] * np.log(10.)  # Variable change, integration over y=log10(x)
-                           * self._sfr(10. ** self._t2z(
-                    np.log10(self._LookbackTime_cube[s].value + 10. ** log_t_ssp_intcube[s]))))  # sfr(z)
+        kernel_emiss[s] = (10. ** log_t_ssp_intcube[s] * np.log(10.)  # Variable change, integration over y=log10(x)
+                           * 10. ** ssp_spline.ev(self._log_freq_cube[s], log_t_ssp_intcube[s])  # L(t)
+                           * self._sfr(10. ** self._t2z(                                         # sfr(z(t))
+                    np.log10(self._LookbackTime_cube[s].value + 10. ** log_t_ssp_intcube[s]))))
 
-        calc_kernel = time.time()
-        print('   Set kernel: %.2fs' % (-calc_s + calc_kernel))
+        self.logging_info('Set kernel')
 
         # Calculate emissivity
         em = simpson(kernel_emiss, x=log_t_ssp_intcube, axis=-1)  # [erg s^-1 Hz^-1 Mpc^-3]
 
         print('Calculating dust absorption')
-        init_time = time.time()
 
         lem = np.log10(em)
         lem += dust_abs.calculate_dust(self._lambda_array, models=self._dust_abs_models, z_array=self._z_array)
 
-        dust_time = time.time()
-        print('   Set dust absorption: %.2fs' % (dust_time - init_time))
+        self.logging_info('Set dust absorption')
 
         lem[np.invert(np.isfinite(lem))] = -43.
         self._emi_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lem, kx=1, ky=1)
 
         del log_t_ssp_intcube, kernel_emiss, s, self._t2z, ssp_spline, em, lem
 
-        calc_emissivity = time.time()
-        print('   Calculation time for emissivity: %.2fs' % (calc_emissivity - calc_kernel))
+        self.logging_info('Calculation time for emissivity')
 
         return
 
     def calc_ebl(self):
-        # print('EBL')
-        init_time = time.time()
-
-        def cosmo_term(zz):
-            return 1. / (1.022699E-1 * self._h) / (1. + zz) / np.sqrt(1 - self._omegaM + self._omegaM * (1. + zz) ** 3.)
 
         if self._ebl_SSP is None:
             self.calc_emissivity_ssp()
 
-            eblzintcube = self._z_cube + self._log_integr_t_cube * (np.max(self._z_array) - self._z_cube)
+            ebl_z_intcube = self._z_cube + self._log_integr_t_cube * (np.max(self._z_array) - self._z_cube)
 
-            end_z = time.time()
-            print('   Calculation time for z cube: %.2fs' % (end_z - init_time))
+            self.logging_info('Calculation time for z cube')
 
             # Calculate integration values
-            eblintcube = 10. ** self._emi_spline.ev(
-                (self._log_freq_cube + np.log10((1. + eblzintcube) / (1. + self._z_cube))).flatten(),
-                eblzintcube.flatten()).reshape(self._cube.shape)
+            ebl_intcube = 10. ** self._emi_spline.ev(
+                (self._log_freq_cube + np.log10((1. + ebl_z_intcube) / (1. + self._z_cube))).flatten(),
+                ebl_z_intcube.flatten()).reshape(self._cube.shape)
 
-            eblintcube *= cosmo_term(eblzintcube) * 1E9
+            ebl_intcube /= ((1. + ebl_z_intcube) * self._cosmo.H(ebl_z_intcube).to(u.s ** -1).value)
 
-            # s -> yr, Mpc^-3 -> m^-3, erg -> nJ,
-            eblintcube *= (u.erg * u.Mpc ** -3 * u.s ** -1).to(u.nJ * u.m ** -3 * u.year ** -1)
-            eblintcube *= 10. ** self._log_freq_cube * c.value / 4. / np.pi
+            # Mpc^-3 -> m^-3, erg/s -> nW
+            ebl_intcube *= (u.erg * u.Mpc ** -3 * u.s ** -1).to(u.nW * u.m ** -3)
+            ebl_intcube *= 10. ** self._log_freq_cube * c.value / 4. / np.pi
 
-            end_eblcube = time.time()
-            print('   Calculation time for ebl ssp cube: %.2fs' % (end_eblcube - end_z))
+            self.logging_info('Calculation time for ebl ssp cube')
 
             # EBL from SSP
-            self._ebl_SSP = simpson(eblintcube, x=eblzintcube, axis=-1)
+            self._ebl_SSP = simpson(ebl_intcube, x=ebl_z_intcube, axis=-1)
 
-            end_ebl = time.time()
-            print('   Calculation time for ebl ssp: %.2fs' % (end_ebl - end_eblcube))
+            self.logging_info('Calculation time for ebl ssp')
 
             lebl = np.log10(self._ebl_SSP)
             lebl[np.isnan(lebl)] = -43.
             lebl[np.invert(np.isfinite(lebl))] = -43.
             self._ebl_ssp_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lebl, kx=1, ky=1)
 
-            del eblzintcube, eblintcube, lebl
+            del ebl_z_intcube, ebl_intcube, lebl
 
         if self._intrahalo_light:
             if self._ebl_intra_spline is None:
@@ -378,9 +385,11 @@ class EBL_model(object):
                     kernel_intrahalo[:, nzi] = simpson(kernel, x=np.log10(mf.m), axis=0)
 
                 print(mf.m)
-                print( (u.solLum.to(u.nW)*u.nW / (u.Mpc*self._h)**3).to(u.nW / u.m**3))
+                #print( (u.solLum.to(u.nW)*u.nW / (u.Mpc*self._h)**3).to(u.nW / u.m**3))
 
-                nu_luminosity = kernel_intrahalo * c.value / (10** self._freq_array[:, np.newaxis])**2.
+                nu_luminosity = kernel_intrahalo * c / (10 ** self._freq_array[:, np.newaxis])**2. * u.s**2
+                nu_luminosity *= (u.solLum.to(u.W)*u.W / (u.Mpc*self._h)**3 / u.m).to(u.erg /u.s / u.Mpc**3 / u.m)
+
                 print('aaaa')
                 print(nu_luminosity)
                 aaa = np.log10(nu_luminosity)
@@ -431,14 +440,13 @@ class EBL_model(object):
             self._ebl_intrahalo = 0.
 
         if self._axion_decay:
-            start_ebl_axion = time.time()
 
-            z_star = self._massc2_axion \
+            z_star = self._axion_massc2 \
                      / (2. * h_plank.to(u.eV * u.s) * 10 ** self._log_freq_cube[:, :, 0] * u.s ** -1) - 1.
 
             I_v = ((c / (4. * np.pi * u.sr)
                     * self._cosmo.Odm(0.) * self._cosmo.critical_density0.to(u.kg * u.m ** -3)
-                    * c ** 2. * self._axion_gamma / self._massc2_axion.to(u.J)
+                    * c ** 2. * self._axion_gamma / self._axion_massc2.to(u.J)
                     * 10 ** self._log_freq_cube[:, :, 0] * u.s ** -1 * h_plank * (1 + self._z_cube[:, :, 0])
                     / self._cosmo.H(z_star).to(u.s ** -1)).to(u.nW * u.m ** -2 * u.sr ** -1)
                    * (z_star > self._z_cube[:, :, 0]))
@@ -452,23 +460,20 @@ class EBL_model(object):
 
             del z_star, I_v, lebl
 
-            end_ebl_axion = time.time()
-            #print('   Calculation time for ebl axions: %.2fs' % (end_ebl_axion - start_ebl_axion))
+            self.logging_info('Calculation time for ebl axions')
 
         else:
             ebl_axion = 0.
 
         # Calculation of the whole EBL
-        start_ebl_total = time.time()
         lebl = np.log10(self._ebl_SSP + ebl_axion + self._ebl_intrahalo)
         lebl[np.isnan(lebl)] = -43.
         lebl[np.invert(np.isfinite(lebl))] = -43.
         self._ebl_tot_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lebl, kx=1, ky=1)
 
         # Free memory
-        #del eblzintcube, eblintcube, lebl
+        #del ebl_z_intcube, ebl_intcube, lebl
 
-        end_ebl_total = time.time()
-        #print('   Calculation time for ebl total: %.2fs' % (end_ebl_total - start_ebl_total))
+        self.logging_info('Calculation time for ebl total')
 
         return

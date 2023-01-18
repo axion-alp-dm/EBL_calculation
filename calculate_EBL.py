@@ -58,7 +58,8 @@ def input_yaml_data_into_class(yaml_data):
                      z_max=yaml_data['z_intmax'],
                      h=float(yaml_data['cosmo'][0]), omegaM=float(yaml_data['cosmo'][1]),
                      omegaBar=float(yaml_data['omegaBar']),
-                     axion_decay=yaml_data['axion_decay'])
+                     axion_decay=yaml_data['axion_decay'],
+                     log_prints=yaml_data['log_prints'])
 
 
 # Calculations of emissivity and EBL ----------------#
@@ -127,6 +128,7 @@ for key in config_data.keys():
              color=colors[j])
     j += 1
 
+    test_stuff.logging_prints = False
     for aa in range(len(axion_mac2)):
         test_stuff.axion_mass = axion_mac2[aa]
         for bb in range(len(axion_gamma)):

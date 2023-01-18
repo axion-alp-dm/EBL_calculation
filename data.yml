@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------
 Kneiste_only:
   name: 'Kneiste02'
+  log_prints: True
 
   # SFR INPUTS
   sfr: 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1])
