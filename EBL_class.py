@@ -78,7 +78,7 @@ class EBL_model(object):
         self._axion_gamma = axion_gamma * u.s ** -1
         self._axion_massc2 = massc2_axion * u.eV
 
-        self._intrahalo_light = False
+        self._intrahalo_light = True
 
         self._log_prints = True
 
@@ -357,14 +357,33 @@ class EBL_model(object):
 
                 old_spectrum = np.loadtxt('Swire_library/Ell13_template_norm.sed')
                 old_spline = UnivariateSpline(old_spectrum[:, 0], old_spectrum[:, 1], s=0, k=1, ext=1)
+                print(old_spectrum[abs(old_spectrum[:,0]-22000).argmin(), 1])
+                old_spectrum[:, 1] *= old_spectrum[:, 0] / old_spline(22000) / 22000.
+                #old_spectrum[:, 1] *= 1. / old_spline(22000) 
+                print(old_spectrum[abs(old_spectrum[:,0]-22000).argmin(), 1])
+		
+                plt.figure()
+                plt.plot(old_spectrum[:,0], old_spectrum[:,1])
+                plt.xscale('log')
+                plt.yscale('log')
+
+                plt.axhline(1, color='grey')
+                plt.axvline(5500)
+                plt.axvline(22000)
+
+                plt.xlabel(r'Wavelength [A]')
+                plt.ylabel(r'lambda * F_lambda [erg cm-2 s-1]')
+
+                plt.ylim(0.01, 10000)
+
+
                 old_spectrum[:, 0] *= 1e-4
-                old_spectrum[:, 1] *= old_spline(5500) / old_spline(2200)
-                old_spectrum_spline = UnivariateSpline(old_spectrum[:, 0], old_spectrum[:, 1], s=0, k=1, ext=1)
+               
+                old_spectrum_spline = UnivariateSpline(np.log10(old_spectrum[:, 0]), np.log10(old_spectrum[:, 1]), s=0, k=1)
 
                 mf = MassFunction(cosmo_model=self._cosmo, Mmin=m_min, Mmax=m_max)
 
-                L22 = (5.64e12 * (self._h / 0.7) ** (-2) * (mf.m / (2.7e14 / (self._h / 0.7))) ** 0.72
-                   / 2.2 * 1e-6)
+                L22 = 5.64e12 * (self._h / 0.7)**(-2) * (mf.m / 2.7e14 * self._h / 0.7)**0.72 / 2.2e-6
             
                 kernel_intrahalo = np.zeros((len(self._freq_array), len(self._z_array)))
 
@@ -373,7 +392,7 @@ class EBL_model(object):
                     mf.update(z=zi)
                 
                     lambda_luminosity = ((f_ihl(mf.m)* L22 * (1 + zi) ** alpha)[:, np.newaxis] 
-                    * old_spectrum_spline(self._lambda_array[np.newaxis, :])
+                    * 10**old_spectrum_spline(np.log10(self._lambda_array[np.newaxis, :]))
                           )
                     
                    
@@ -384,15 +403,16 @@ class EBL_model(object):
                     
                     kernel_intrahalo[:, nzi] = simpson(kernel, x=np.log10(mf.m), axis=0)
 
-                print(mf.m)
-                #print( (u.solLum.to(u.nW)*u.nW / (u.Mpc*self._h)**3).to(u.nW / u.m**3))
 
+
+                plt.plot(self._lambda_array*1e4, 10**old_spectrum_spline(np.log10(self._lambda_array)))
                 nu_luminosity = kernel_intrahalo * c / (10 ** self._freq_array[:, np.newaxis])**2. * u.s**2
+                
                 nu_luminosity *= (u.solLum.to(u.W)*u.W / (u.Mpc*self._h)**3 / u.m).to(u.erg /u.s / u.Mpc**3 / u.m)
 
-                print('aaaa')
-                print(nu_luminosity)
-                aaa = np.log10(nu_luminosity)
+                print('nu luminosity')
+                print('%.2e %r' %(nu_luminosity[0,0].value, str(nu_luminosity[0,0].unit)))
+                aaa = np.log10(nu_luminosity.value)
                 aaa[np.isnan(aaa)] = -43.
                 aaa[np.invert(np.isfinite(aaa))] = -43.
                 nu_lumin_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=aaa, kx=1, ky=1)
@@ -406,32 +426,26 @@ class EBL_model(object):
 
                 kernel_ebl_intra = 10**((nu_lumin_spline.ev((self._log_freq_cube + np.log10((1. + z_integr)/ (1. + self._z_cube))).flatten(),
                         z_integr.flatten())).reshape(self._cube.shape))
-                print('kernel ebl intrahalo')
-                print(kernel_ebl_intra[0, 0, :])
+
                 kernel_ebl_intra /= ((1. + z_integr) *  self._cosmo.H(z_integr).to(u.s ** -1).value)
-                print()
-                print('kernel ebl intrahalo after putting kernel stuff')
-                print(kernel_ebl_intra[0, 0, :])
-                print()
-                print('z integration')
-                print(z_integr[0, 0, :])
-                #print()
+
+
                 plt.figure()
                 plt.plot(z_integr[0, 0, :], kernel_ebl_intra[0, 0, :])
                 plt.yscale('log')
 
                 plt.title(simpson(kernel_ebl_intra[0,0,:], x=z_integr[0,0,:]))
 
-               # print(z_integr[::-1])
-                self._ebl_intrahalo = simpson(kernel_ebl_intra, x=z_integr, axis=-1)
-                print('self.ebl intrahalo')
-                print(self._ebl_intrahalo)
 
-                self._ebl_intrahalo *= (u.solLum.to(u.nW)*u.nW / (u.Mpc*self._h)**3).to(u.nW / u.m**3).value
-                self._ebl_intrahalo *= c.value**2 / (self._lambda_array[:, np.newaxis] * 1e-6 * 4. * np.pi)
-                self._ebl_intrahalo *= 1e10
+                self._ebl_intrahalo = simpson(kernel_ebl_intra, x=z_integr, axis=-1)
+
+                self._ebl_intrahalo *= u.erg * u.s / u.Mpc**3
+                self._ebl_intrahalo *= c**2 / (self._lambda_array[:, np.newaxis] * 1e-6 *u.m * 4. * np.pi)
                 print('self.ebl intrahalo')
-                print(self._ebl_intrahalo)
+                print(self._ebl_intrahalo[0,0])
+                self._ebl_intrahalo = self._ebl_intrahalo.to(u.nW / u.m**2).value
+                print('final intrahalo')
+                print(self._ebl_intrahalo[0,0])
                 lebl = np.log10(self._ebl_intrahalo)
                 lebl[np.isnan(lebl)] = -43.
                 lebl[np.invert(np.isfinite(lebl))] = -43.

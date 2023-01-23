@@ -178,6 +178,8 @@ axes2.add_artist(legend22)
 
 plt.xlim([.1, 1E3])
 plt.ylim(1E-4, 1.1e2)  # 1.5 * np.max(ebl_axion[:, i * 10] + ebl_SSP[:, i * 10])])
+#plt.xlim(0,5)
+#plt.ylim(1e-2, 100)
 plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 
 
