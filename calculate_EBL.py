@@ -4,15 +4,16 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 
+from astropy import units as u
+from astropy.constants import h as h_plank
+
 from EBL_class import EBL_model
 from EBL_measurements.EBL_measurs_plot import plot_ebl_measurement_collection
-
-from astropy.constants import h as h_plank
-from astropy import units as u
 
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams['axes.labelsize'] = 20
 plt.rc('font', size=20)
 plt.rc('axes', titlesize=20)
 plt.rc('axes', labelsize=20)
@@ -29,7 +30,6 @@ plt.rc('ytick.minor', size=4, width=1)
 
 
 # Configuration file reading and data input/output ---------#
-
 def read_config_file(ConfigFile):
     with open(ConfigFile, 'r') as stream:
         try:
@@ -46,20 +46,26 @@ if not os.path.exists("outputs/"):
 
 def input_yaml_data_into_class(yaml_data):
 
-    z_array = np.linspace(float(yaml_data['zmin']), float(yaml_data['zmax']), yaml_data['zsteps'])
-    lamb_array = np.logspace(np.log10(float(yaml_data['lmin'])), np.log10(float(yaml_data['lmax'])),
-                             yaml_data['lfsteps'])
+    z_array = np.linspace(float(yaml_data['redshift_array']['zmin']),
+                          float(yaml_data['redshift_array']['zmax']),
+                          yaml_data['redshift_array']['zsteps'])
+
+    lamb_array = np.logspace(np.log10(float(yaml_data['wavelenght_array']['lmin'])),
+                             np.log10(float(yaml_data['wavelenght_array']['lmax'])),
+                             yaml_data['wavelenght_array']['lfsteps'])
 
     return EBL_model(z_array, lamb_array,
-                     sfr=yaml_data['sfr'], sfr_params=yaml_data['sfr_params'],
-                     path_SSP=yaml_data['path_SSP'],
-                     dust_abs_models=yaml_data['dust_abs_models'],
+                     h=float(yaml_data['cosmology_params']['cosmo'][0]),
+                     omegaM=float(yaml_data['cosmology_params']['cosmo'][1]),
+                     omegaBar=float(yaml_data['cosmology_params']['omegaBar']),
+                     #sfr=yaml_data['sfr'], sfr_params=yaml_data['sfr_params'],
+                     #path_SSP=yaml_data['path_SSP'],
+                     #dust_abs_models=yaml_data['dust_abs_models'],
                      t_intsteps=yaml_data['t_intsteps'],
-                     z_max=yaml_data['z_intmax'],
-                     h=float(yaml_data['cosmo'][0]), omegaM=float(yaml_data['cosmo'][1]),
-                     omegaBar=float(yaml_data['omegaBar']),
-                     axion_decay=yaml_data['axion_decay'],
-                     log_prints=yaml_data['log_prints'])
+                     z_max=yaml_data['z_intmax'])
+                     #axion_decay=yaml_data['axion_decay'],
+                     #log_prints=yaml_data['log_prints'])
+
 
 
 # Calculations of emissivity and EBL ----------------#
@@ -81,23 +87,16 @@ j = 0
 
 def gamma_from_rest(mass, gay):
     return ((mass*u.eV)**3. * (gay*u.GeV**-1)**2. / 32. / h_plank.to(u.eV * u.s)).to(u.s**-1).value
+
 axion_mac2 = np.logspace(np.log10(3), 1, num=15)
 axion_gay = np.logspace(np.log10(5e-11), -9, num=20)
-#axion_mac2 = np.array([7., 10.])
-#axion_gay = np.array([1e-10, 7e-10, 1e-9])
+
 axion_gamma = np.logspace(np.log10(gamma_from_rest(axion_mac2[0], axion_gay[0])),
         np.log10(gamma_from_rest(axion_mac2[-1], axion_gay[-1])), num=len(axion_gay))
 
 values_gamma_array = np.zeros((len(axion_mac2), len(axion_gamma)))
 values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
 
-freq_Driver16 = np.log10(3e8*1e6/np.array([0.470, 0.618, 0.749, 0.895, 1.021, 1.252, 1.643, 2.150, 3.544, 4.487]))
-ebl_Driver16 = np.array([5.36-0.93, 7.47, 9.55, 10.15, 10.44, 10.38, 10.12, 8.72, 5.17, 3.60])
-
-#[0.153, 0.225, 0.356, 0.470, 0.618, 0.749, 0.895, 1.021, 1.252, 1.643, 2.150, 3.544, 4.487, 7.841, 23.675,
-#               70.890, 101.000, 161.000, 161.000, 249.000, 357.000, 504.000]
-#    'ebl': [1.45, 3.15, 4.03, 5.36, 7.47, 9.55, 10.15, 10.44, 10.38, 10.12, 8.72, 5.17, 3.60, 2.45, 3.01, 6.90, 10.22,
-#            16.47, 13.14, 10.00, 5.83, 2.46]0.470, 0.618, 0.749, 0.895, 1.021, 1.252, 1.643, 2.150, 3.544, 4.487
 
 fig1 = plt.figure()
 axes1 = fig1.gca()
@@ -105,7 +104,13 @@ axes1 = fig1.gca()
 fig2 = plt.figure(figsize=(14, 8))
 axes2 = fig2.gca()
 
+ebl_class = input_yaml_data_into_class(config_data)
 
+for key in config_data['ssp_models']:
+    print(key, config_data['ssp_models'][key])
+    ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+
+'''
 for key in config_data.keys():
     print('EBL model: ', key)
     test_stuff = input_yaml_data_into_class(config_data[key])
@@ -122,8 +127,8 @@ for key in config_data.keys():
              color=colors[j], label=config_data[key]['name'])
     plt.plot(waves_ebl, 10**test_stuff.ebl_ssp_spline(freq_array_ebl, 0., grid=False), linestyle=models[1],
              color=colors[j])
-    plt.plot(waves_ebl, 10**test_stuff.ebl_intra_spline(freq_array_ebl, 0., grid=False), linestyle=models[2],
-             color=colors[j])
+    # plt.plot(waves_ebl, 10**test_stuff.ebl_intra_spline(freq_array_ebl, 0., grid=False), linestyle=models[2],
+    #          color=colors[j])
     plt.plot(waves_ebl, 10**test_stuff.ebl_axion_spline(freq_array_ebl, 0., grid=False), linestyle=models[3],
              color=colors[j])
     j += 1
@@ -134,17 +139,13 @@ for key in config_data.keys():
         for bb in range(len(axion_gamma)):
             test_stuff.axion_gamma = axion_gamma[bb]
 
-            ebl_ourvalues = 10**test_stuff.ebl_total_spline(freq_Driver16, 0., grid=False)
-            if np.all(ebl_ourvalues > ebl_Driver16) and\
-                    10**test_stuff.ebl_total_spline(np.log10(3e8/0.608*1e6), 0.) < 16.37:
+            if 10**test_stuff.ebl_total_spline(np.log10(3e8/0.608*1e6), 0.) < 16.37:
                 values_gamma_array[aa, bb] = 1.
 
             #--------------
             test_stuff.axion_gamma = gamma_from_rest(axion_mac2[aa], axion_gay[bb])
 
-            ebl_ourvalues = 10**test_stuff.ebl_total_spline(freq_Driver16, 0., grid=False)
-            if np.all(ebl_ourvalues > ebl_Driver16) and\
-                    10**test_stuff.ebl_total_spline(np.log10(3e8/0.608*1e6), 0.) < 16.37:
+            if 10**test_stuff.ebl_total_spline(np.log10(3e8/0.608*1e6), 0.) < 16.37:
                 values_gay_array[aa, bb] = 1.
 
 
@@ -238,4 +239,4 @@ aaa.close()
 # plt.ylabel(r'EBL SED (nW / m$^2$ sr)')
 plt.show()
 #plt.close('all')
-
+'''

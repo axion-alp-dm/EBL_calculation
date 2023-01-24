@@ -1,80 +1,88 @@
-# List of EBL models we want to try.
+# COSMOLOGY CONSTANTS (flat LCDM assumed)
+cosmology_params:
+  cosmo: [ .7, .3, .7 ]   # [h_0, omega_matter, omega_L]
+  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
 
-
-#None:
-#  name: 'Test'
-#  sfr: 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))'
-#  sfr_params: [0.15, 1.1, 3.4, 0.]
-#  ssp_type: 'SB99'
-#  path_SSP: 'ssp/final run.spectrum'
-#  dust_abs_models: []
-#  lmin: 1e-2
-#  lmax: 3e3
-#  lfsteps: 191
-#  zmin: 1e-6
-#  zmax: 10.
-#  zintmax: 35.
-#  zsteps: 181
-#  ltintsteps: 201
-#  eblzmin: 0.
-#  eblzmax: 10
-#  eblzsteps: 201
-#  cosmo: [ .7, .3, .7 ]
-#  ebv: 0.15
-#  ir_wave_start: 5.5
-#  ir_fac: 3E9
-#  dust: True
-#  nebula: True
-#  fesc: 0.
-
-
-# ----------------------------------------------------------------------
-Kneiste_only:
-  name: 'Kneiste02'
-  log_prints: True
-
-  # SFR INPUTS
-  sfr: 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1])
-      - ci[3]*(x>ci[1]))'
-  sfr_params: [0.15, 1.1, 3.4, 0.]
-
-  # SSP DATA
-  ssp_type: 'SB99'
-  path_SSP: 'ssp/final run.spectrum'
-
-  # DUST ABSORPTION MODELS
-  dust_abs_models: ['kneiste2002', 'aaaa']
-
-  # WAVELENGTH ARRAY INPUTS TO STUDY
+# WAVELENGTH ARRAY FOR EBL [microns]
+wavelenght_array:
   lmin: 1e-2
   lmax: 3e3
   lfsteps: 391
 
-  # REDSHIFT ARRAY INPUTS
+# REDSHIFT ARRAY FOR MRF (ebl at any redshift)
+redshift_array:
   zmin: 1e-6
   zmax: 10.
   zsteps: 181
 
-  # MAXIMUM REDSHIFT AT WHICH WE FORM SSPs
-  z_intmax: 35.
+# INTEGRATION TIME STEP
+t_intsteps: 201
 
-  # INTEGRATION TIME STEP
-  t_intsteps: 201
+# PRINT LOGGING OF OUR PROCESSES
+log_prints: True
 
-  # COSMOLOGY CONSTANTS (flat LCDM assumed) [h_0, omega_matter, omega_L]
-  cosmo: [ .7, .3, .7 ]
-  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
+# AXION DECAY BEING CONSIDERED
+axion_params:
+  axion_mass:  1      # [eV]
+  axion_gamma: 5e-23  # [s**-1]
 
-  # AXION DECAY BEING CONSIDERED
-  axion_decay: True
+# INTRA HALO LIGHT PARAMETERS
+ihl_params:
+  A_ihl: 1e-3
 
-  # Stuff that was here before and we might use in the future
-  ebv: 0.15
-  ir_wave_start: 5.5
-  ir_fac: 3E9
-  dust: True
-  nebula: True
-  fesc: 0.
+# SSP INFORMATION
+# Maximum redshift at which we form SSPs
+z_intmax: 35.
+# List of SSP models we want to try
+ssp_models:
+  Kneiste_only:
+    name: 'Kneiste02'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1])
+        - ci[3]*(x>ci[1]))'
+    sfr_params: [0.15, 1.1, 3.4, 0.]
+
+    # SSP DATA
+    ssp_type: 'SB99'
+    path_SSP: 'ssp/final run.spectrum'
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiste2002', 'aaaa' ]
+
+  finke22_MD14:
+    name: 'Finke22, sfr=MD14'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [0.015, 2.7, 2.9, 5.6]
+
+    # SSP DATA
+    ssp_type: 'SB99'
+    path_SSP: 'ssp/final run.spectrum'
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'finke2022' ]
+
+  finke22_piece:
+    name: 'Finke22, sfr=piece'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x: 10**ci[0] * (
+        ((1+x)**ci[1] * (x<ci[-4]))
+      + ((1+ci[-4])**(ci[1]-ci[2])*(1+     x)** ci[2]                                                     * (x>=ci[-4])*(x<ci[-3]))
+      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+     x)** ci[3]                           * (x>=ci[-3])*(x<ci[-2]))
+      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+     x)** ci[4] * (x>=ci[-2])*(x<ci[-1]))
+      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+ci[-1])**(ci[4]-ci[5])*(1+x)**ci[5] * (x>=ci[-1])))'
+    sfr_params: [-2.04, 2.81, 1.25, -1.25, -1.84, -4.40, 1., 2., 3., 4.]
+
+    # SSP DATA
+    ssp_type: 'SB99'
+    path_SSP: 'ssp/final run.spectrum'
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'finke2022' ]
+
 
 
 ### ----------------------------------------------------------------------
@@ -92,29 +100,6 @@ Kneiste_only:
 ##  # DUST ABSORPTION MODELS
 ##  dust_abs_models: ['kneiste2002', 'abdollahi2018']
 ##
-##  # WAVELENGTH ARRAY INPUTS TO STUDY
-##  lmin: 1e-2
-##  lmax: 3e3
-##  lfsteps: 191
-##
-##  # REDSHIFT ARRAY INPUTS
-##  zmin: 1e-6
-##  zmax: 10.
-##  zsteps: 181
-##
-##  # MAXIMUM REDSHIFT AT WHICH WE FORM SSPs
-##  z_intmax: 35.
-##
-##  # INTEGRATION TIME STEP
-##  t_intsteps: 201
-##
-##  # COSMOLOGY CONSTANTS (flat LCDM assumed) [h_0, omega_matter, omega_L]
-##  cosmo: [ .7, .3, .7 ]
-##  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
-##
-##  # AXION DECAY BEING CONSIDERED
-##  axion_decay: True
-##
 ##  # Stuff that was here before and we might use in the future
 ##  ebv: 0.15
 ##  ir_wave_start: 5.5
@@ -122,103 +107,3 @@ Kneiste_only:
 ##  dust: True
 ##  nebula: True
 ##  fesc: 0.
-#
-#
-## ----------------------------------------------------------------------
-#finke22_MD14:
-#  name: 'Finke22, sfr=MD14'
-#
-#  # SFR INPUTS
-#  sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#  sfr_params: [0.015, 2.7, 2.9, 5.6]
-#
-#  # SSP DATA
-#  ssp_type: 'SB99'
-#  path_SSP: 'ssp/final run.spectrum'
-#
-#  # DUST ABSORPTION MODELS
-#  dust_abs_models: [ 'finke2022' ]
-#
-#  # WAVELENGTH ARRAY INPUTS TO STUDY
-#  lmin: 1e-2
-#  lmax: 3e3
-#  lfsteps: 391
-#
-#  # REDSHIFT ARRAY INPUTS
-#  zmin: 1e-6
-#  zmax: 10.
-#  zsteps: 181
-#
-#  # MAXIMUM REDSHIFT AT WHICH WE FORM SSPs
-#  z_intmax: 35.
-#
-#  # INTEGRATION TIME STEP
-#  t_intsteps: 201
-#
-#  # COSMOLOGY CONSTANTS (flat LCDM assumed) [h_0, omega_matter, omega_L]
-#  cosmo: [ .7, .3, .7 ]
-#  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
-#
-#  # AXION DECAY BEING CONSIDERED
-#  axion_decay: True
-#
-#  # Stuff that was here before and we might use in the future
-#  ebv: 0.15
-#  ir_wave_start: 5.5
-#  ir_fac: 3E9
-#  dust: True
-#  nebula: True
-#  fesc: 0.
-
-
-#
-## ----------------------------------------------------------------------
-#finke22_piece:
-#  name: 'Finke22, sfr=piece'
-#
-#  # SFR INPUTS
-#  sfr: 'lambda ci, x: 10**ci[0] * (
-#      ((1+x)**ci[1] * (x<ci[-4]))
-#    + ((1+ci[-4])**(ci[1]-ci[2])*(1+     x)** ci[2]                                                     * (x>=ci[-4])*(x<ci[-3]))
-#    + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+     x)** ci[3]                           * (x>=ci[-3])*(x<ci[-2]))
-#    + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+     x)** ci[4] * (x>=ci[-2])*(x<ci[-1]))
-#    + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+ci[-1])**(ci[4]-ci[5])*(1+x)**ci[5] * (x>=ci[-1])))'
-#  sfr_params: [-2.04, 2.81, 1.25, -1.25, -1.84, -4.40, 1., 2., 3., 4.]
-#
-#  # SSP DATA
-#  ssp_type: 'SB99'
-#  path_SSP: 'ssp/final run.spectrum'
-#
-#  # DUST ABSORPTION MODELS
-#  dust_abs_models: [ 'finke2022' ]
-#
-#  # WAVELENGTH ARRAY INPUTS TO STUDY
-#  lmin: 1e-2
-#  lmax: 3e3
-#  lfsteps: 391
-#
-#  # REDSHIFT ARRAY INPUTS
-#  zmin: 1e-6
-#  zmax: 10.
-#  zsteps: 181
-#
-#  # MAXIMUM REDSHIFT AT WHICH WE FORM SSPs
-#  z_intmax: 35.
-#
-#  # INTEGRATION TIME STEP
-#  t_intsteps: 201
-#
-#  # COSMOLOGY CONSTANTS (flat LCDM assumed) [h_0, omega_matter, omega_L]
-#  cosmo: [ .7, .3, .7 ]
-#  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
-#
-#  # AXION DECAY BEING CONSIDERED
-#  axion_decay: True
-#
-#  # Stuff that was here before and we might use in the future
-#  ebv: 0.15
-#  ir_wave_start: 5.5
-#  ir_fac: 3E9
-#  dust: True
-#  nebula: True
-#  fesc: 0.
