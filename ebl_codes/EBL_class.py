@@ -2,7 +2,6 @@
 import logging
 import time
 import numpy as np
-import matplotlib.pyplot as plt
 
 from scipy.interpolate import UnivariateSpline, RectBivariateSpline
 from scipy.integrate   import simpson
@@ -12,7 +11,7 @@ from astropy.constants import c
 from astropy.constants import h as h_plank
 from astropy.cosmology import FlatLambdaCDM
 
-import dust_absorption_models as dust_abs
+from ebl_codes import dust_absorption_models as dust_abs
 
 from hmf import MassFunction
 
@@ -243,7 +242,7 @@ class EBL_model(object):
         Aihl = 10 ** log10_Aihl
         f_ihl = lambda x: Aihl * (x / 1e12) ** 0.1
 
-        old_spectrum = np.loadtxt('Swire_library/Ell13_template_norm.sed')
+        old_spectrum = np.loadtxt('../Swire_library/Ell13_template_norm.sed')
         old_spline = UnivariateSpline(old_spectrum[:, 0], old_spectrum[:, 1], s=0, k=1, ext=1)
 
         old_spectrum[:, 1] *= old_spectrum[:, 0] / old_spline(22000) / 22000.

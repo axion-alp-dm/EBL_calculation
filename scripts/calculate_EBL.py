@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 from astropy import units as u
 from astropy.constants import h as h_plank
 
-from EBL_class import EBL_model
-from EBL_measurements.EBL_measurs_plot import plot_ebl_measurement_collection
-
+from ebl_codes.EBL_class import EBL_model
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -39,9 +37,9 @@ def read_config_file(ConfigFile):
     return parsed_yaml
 
 
-if not os.path.exists("outputs/"):
+if not os.path.exists("../outputs/"):
     # if the directory for outputs is not present, create it.
-    os.makedirs("outputs/")
+    os.makedirs("../outputs/")
 
 
 def input_yaml_data_into_class(yaml_data):
