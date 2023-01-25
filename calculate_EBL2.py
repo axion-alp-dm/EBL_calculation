@@ -81,7 +81,7 @@ ebl_class.ebl_axion_calculation(mass=float(config_data['axion_params']['axion_ma
 plt.plot(waves_ebl, 10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False), linestyle=models[3],
          color='k')
 
-ebl_class.ebl_intrahalo_calculation(config_data['ihl_params'])
+ebl_class.ebl_intrahalo_calculation()#config_data['ihl_params'])
 plt.plot(waves_ebl, 10 ** ebl_class.ebl_intra_spline(freq_array_ebl, 0., grid=False), linestyle=models[2],
          color='k')
 
@@ -136,7 +136,7 @@ values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
 ebl_class = input_yaml_data_into_class(config_data)
 ebl_class.logging_prints = False
 
-ebl_class.ebl_intrahalo_calculation(config_data['ihl_params'])
+ebl_class.ebl_intrahalo_calculation()#config_data['ihl_params'])
 ebl_class.ebl_ssp_calculation(config_data['ssp_models']['Kneiste_only'])
 
 for aa in range(len(axion_mac2)):
