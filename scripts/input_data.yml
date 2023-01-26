@@ -29,6 +29,7 @@ axion_params:
 # INTRA HALO LIGHT PARAMETERS
 ihl_params:
   A_ihl: 1e-3
+  alpha: 1
 
 # SSP INFORMATION
 # Maximum redshift at which we form SSPs
@@ -45,13 +46,13 @@ ssp_models:
 
     # SSP DATA
     ssp_type: 'SB99'
-    path_SSP: 'ssp/final run.spectrum'
+    path_SSP: '../ssp/final_run_spectrum'
 
     # DUST ABSORPTION MODELS
     dust_abs_models: [ 'kneiste2002', 'aaaa' ]
 
-  finke22_MD14:
-    name: 'Finke22, sfr=MD14'
+  finke22_MD14_params:
+    name: 'Finke22, sfr=MD14, params=MD14'
 
     # SFR INPUTS
     sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
@@ -59,29 +60,43 @@ ssp_models:
 
     # SSP DATA
     ssp_type: 'SB99'
-    path_SSP: 'ssp/final run.spectrum'
+    path_SSP: '../ssp/final_run_spectrum'
 
     # DUST ABSORPTION MODELS
     dust_abs_models: [ 'finke2022' ]
 
-  finke22_piece:
-    name: 'Finke22, sfr=piece'
-
-    # SFR INPUTS
-    sfr: 'lambda ci, x: 10**ci[0] * (
-        ((1+x)**ci[1] * (x<ci[-4]))
-      + ((1+ci[-4])**(ci[1]-ci[2])*(1+     x)** ci[2]                                                     * (x>=ci[-4])*(x<ci[-3]))
-      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+     x)** ci[3]                           * (x>=ci[-3])*(x<ci[-2]))
-      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+     x)** ci[4] * (x>=ci[-2])*(x<ci[-1]))
-      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+ci[-1])**(ci[4]-ci[5])*(1+x)**ci[5] * (x>=ci[-1])))'
-    sfr_params: [-2.04, 2.81, 1.25, -1.25, -1.84, -4.40, 1., 2., 3., 4.]
-
-    # SSP DATA
-    ssp_type: 'SB99'
-    path_SSP: 'ssp/final run.spectrum'
-
-    # DUST ABSORPTION MODELS
-    dust_abs_models: [ 'finke2022' ]
+#  finke22_MD14_modelA:
+#    name: 'Finke22, sfr=MD14, params=A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [0.0092, 2.79, 3.10, 6.97]
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: '../ssp/final_run_spectrum'
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022' ]
+#
+#  finke22_piece:
+#    name: 'Finke22, sfr=piece'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x: 10**ci[0] * (
+#        ((1+     x)** ci[1]                                                                               * (x<ci[-4]))
+#      + ((1+ci[-4])**(ci[1]-ci[2])*(1+     x)** ci[2]                                                     * (x>=ci[-4])*(x<ci[-3]))
+#      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+     x)** ci[3]                           * (x>=ci[-3])*(x<ci[-2]))
+#      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+     x)** ci[4] * (x>=ci[-2])*(x<ci[-1]))
+#      + ((1+ci[-4])**(ci[1]-ci[2])*(1+ci[-3])**(ci[2]-ci[3])*(1+ci[-2])**(ci[3]-ci[4])*(1+ci[-1])**(ci[4]-ci[5])*(1+x)**ci[5] * (x>=ci[-1])))'
+#    sfr_params: [-2.04, 2.81, 1.25, -1.25, -1.84, -4.40, 1., 2., 3., 4.]
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: '../ssp/final_run_spectrum'
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022' ]
 
 
 

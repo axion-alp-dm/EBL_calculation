@@ -4,11 +4,8 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 
-from astropy import units as u
-from astropy.constants import h as h_plank
-
 from ebl_codes.EBL_class import EBL_model
-from EBL_measurements.EBL_measurs_plot import plot_ebl_measurement_collection
+from ebl_measurements.EBL_measurs_plot import plot_ebl_measurement_collection
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -60,10 +57,10 @@ def input_yaml_data_into_class(yaml_data):
                      z_max=yaml_data['z_intmax'])
 
 
-# FIGURE: AXION MASS-GAYY AND MASS-GAMMA PARAMETER SPACES -----------------------------------
+# FIGURE: EBL FOR DIFFERENT MODELS -----------------------------------
 
-fig2 = plt.figure(figsize=(14, 8))
-axes2 = fig2.gca()
+fig = plt.figure(figsize=(15, 8))
+axes = fig.gca()
 
 waves_ebl = np.logspace(-1, 3, num=700)
 freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
@@ -72,19 +69,23 @@ models = ['solid', 'dashed', 'dotted', 'dashdot']
 colors = ['b', 'r', 'g', 'orange']
 j = 0
 
-# We initialize the class and calculate the EBL contributions from different elements
-config_data = read_config_file('data.yml')
+# We initialize the class with the input file
+config_data = read_config_file('input_data.yml')
 ebl_class = input_yaml_data_into_class(config_data)
 
+# Axion component calculation
 ebl_class.ebl_axion_calculation(mass=float(config_data['axion_params']['axion_mass']),
                                 gamma=float(config_data['axion_params']['axion_gamma']))
 plt.plot(waves_ebl, 10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False), linestyle=models[3],
          color='k')
 
-ebl_class.ebl_intrahalo_calculation()#config_data['ihl_params'])
+# Intrahalo component calculation
+ebl_class.ebl_intrahalo_calculation(float(config_data['ihl_params']['A_ihl']),
+                                    float(config_data['ihl_params']['alpha']))
 plt.plot(waves_ebl, 10 ** ebl_class.ebl_intra_spline(freq_array_ebl, 0., grid=False), linestyle=models[2],
          color='k')
 
+# SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
@@ -97,7 +98,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ebl_class.logging_prints = False
 
-plot_ebl_measurement_collection('../EBL_measurements/EBL_measurements.yml')
+plot_ebl_measurement_collection('../ebl_measurements/EBL_measurements.yml')
 
 plt.yscale('log')
 plt.xscale('log')
@@ -111,74 +112,36 @@ legend33 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-', color=colo
                        for i in range(len(config_data['ssp_models']))],
                       [config_data['ssp_models'][key]['name'] for key in config_data['ssp_models']],
                       title=r'SSP models', bbox_to_anchor=(1.04, 0.1), loc="lower left")
-axes2.add_artist(legend11)
-axes2.add_artist(legend22)
-axes2.add_artist(legend33)
+axes.add_artist(legend11)
+axes.add_artist(legend22)
+axes.add_artist(legend33)
 
 plt.xlim([.1, 1E3])
 plt.ylim(1e-2, 100)
 plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 
 
-# FIGURE: AXION MASS-GAYY AND MASS-GAMMA PARAMETER SPACES -----------------------------------
-def gamma_from_rest(mass, gay):
-    return ((mass * u.eV) ** 3. * (gay * u.GeV ** -1) ** 2. / 32. / h_plank.to(u.eV * u.s)).to(u.s ** -1).value
+# SFRs FOR SSP MODELS ------------------------------
+plt.figure(figsize=(12, 8))
+
+z_data = np.linspace(float(config_data['redshift_array']['zmin']),
+                     float(config_data['redshift_array']['zmax']),
+                     num=500)
 
 
-axion_mac2 = np.logspace(np.log10(3), 1, num=2)
-axion_gay = np.logspace(np.log10(5e-11), -9, num=3)
+def sfr(zz, str_sfr, params):
+    return eval(str_sfr)(params, zz)
 
-axion_gamma = np.logspace(np.log10(gamma_from_rest(axion_mac2[0], axion_gay[0])),
-                          np.log10(gamma_from_rest(axion_mac2[-1], axion_gay[-1])), num=len(axion_gay))
 
-values_gamma_array = np.zeros((len(axion_mac2), len(axion_gamma)))
-values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
-ebl_class = input_yaml_data_into_class(config_data)
-ebl_class.logging_prints = False
+for nkey, key in enumerate(config_data['ssp_models']):
+    plt.plot(z_data, sfr(z_data, config_data['ssp_models'][key]['sfr'], config_data['ssp_models'][key]['sfr_params']),
+             label=config_data['ssp_models'][key]['name'])
 
-ebl_class.ebl_intrahalo_calculation()#config_data['ihl_params'])
-ebl_class.ebl_ssp_calculation(config_data['ssp_models']['Kneiste_only'])
 
-for aa in range(len(axion_mac2)):
-    for bb in range(len(axion_gamma)):
-        ebl_class.ebl_axion_calculation(axion_mac2[aa], axion_gamma[bb])
-
-        if 10 ** ebl_class.ebl_total_spline(np.log10(3e8 / 0.608 * 1e6), 0.) < 16.37:
-            values_gamma_array[aa, bb] = 1.
-
-        # --------------
-        ebl_class.ebl_axion_calculation(axion_mac2[aa], gamma_from_rest(axion_mac2[aa], axion_gay[bb]))
-
-        if 10 ** ebl_class.ebl_total_spline(np.log10(3e8 / 0.608 * 1e6), 0.) < 16.37:
-            values_gay_array[aa, bb] = 1.
-
-plt.subplots(2, 1, figsize=(10, 8))
-
-plt.subplot(211)
-aaa = plt.pcolor(axion_mac2, axion_gamma, values_gamma_array.T)
-
-plt.colorbar(aaa)
-
-plt.xscale('log')
+plt.legend()
 plt.yscale('log')
+plt.ylabel('sfr(z)')
+plt.xlabel('z')
 
-plt.ylabel(r'$\Gamma_{a}$ [s$^{-1}$]')
-
-plt.xlim(axion_mac2[0], axion_mac2[-1])
-plt.ylim(axion_gamma[0], axion_gamma[-1])
-
-plt.subplot(212)
-
-bbb = plt.pcolor(axion_mac2, axion_gay, values_gay_array.T)
-plt.colorbar(bbb)
-
-plt.xscale('log')
-plt.yscale('log')
-
-plt.xlabel(r'm$_a\,$c$^2$ [eV]')
-plt.ylabel(r'$g_{a\gamma}$ [GeV$^{-1}$]')
-
-plt.xlim(axion_mac2[0], axion_mac2[-1])
-plt.ylim(axion_gay[0], axion_gay[-1])
 
 plt.show()

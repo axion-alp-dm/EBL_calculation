@@ -99,6 +99,32 @@ class EBL_model(object):
     def logging_prints(self, new_print):
         self._log_prints = new_print
         return
+
+    def change_axion_contribution(self, mass, gamma):
+        self.ebl_axion_calculation(mass=mass, gamma=gamma)
+        self.ebl_sum_contributions()
+        return
+
+    def change_ssp_contribution(self, yaml_file):
+        self.ebl_ssp_calculation(yaml_data=yaml_file)
+        self.ebl_sum_contributions()
+        return
+
+    def change_ihl_contribution(self, a_ihl, alpha):
+        self.ebl_intrahalo_calculation(log10_Aihl=a_ihl, alpha=alpha)
+        self.ebl_sum_contributions()
+        return
+
+    def change_H0(self, new_H0):
+        self._cosmo = FlatLambdaCDM(H0=new_H0, Om0=self._omegaM, Ob0=self._omegaB0, Tcmb0=2.7255)
+
+        self._ebl_axion_spline = None
+        self._ebl_ssp_spline   = None
+        self._ebl_intra_spline = None
+
+        return
+
+
     
     def read_SSP_file(self, datfile, ssp_type):
         """
@@ -135,6 +161,7 @@ class EBL_model(object):
         self.logging_info('Calculate the cubes')
         return
 
+
     def ebl_ssp_calculation(self, yaml_data):
 
         self.emissivity_ssp_calculation(yaml_data)
@@ -166,7 +193,6 @@ class EBL_model(object):
         lebl[np.invert(np.isfinite(lebl))] = -43.
         self._ebl_ssp_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lebl, kx=1, ky=1)
 
-        self.ebl_total_calculation()
         del ebl_z_intcube, ebl_intcube, lebl
 
         self.logging_info('SSP EBL: done')
@@ -234,7 +260,7 @@ class EBL_model(object):
 
         return
 
-    def ebl_intrahalo_calculation(self, log10_Aihl=-3.23, alpha=1.):
+    def ebl_intrahalo_calculation(self, log10_Aihl, alpha):
 
         m_min = np.log10(1e9)  # / self._h)
         m_max = np.log10(1e13)  # / self._h)
@@ -299,7 +325,6 @@ class EBL_model(object):
         lebl[np.invert(np.isfinite(lebl))] = -43.
         self._ebl_intra_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lebl, kx=1, ky=1)
 
-        self.ebl_total_calculation()
         return
 
     def ebl_axion_calculation(self, mass, gamma):
@@ -320,12 +345,11 @@ class EBL_model(object):
         lebl[np.invert(np.isfinite(lebl))] = -43.
         self._ebl_axion_spline = RectBivariateSpline(x=self._freq_array, y=self._z_array, z=lebl, kx=1, ky=1)
 
-        self.ebl_total_calculation()
         del z_star, lebl
 
         self.logging_info('Calculation time for ebl axions')
 
-    def ebl_total_calculation(self):
+    def ebl_sum_contributions(self):
 
         # Calculation of the whole EBL
         lebl = np.log10(self._ebl_SSP + self._ebl_axion + self._ebl_intrahalo)
@@ -337,5 +361,22 @@ class EBL_model(object):
         del lebl
 
         self.logging_info('Calculation time for ebl total')
+
+        return
+
+    def ebl_all_calculations(self, ssp_yaml=None, log10_Aihl=-3.23, alpha=1., mass=1., gamma=5e-23):
+
+        if ssp_yaml is None:
+            ssp_yaml = {'name': 'Kneiste02',
+                        'sfr': 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))',
+                        'sfr_params': [0.15, 1.1, 3.4, 0.0],
+                        'ssp_type': 'SB99', 'path_SSP': '../ssp/final_run_spectrum',
+                        'dust_abs_models': ['kneiste2002', 'aaaa']}
+
+        self.ebl_ssp_calculation(ssp_yaml)
+        self.ebl_intrahalo_calculation(log10_Aihl, alpha)
+        self.ebl_axion_calculation(mass, gamma)
+
+        self.ebl_sum_contributions()
 
         return

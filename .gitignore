@@ -13,5 +13,7 @@ __pycache__/
 *.swn
 *.swo
 *.swp
+*.xml
+*.iml
 
 #models_tests/
