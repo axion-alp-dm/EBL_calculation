@@ -70,7 +70,7 @@ colors = ['b', 'r', 'g', 'orange']
 j = 0
 
 # We initialize the class with the input file
-config_data = read_config_file('input_data.yml')
+config_data = read_config_file('scripts/input_data.yml')
 ebl_class = input_yaml_data_into_class(config_data)
 
 # Axion component calculation
@@ -90,6 +90,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+    ebl_class.ebl_sum_contributions()
 
     plt.plot(waves_ebl, 10 ** ebl_class.ebl_total_spline(freq_array_ebl, 0., grid=False),
              linestyle=models[0], color=colors[nkey])
@@ -98,7 +99,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ebl_class.logging_prints = False
 
-plot_ebl_measurement_collection('../ebl_measurements/EBL_measurements.yml')
+plot_ebl_measurement_collection('ebl_measurements/EBL_measurements.yml')
 
 plt.yscale('log')
 plt.xscale('log')

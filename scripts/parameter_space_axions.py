@@ -73,7 +73,7 @@ axion_gamma = np.logspace(np.log10(gamma_from_rest(axion_mac2[0], axion_gay[0]))
 values_gamma_array = np.zeros((len(axion_mac2), len(axion_gamma)))
 values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
 
-config_data = read_config_file('input_data.yml')
+config_data = read_config_file('scripts/input_data.yml')
 ebl_class = input_yaml_data_into_class(config_data)
 ebl_class.logging_prints = False
 

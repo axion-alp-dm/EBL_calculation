@@ -268,7 +268,7 @@ class EBL_model(object):
         Aihl = 10 ** log10_Aihl
         f_ihl = lambda x: Aihl * (x / 1e12) ** 0.1
 
-        old_spectrum = np.loadtxt('../Swire_library/Ell13_template_norm.sed')
+        old_spectrum = np.loadtxt('Swire_library/Ell13_template_norm.sed')
         old_spline = UnivariateSpline(old_spectrum[:, 0], old_spectrum[:, 1], s=0, k=1, ext=1)
 
         old_spectrum[:, 1] *= old_spectrum[:, 0] / old_spline(22000) / 22000.
@@ -370,7 +370,7 @@ class EBL_model(object):
             ssp_yaml = {'name': 'Kneiste02',
                         'sfr': 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))',
                         'sfr_params': [0.15, 1.1, 3.4, 0.0],
-                        'ssp_type': 'SB99', 'path_SSP': '../ssp/final_run_spectrum',
+                        'ssp_type': 'SB99', 'path_SSP': 'ssp/final_run_spectrum',
                         'dust_abs_models': ['kneiste2002', 'aaaa']}
 
         self.ebl_ssp_calculation(ssp_yaml)

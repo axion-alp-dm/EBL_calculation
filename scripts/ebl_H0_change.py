@@ -60,7 +60,7 @@ def input_yaml_data_into_class(yaml_data):
 # FIGURE: EBL FOR DIFFERENT MODELS -----------------------------------
 
 # We initialize the class with the input file
-config_data = read_config_file('input_data.yml')
+config_data = read_config_file('scripts/input_data.yml')
 ebl_class = input_yaml_data_into_class(config_data)
 
 h0_parameters = [50, 70, 100]
@@ -103,7 +103,7 @@ for n_h0, h0 in enumerate(h0_parameters):
     plt.plot(waves_ebl, 10 ** ebl_class.ebl_intra_spline(freq_array_ebl, 0., grid=False),
     linestyle=models[2], color='k', alpha=alphas[n_h0])
 
-plot_ebl_measurement_collection('../ebl_measurements/EBL_measurements.yml')
+plot_ebl_measurement_collection('ebl_measurements/EBL_measurements.yml')
 
 plt.yscale('log')
 plt.xscale('log')
@@ -118,7 +118,7 @@ legend33 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-', color=colo
                       [config_data['ssp_models'][key]['name'] for key in config_data['ssp_models']],
                       title=r'SSP models', bbox_to_anchor=(1.04, 0.1), loc="lower left")
 legend44 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-', color='b', alpha=alphas[i])
-                       for i in range(len(config_data['ssp_models']))],
+                       for i in range(len(h0_parameters))],
                       [h0_parameters[i] for i in range(len(h0_parameters))],
                       title=r'H$_0$', loc=4)
 axes.add_artist(legend11)
