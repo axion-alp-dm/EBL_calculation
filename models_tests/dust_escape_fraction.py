@@ -24,12 +24,12 @@ def finke2022(lambda_array, z_array):
     return yy
 
 
-def abs_A_kneiste2002(lambda_array, E_bv=0.15, R=3.2):
+def abs_A_kneiske2002(lambda_array, E_bv=0.15, R=3.2):
     return 0.68 * E_bv * R * (lambda_array**-1. - 0.35)
 
 
-def kneiste2002(lambda_array):
-    return 10**(-0.4*abs_A_kneiste2002(lambda_array))
+def kneiske2002(lambda_array):
+    return 10**(-0.4*abs_A_kneiske2002(lambda_array))
 
 
 plt.figure()
@@ -48,7 +48,7 @@ plt.plot(x_lambda, finke2022(x_lambda, x_zetas[-1]), 'k',
          alpha=alpha, label=r'Finke2022 z=%.2f' % x_zetas[-1])
 
 plt.plot(x_lambda, razzaque2009(x_lambda), 'r', label='Razzaque2009')
-plt.plot(x_lambda, kneiste2002(x_lambda), 'limegreen', label='Kneiste2002')
+plt.plot(x_lambda, kneiske2002(x_lambda), 'limegreen', label='Kneiske2002')
 
 plt.ylabel('Escape fraction of photons')
 plt.xlabel('lambda (microns)')

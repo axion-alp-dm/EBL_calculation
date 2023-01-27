@@ -20,7 +20,7 @@ def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
         -> If 2 strings are given, the first model is applied for wavelength and the second for
             redshift dependence. The models will usually assume that these two dependencies are multiplied.
             If either of them does not correspond to any listed models, no dust absorption will be calculated.
-            - Wavelength accepted values: kneiste2002, razzaque2009
+            - Wavelength accepted values: kneiske2002, razzaque2009
             - Redshift accepted values: abdollahi2018
 
         -> If 1 string is given, a combined wavelength and redshift model will be applied.
@@ -55,8 +55,8 @@ def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
     # The absorption models for wavelength and redshift are not defined together
     elif len(models) == 2:
         # Wavelength dependency
-        if models[0] == 'kneiste2002':
-            dust_att += kneiste2002(wv_array[:, np.newaxis], **kwargs)
+        if models[0] == 'kneiske2002':
+            dust_att += kneiske2002(wv_array[:, np.newaxis], **kwargs)
 
         elif models[0] == 'razzaque2009':
             dust_att += razzaque2009(wv_array[:, np.newaxis])
@@ -79,9 +79,9 @@ def calculate_dust(wv_array, z_array=0., models=None, **kwargs):
     return dust_att
 
 
-def kneiste2002(wv, Ebv=0.15, R=3.2):
+def kneiske2002(wv, Ebv=0.15, R=3.2):
     """
-    Dust attenuation as a function of wavelength following Kneiste02 or 0202104
+    Dust attenuation as a function of wavelength following Kneiske02 or 0202104
 
     :param wv: float or array  [microns]
         Wavelength values to compute dust absorption.
@@ -170,7 +170,7 @@ plt.plot(x_lambda, 10**calculate_dust(x_lambda, z_array=x_zetas[-1], models=['fi
          'k', alpha=alpha, label=r'Finke2022 z=%.2f' % x_zetas[-1])
 
 plt.plot(x_lambda, 10**calculate_dust(x_lambda, models=['razzaque2009', 'aaa']), 'r', label='Razzaque2009')
-plt.plot(x_lambda, 10**kneiste2002(x_lambda), 'limegreen', label='Kneiste2002')
+plt.plot(x_lambda, 10**kneiske2002(x_lambda), 'limegreen', label='Kneiske2002')
 
 plt.ylabel('Escape fraction of photons')
 plt.xlabel('lambda (microns)')

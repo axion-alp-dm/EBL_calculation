@@ -24,6 +24,10 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
+# Check that the working directory is correct for the paths
+if os.path.basename(os.getcwd()) == 'scripts':
+    os.chdir("..")
+
 
 # Configuration file reading and data input/output ---------#
 def read_config_file(ConfigFile):
@@ -40,7 +44,7 @@ if not os.path.exists("../outputs/"):
     os.makedirs("../outputs/")
 
 
-def input_yaml_data_into_class(yaml_data):
+def input_yaml_data_into_class(yaml_data, log_prints=False):
     z_array = np.linspace(float(yaml_data['redshift_array']['zmin']),
                           float(yaml_data['redshift_array']['zmax']),
                           yaml_data['redshift_array']['zsteps'])
@@ -54,17 +58,17 @@ def input_yaml_data_into_class(yaml_data):
                      omegaM=float(yaml_data['cosmology_params']['cosmo'][1]),
                      omegaBar=float(yaml_data['cosmology_params']['omegaBar']),
                      t_intsteps=yaml_data['t_intsteps'],
-                     z_max=yaml_data['z_intmax'])
+                     z_max=yaml_data['z_intmax'],
+                     log_prints=log_prints)
 
 
 # FIGURE: EBL FOR DIFFERENT MODELS -----------------------------------
 
 # We initialize the class with the input file
 config_data = read_config_file('scripts/input_data.yml')
-ebl_class = input_yaml_data_into_class(config_data)
+ebl_class = input_yaml_data_into_class(config_data, log_prints=True)
 
 h0_parameters = [50, 70, 100]
-print(len(h0_parameters))
 
 fig = plt.figure(figsize=(15, 8))
 axes = fig.gca()
@@ -81,8 +85,8 @@ for n_h0, h0 in enumerate(h0_parameters):
     ebl_class.change_H0(new_H0=h0)
     ebl_class.ebl_all_calculations(log10_Aihl=float(config_data['ihl_params']['A_ihl']),
                                    alpha=float(config_data['ihl_params']['alpha']),
-                                   mass=float(config_data['axion_params']['axion_mass']),
-                                   gamma=float(config_data['axion_params']['axion_gamma'])
+                                   axion_mass=float(config_data['axion_params']['axion_mass']),
+                                   axion_gamma=float(config_data['axion_params']['axion_gamma'])
                                    )
 
     for nkey, key in enumerate(config_data['ssp_models']):

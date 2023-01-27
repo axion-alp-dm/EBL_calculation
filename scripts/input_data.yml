@@ -36,8 +36,8 @@ ihl_params:
 z_intmax: 35.
 # List of SSP models we want to try
 ssp_models:
-  Kneiste_only:
-    name: 'Kneiste02'
+  Kneiske_only:
+    name: 'Kneiske02'
 
     # SFR INPUTS
     sfr: 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1])
@@ -49,7 +49,7 @@ ssp_models:
     path_SSP: 'ssp/final_run_spectrum'
 
     # DUST ABSORPTION MODELS
-    dust_abs_models: [ 'kneiste2002', 'aaaa' ]
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 #
 #  finke22_MD14_params:
 #    name: 'Finke22, sfr=MD14, params=MD14'
@@ -101,7 +101,7 @@ ssp_models:
 
 
 ### ----------------------------------------------------------------------
-##KneisteAbdollahi:
+##KneiskeAbdollahi:
 ##  name: 'Kn02 (wv) and Abd18 (z)'
 ##
 ##  # SFR INPUTS
@@ -113,7 +113,7 @@ ssp_models:
 ##  path_SSP: 'ssp/final run.spectrum'
 ##
 ##  # DUST ABSORPTION MODELS
-##  dust_abs_models: ['kneiste2002', 'abdollahi2018']
+##  dust_abs_models: ['kneiske2002', 'abdollahi2018']
 ##
 ##  # Stuff that was here before and we might use in the future
 ##  ebv: 0.15

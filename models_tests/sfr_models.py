@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-sfr_kneiste02 = 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))'
-sfr_params_kneiste02 = [0.15, 1.1, 3.4, 0.]
-sfr_kneiste = lambda x: eval(sfr_kneiste02)(sfr_params_kneiste02, x)
+sfr_kneiske02 = 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))'
+sfr_params_kneiske02 = [0.15, 1.1, 3.4, 0.]
+sfr_kneiske = lambda x: eval(sfr_kneiske02)(sfr_params_kneiske02, x)
 
 
 sfr_finke22 = 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
@@ -26,7 +26,7 @@ sfr_params_finke22a = [-2.04, 2.81, 1.25, -1.25, -1.84, -4.40, 1., 2., 3., 4.]
 plt.figure()
 x_array = np.linspace(0, 10, num=500)
 
-plt.plot(x_array, sfr_kneiste(x_array), label='Kneiste02')
+plt.plot(x_array, sfr_kneiske(x_array), label='Kneiske02')
 plt.plot(x_array, sfr_finke(x_array), label='finke22: MD14')
 plt.plot(x_array, sfr_finke22a(x_array, sfr_params_finke22a), label='finke22: piece')
 

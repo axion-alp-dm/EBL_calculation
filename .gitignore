@@ -4,9 +4,10 @@ outputs/
 envs/
 venv/
 /.idea/
+.idea/
 
 */__pycache__/*
-__pycache__/
+__pycache__/*
 .ipynb_checkpoints/
 
 *.swm
