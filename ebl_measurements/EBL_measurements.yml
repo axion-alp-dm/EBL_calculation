@@ -41,7 +41,7 @@ NH_limits22:
   'DOI': '10.3847/2041-8213/ac573d'
   'year': 2022
   'is_lower_limit': 0
-  'is_upper_limit': 1
+  'is_upper_limit': 0
   'data':
     'lambda': [0.608]
     'ebl': [16.37]

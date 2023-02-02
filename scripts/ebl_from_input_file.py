@@ -48,8 +48,10 @@ def input_yaml_data_into_class(yaml_data, log_prints=False):
                           float(yaml_data['redshift_array']['zmax']),
                           yaml_data['redshift_array']['zsteps'])
 
-    lamb_array = np.logspace(np.log10(float(yaml_data['wavelenght_array']['lmin'])),
-                             np.log10(float(yaml_data['wavelenght_array']['lmax'])),
+    lamb_array = np.logspace(np.log10(float(
+                                 yaml_data['wavelenght_array']['lmin'])),
+                             np.log10(float(
+                                 yaml_data['wavelenght_array']['lmax'])),
                              yaml_data['wavelenght_array']['lfsteps'])
 
     return EBL_model(z_array, lamb_array,
@@ -78,16 +80,22 @@ config_data = read_config_file('scripts/input_data.yml')
 ebl_class = input_yaml_data_into_class(config_data, log_prints=True)
 
 # Axion component calculation
-ebl_class.ebl_axion_calculation(axion_mass=float(config_data['axion_params']['axion_mass']),
-                                axion_gamma=float(config_data['axion_params']['axion_gamma']))
-plt.plot(waves_ebl, 10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False), linestyle=models[3],
-         color='k')
+ebl_class.ebl_axion_calculation(
+    axion_mass=float(config_data['axion_params']['axion_mass']),
+    axion_gamma=float(config_data['axion_params']['axion_gamma'])
+    )
+plt.plot(waves_ebl,
+         10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False),
+         linestyle=models[3], color='k')
 
 # Intrahalo component calculation
-# ebl_class.ebl_intrahalo_calculation(float(config_data['ihl_params']['A_ihl']),
-#                                     float(config_data['ihl_params']['alpha']))
-# plt.plot(waves_ebl, 10 ** ebl_class.ebl_intra_spline(freq_array_ebl, 0., grid=False), linestyle=models[2],
-#          color='k')
+# ebl_class.ebl_intrahalo_calculation(float(
+#                                       config_data['ihl_params']['A_ihl']),
+#                                     float(
+#                                     config_data['ihl_params']['alpha']))
+# plt.plot(waves_ebl, 10 ** ebl_class.ebl_intra_spline(
+# freq_array_ebl, 0., grid=False),
+# linestyle=models[2], color='k')
 
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
@@ -96,13 +104,16 @@ for nkey, key in enumerate(config_data['ssp_models']):
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.ebl_sum_contributions()
 
-    plt.plot(waves_ebl, 10 ** ebl_class.ebl_total_spline(freq_array_ebl, 0., grid=False),
+    plt.figure(fig)
+    plt.plot(waves_ebl, 10 ** ebl_class.ebl_total_spline(
+        freq_array_ebl, 0., grid=False),
              linestyle=models[0], color=colors[nkey])
-    plt.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0., grid=False),
+    plt.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
+        freq_array_ebl, 0., grid=False),
              linestyle=models[1], color=colors[nkey])
 
     ebl_class.logging_prints = False
-
+plt.figure(fig)
 plot_ebl_measurement_collection('ebl_measurements/EBL_measurements.yml')
 
 plt.yscale('log')
@@ -110,13 +121,19 @@ plt.xscale('log')
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
 
-legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left", title=r'Measurements')
-legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i], color='k') for i in range(4)],
-                      ['Total', 'SSP', 'IHL', 'Axion decay'], loc=3, title=r'Components')
-legend33 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-', color=colors[i])
+legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left",
+                      title=r'Measurements')
+legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
+                                  color='k') for i in range(4)],
+                      ['Total', 'SSP', 'IHL', 'Axion decay'], loc=3,
+                      title=r'Components')
+legend33 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
+                                  color=colors[i])
                        for i in range(len(config_data['ssp_models']))],
-                      [config_data['ssp_models'][key]['name'] for key in config_data['ssp_models']],
-                      title=r'SSP models', bbox_to_anchor=(1.04, 0.1), loc="lower left")
+                      [config_data['ssp_models'][key]['name']
+                       for key in config_data['ssp_models']],
+                      title=r'SSP models', bbox_to_anchor=(1.04, 0.1),
+                      loc="lower left")
 axes.add_artist(legend11)
 axes.add_artist(legend22)
 axes.add_artist(legend33)
@@ -139,7 +156,8 @@ def sfr(zz, str_sfr, params):
 
 
 for nkey, key in enumerate(config_data['ssp_models']):
-    plt.plot(z_data, sfr(z_data, config_data['ssp_models'][key]['sfr'], config_data['ssp_models'][key]['sfr_params']),
+    plt.plot(z_data, sfr(z_data, config_data['ssp_models'][key]['sfr'],
+                         config_data['ssp_models'][key]['sfr_params']),
              label=config_data['ssp_models'][key]['name'])
 
 
