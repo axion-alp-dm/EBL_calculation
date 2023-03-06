@@ -7,8 +7,10 @@ def razzaque2009(lambda_array):
     # lambda has to be input in microns.
     yy  = np.zeros(np.shape(lambda_array))
     yy += (0.688 + 0.556 * np.log10(lambda_array)) * (lambda_array < 0.167)
-    yy += (0.151 - 0.136 * np.log10(lambda_array)) * (lambda_array < 0.218) * (lambda_array > 0.167)
-    yy += (1.000 + 1.148 * np.log10(lambda_array)) * (lambda_array < 0.422) * (lambda_array > 0.218) # The paper here fails?
+    yy += ((0.151 - 0.136 * np.log10(lambda_array)) * (lambda_array < 0.218)
+           * (lambda_array > 0.167))
+    yy += ((1.000 + 1.148 * np.log10(lambda_array)) * (lambda_array < 0.422)
+           * (lambda_array > 0.218)) # The paper here fails?
     yy += (0.728 + 0.422 * np.log10(lambda_array)) * (lambda_array > 0.422)
     return yy
 

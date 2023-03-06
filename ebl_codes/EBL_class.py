@@ -1,10 +1,12 @@
 # IMPORTS -----------------------------------#
 import logging
+import os
 import time
 import numpy as np
 
 from scipy.integrate import simpson
 from scipy.interpolate import UnivariateSpline, RectBivariateSpline
+from fast_interp import interp2d as fast_interp2d
 
 from astropy import units as u
 from astropy.constants import c
@@ -12,6 +14,7 @@ from astropy.constants import h as h_plank
 from astropy.cosmology import FlatLambdaCDM
 
 from ebl_codes import dust_absorption_models as dust_abs
+
 
 # from hmf import MassFunction
 
@@ -67,6 +70,9 @@ class EBL_model(object):
             Maximum redshift at which we form SSPs.
         """
 
+        self._shifted_times_emiss = None
+        self._s = None
+        self._log_t_ssp_intcube = None
         self._process_time = time.process_time()
         logging.basicConfig(level='INFO',
                             format='%(asctime)s - %(levelname)s'
@@ -82,6 +88,7 @@ class EBL_model(object):
         self._ssp_log_time = None
         self._ssp_log_freq = None
         self._ssp_log_emis = None
+        self._kernel_emiss = None
 
         self._emi_spline = None
         self._ebl_tot_spline = None
@@ -104,6 +111,11 @@ class EBL_model(object):
         self._lambda_array = lambda_array[::-1]
         self._freq_array = np.log10(c.value / lambda_array[::-1] * 1e6)
         self._t_intsteps = t_intsteps
+
+        self._last_ssp = None
+        self._ebl_intcube = None
+        self._shifted_freq = None
+        self._ebl_z_intcube = None
 
         self.intcubes()
 
@@ -222,7 +234,8 @@ class EBL_model(object):
 
         return
 
-    def read_SSP_file(self, data_file, ssp_type):
+    def read_SSP_file(self, data_file, ssp_type,
+                      pop_filename='', cut_popstar=False):
         """
         Read Simple Stellar Population model spectra.
 
@@ -234,34 +247,184 @@ class EBL_model(object):
         http://www.stsci.edu/science/starburst99/
         The calculations assume that the value of 'Total stellar mass'
         in the simulation has been left as default, 1e6 Msun. If not,
-        change the calculation of emissivity of -6. to
+        change the calculation of emissivity of '-6.' to
         log10(new total mass).
 
         Popstar output:
         on progress
         """
         if ssp_type == 'SB99':
-            d = np.loadtxt(data_file, skiprows=6)
+            if cut_popstar is False:
+                d = np.loadtxt(data_file, skiprows=6)
 
-            # Get unique time steps and frequencies, and spectral data
-            t = np.unique(d[:, 0])
-            l = np.unique(d[:, 1])
-            dd = d[:, 3].reshape(t.shape[0], l.shape[0]).T
+                # Get unique time steps and frequencies, and spectral data
+                t_total = np.unique(d[:, 0])
+                l_total = np.unique(d[:, 1])
+                dd_total = d[:, 3].reshape(t_total.shape[0],
+                                           l_total.shape[0]).T
+
+            else:
+                data_starburst_old = np.loadtxt(
+                    'ssp/final_run_spectrum', skiprows=6)
+                t_old = np.unique(data_starburst_old[:, 0])
+                l_old = np.unique(data_starburst_old[:, 1])
+                dd_old = data_starburst_old[:, 3].reshape(t_old.shape[0],
+                                                          l_old.shape[0]).T
+
+                data_starburst = np.loadtxt(
+                    'ssp/low_res_for_real.spectrum1', skiprows=6)
+                t = np.unique(data_starburst[:, 0])
+                l_total = np.unique(data_starburst[:, 1])
+                dd = data_starburst[:, 3].reshape(t.shape[0],
+                                                  l_total.shape[0]).T
+
+                dd_total = np.zeros((len(l_total),
+                                     len(t) + sum(t_old > t[-1])))
+                t_total = np.zeros(len(t) + sum(t_old > t[-1]))
+                aaa = np.where((t_old - t[-1]) > 0)[0][0]
+
+                t_total[:len(t)] = t
+                t_total[len(t):] = t_old[aaa:]
+
+                dd_total[:, :len(t)] = dd
+                dd_total[:, len(t):] = dd_old[:, aaa:]
 
             # Define the quantities we will work with
-            self._ssp_log_time = np.log10(t)  # log(time/yrs)
+            self._ssp_log_time = np.log10(t_total)  # log(time/yrs)
             self._ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l[::-1] / 1E-10)
-            self._ssp_log_emis = (dd[::-1]  # log(em[erg/s/Hz/M_solar])
+                c.value / l_total[::-1] / 1E-10)
+            self._ssp_log_emis = (dd_total[::-1]  # log(em[erg/s/Hz/M_solar])
                                   - 6.
                                   + np.log10(1E10 * c.value)
                                   - 2. * self._ssp_log_freq[:, np.newaxis])
 
-        # if ssp_type == 'Popstar':
+        elif ssp_type == 'Popstar09':
+            list_files = os.listdir(data_file)
+
+            numbers = []
+            for listt in list_files:
+                numbers.append(
+                    float(listt.replace(pop_filename, '')))
+
+            indexes = np.argsort(numbers)
+            self._ssp_log_time = np.sort(numbers)
+            ssp_wavelenghts = np.loadtxt(data_file + list_files[0])[:, 0]
+            pop09_lumin_cube = np.zeros((len(ssp_wavelenghts),
+                                         len(list_files)))
+
+            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
+                c.value / ssp_wavelenghts[::-1] / 1E-10)
+
+            x_is_1e4 = np.argmin(np.abs(ssp_wavelenghts - 1e4))
+            cut = 5e27 / 3.828e33
+
+            for nind, ind in enumerate(indexes):
+                yyy = np.loadtxt(
+                    data_file
+                    + pop_filename
+                    + str('%.2f' % numbers[ind])
+                )[:, 1]
+
+                if np.shape(np.where(yyy[:x_is_1e4] < cut))[1] == 0:
+                    min_x = 0
+                else:
+                    min_x = np.where(yyy[:x_is_1e4] < cut)[0][-1]
+
+                if cut_popstar:
+                    pop09_lumin_cube[min_x:, nind] = yyy[min_x:]
+                else:
+                    pop09_lumin_cube[:, nind] = yyy
+
+            # log(em[erg/s/Hz/M_solar])
+            self._ssp_log_emis = np.log10(pop09_lumin_cube[::-1]
+                                          * 3.828e33)
+            self._ssp_log_emis[np.isnan(self._ssp_log_emis)] = -43.
+            self._ssp_log_emis[
+                np.invert(np.isfinite(self._ssp_log_emis))] = -43.
+            self._ssp_log_emis += (np.log10(1E10 * c.value)
+                                   - 2. * self._ssp_log_freq[:, np.newaxis])
+
+            self._ssp_log_freq = (self._ssp_log_freq[1:]
+                                  + self._ssp_log_freq[:-1]) / 2.
+            self._ssp_log_emis = (self._ssp_log_emis[1:, :]
+                                  + self._ssp_log_emis[:-1, :]) / 2.
+
+            del pop09_lumin_cube
+
+        elif ssp_type == 'pegase3':
+            # pegase_metall = [0.1, 0.05, 0.02, 0.008,
+            #                  0.004, 0.0004, 0.0001]
+            pegase_metall = [pop_filename]  # [0.02]
+
+            data_pegase = np.loadtxt(
+                'ssp/pegase3/spectral_resultsZ0.02.txt')
+            t_pegase = np.unique(data_pegase[:, 0])
+            l_pegase = np.unique(data_pegase[:, 1])
+
+            dd_pegase = np.zeros((l_pegase.shape[0],
+                                  t_pegase.shape[0],
+                                  len(pegase_metall)))
+
+            for n_met, met in enumerate(pegase_metall):
+                data_pegase = np.loadtxt(
+                    'ssp/pegase3/spectral_resultsZ' + str(met) + '.txt')
+                dd_pegase[:, :, n_met] = data_pegase[:, 2].reshape(
+                    t_pegase.shape[0],
+                    l_pegase.shape[0]).T[::-1]
+
+            self._ssp_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
+            self._ssp_log_time[np.isnan(self._ssp_log_time)] = -43.
+            self._ssp_log_time[
+                np.invert(np.isfinite(self._ssp_log_time))] = -43.
+
+            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
+                c.value / l_pegase[::-1] / 1E-10)
+
+            self._ssp_log_emis = np.log10(dd_pegase)
+            self._ssp_log_emis[np.isnan(self._ssp_log_emis)] = -43.
+            self._ssp_log_emis[
+                np.invert(np.isfinite(self._ssp_log_emis))] = -43.
+
+            self._ssp_log_emis += (np.log10(1E10 * c.value)
+                                   - 2. * self._ssp_log_freq
+                                   [:, np.newaxis, np.newaxis])
+
+        # import matplotlib.pyplot as plt
+        # plt.figure(20, figsize=(10, 8))
+        # plt.title('ssp: %s , %s' % (ssp_type, pop_filename))
+        #
+        # if ssp_type == 'Popstar09':
+        #     label = 'dotted'
+        # elif ssp_type == 'pegase3':
+        #     label = '--'
+        # else:
+        #     label = 'solid'
+        #
+        # color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
+        #          'purple', 'brown']
+        #
+        # for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+        #     aaa = np.abs(self._ssp_log_time - age).argmin()
+        #     plt.plot(c.value * 1e10 / 10 ** self._ssp_log_freq,
+        #              self._ssp_log_emis[:, aaa],
+        #              color=color[i], linestyle=label,
+        #              label='log(t) = %.2f'
+        #                    % self._ssp_log_time[aaa])
+        #
+        # plt.xscale('log')
+        #
+        # if ssp_type == 'SB99':
+        #     plt.legend()
+        #
+        # plt.xlim(1e2, 1e6)
+        # # plt.ylim(10, 22)
+        #
+        # plt.xlabel('wavelenght [A]')
 
         # Sanity check and log info
         self._ssp_log_emis[np.isnan(self._ssp_log_emis)] = -43.
-        self._ssp_log_emis[np.invert(np.isfinite(self._ssp_log_emis))] = -43.
+        self._ssp_log_emis[
+            np.invert(np.isfinite(self._ssp_log_emis))] = -43.
         self.logging_info('Reading of SSP file')
         return
 
@@ -272,7 +435,7 @@ class EBL_model(object):
         Their shapes are:
         (len(frequency array), len(z array), integration steps)
         """
-
+        # Cubes to initialize the general quantities needed
         self._cube = np.ones(
             [self._lambda_array.shape[0], self._z_array.shape[0],
              self._t_intsteps])
@@ -282,7 +445,7 @@ class EBL_model(object):
                                * self._freq_array[:, np.newaxis, np.newaxis])
         self._z_cube = self._cube * self._z_array[np.newaxis, :, np.newaxis]
 
-        self.logging_info('Calculate the cubes')
+        self.logging_info('Initialize cubes: end')
         return
 
     def emissivity_ssp_calculation(self, yaml_data):
@@ -303,61 +466,83 @@ class EBL_model(object):
 
         sfr = lambda x: eval(yaml_data['sfr'])(yaml_data['sfr_params'], x)
 
-        self.read_SSP_file(yaml_data['path_SSP'], yaml_data['ssp_type'])
+        if (self._ssp_log_emis is None
+                or (self._last_ssp != [
+                    yaml_data['path_SSP'], yaml_data['ssp_type'],
+                    yaml_data['file_name'], yaml_data['cut_popstar']])):
 
-        lookback_time_cube = self._cube * self._cosmo.lookback_time(
-            self._z_array).to(u.yr)[np.newaxis, :, np.newaxis]
+            self.read_SSP_file(yaml_data['path_SSP'],
+                               yaml_data['ssp_type'],
+                               pop_filename=yaml_data['file_name'],
+                               cut_popstar=yaml_data['cut_popstar'])
 
-        # Array of time values we integrate over (in log10)
-        log_t_ssp_intcube = np.log10(
-            (self._cosmo.lookback_time(self._z_max) - lookback_time_cube
-             ).to(u.yr).value)
-        log_t_ssp_intcube[log_t_ssp_intcube > self._ssp_log_time[-1]] = (
-            self._ssp_log_time[-1])
+            ssp_spline = RectBivariateSpline(x=self._ssp_log_freq,
+                                             y=self._ssp_log_time,
+                                             z=self._ssp_log_emis,
+                                             kx=1, ky=1)
 
-        log_t_ssp_intcube = ((log_t_ssp_intcube - self._ssp_log_time[0])
-                             * self._steps_integration_cube
-                             + self._ssp_log_time[0])
+            lookback_time_cube = self._cube * self._cosmo.lookback_time(
+                self._z_array).to(u.yr)[np.newaxis, :, np.newaxis]
 
-        self.logging_info('SSP emissivity: set time integration cube')
+            # Array of time values we integrate the emissivity over
+            # (in log10)
+            self._log_t_ssp_intcube = np.log10(
+                (self._cosmo.lookback_time(self._z_max)
+                 - lookback_time_cube).to(u.yr).value)
+            self._log_t_ssp_intcube[self._log_t_ssp_intcube
+                                    > self._ssp_log_time[-1]] = (
+                self._ssp_log_time[-1])
 
-        # Two interpolations, transforming t->z (using log10 for both of
-        # them) and a bi spline with the SSP data
-        t2z = UnivariateSpline(
-            np.log10(self._cosmo.lookback_time(self._z_array).to(u.yr).value),
-            np.log10(self._z_array),
-            s=0, k=1)
+            self._log_t_ssp_intcube = (
+                    (self._log_t_ssp_intcube - self._ssp_log_time[0])
+                    * self._steps_integration_cube
+                    + self._ssp_log_time[0])
 
-        ssp_spline = RectBivariateSpline(x=self._ssp_log_freq,
-                                         y=self._ssp_log_time,
-                                         z=self._ssp_log_emis,
-                                         kx=1, ky=1)
+            self.logging_info('SSP emissivity: set time integration cube')
 
-        self.logging_info('SSP emissivity: set splines')
+            # Initialise mask to limit integration range to SSP data (in
+            # wavelength/frequency)
+            self._s = ((self._log_freq_cube >= self._ssp_log_freq[0])
+                       * (self._log_freq_cube <= self._ssp_log_freq[-1]))
 
-        # Initialise mask to limit integration range to SSP data (in
-        # wavelength/frequency)
-        s = (self._log_freq_cube >= self._ssp_log_freq[0]) * (
-                self._log_freq_cube <= self._ssp_log_freq[-1])
+            self.logging_info('SSP emissivity: set frequency mask')
 
-        self.logging_info('SSP emissivity: set frequency mask')
+            # Two interpolations, transforming t->z (using log10 for both of
+            # them) and a bi spline with the SSP data
+            t2z = UnivariateSpline(
+                np.log10(self._cosmo.lookback_time(
+                    self._z_array).to(u.yr).value),
+                np.log10(self._z_array),
+                s=0, k=1)
 
-        # Interior of emissivity integral:
-        # L{t(z)-t(z')} * dens(z') * |dt'/dz'|
-        kernel_emiss = self._cube * 1E-43
-        kernel_emiss[s] = (
-                10. ** log_t_ssp_intcube[s]  # Variable change,
-                * np.log(10.)            # integration over y=log10(x)
-                * 10. ** ssp_spline.ev(self._log_freq_cube[s],  # L(t)
-                                       log_t_ssp_intcube[s])
-                * sfr(10. ** t2z(np.log10(  # sfr(z(t))
-            lookback_time_cube[s].value + 10. ** log_t_ssp_intcube[s]))))
+            self._shifted_times_emiss = 10. ** t2z(np.log10(
+                lookback_time_cube[self._s].value
+                + 10. ** self._log_t_ssp_intcube[self._s]))
 
-        self.logging_info('SSP emissivity: set kernel')
+            self.logging_info('SSP emissivity: set splines')
+
+            # Interior of emissivity integral:
+            # L{t(z)-t(z')} * dens(z') * |dt'/dz'|
+
+            self._kernel_emiss = self._cube * 1E-43
+            self._kernel_emiss = (10. ** self._log_t_ssp_intcube  # Variable
+                                  # change,
+                                  * np.log(10.)  # integration over y=log10(x)
+                                  * 10. ** ssp_spline.ev(  # L(t)
+                        self._log_freq_cube, self._log_t_ssp_intcube))
+            self.logging_info('SSP emissivity: set the initial kernel')
+
+        kernel_emiss = self._cube * 1e-43
+        kernel_emiss[self._s] = (self._kernel_emiss[self._s]  # sfr(z(t))
+                                 * (sfr(self._shifted_times_emiss)))
+
+        self.logging_info('SSP emissivity: calculate ssp kernel')
 
         # Calculate emissivity in units
         # [erg s^-1 Hz^-1 Mpc^-3] == [erg Mpc^-3]
-        emissivity = simpson(kernel_emiss, x=log_t_ssp_intcube, axis=-1)
+        emissivity = simpson(kernel_emiss,
+                             x=self._log_t_ssp_intcube,
+                             axis=-1)
 
         self.logging_info('SSP emissivity: integrate emissivity')
 
@@ -367,44 +552,52 @@ class EBL_model(object):
             self._lambda_array, models=yaml_data['dust_abs_models'],
             z_array=self._z_array)
 
-        import matplotlib.pyplot as plt
-        plt.figure()
-        plt.title(yaml_data['name'])
-        yyy = 10**dust_abs.calculate_dust(
-            self._lambda_array, models=yaml_data['dust_abs_models'],
-            z_array=self._z_array)
-        print('Shape of dust abs', np.shape(yyy))
-
-        alpha = 1.
-        plt.plot(self._lambda_array, yyy[:, 0],
-                 'k', alpha=alpha, label=r'Finke2022 z=%.2f' %
-                                         self._z_array[0])
-        for i in [2, 4, 6]:
-            alpha -= 0.15
-            aaa = (np.abs(self._z_array-i)).argmin()
-            plt.plot(self._lambda_array, yyy[:, aaa],
-                     'k', alpha=alpha, label='%.2f' % i)
-
-        plt.ylabel('Escape fraction of photons')
-        plt.xlabel('lambda (microns)')
-        plt.legend()
-        plt.xscale('log')
-        plt.ylim(0., 1.2)
-        plt.xlim(0.05, 10)
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.title(yaml_data['name'])
+        # yyy = 10 ** dust_abs.calculate_dust(
+        #     self._lambda_array, models=yaml_data['dust_abs_models'],
+        #     z_array=self._z_array)
+        # print('Shape of dust abs', np.shape(yyy))
+        #
+        # alpha = 1.
+        # plt.plot(self._lambda_array, yyy[:, 0],
+        #          'k', alpha=alpha, label=r'z=%.2f' %
+        #                                  self._z_array[0])
+        # for i in [2, 4, 6]:
+        #     alpha -= 0.15
+        #     aaa = (np.abs(self._z_array - i)).argmin()
+        #     plt.plot(self._lambda_array, yyy[:, aaa],
+        #              'k', alpha=alpha, label='%.2f' % i)
+        #
+        # plt.ylabel('Escape fraction of photons')
+        # plt.xlabel('lambda (microns)')
+        # plt.legend()
+        # plt.xscale('log')
+        # plt.ylim(0., 1.2)
+        # plt.xlim(0.05, 10)
 
         self.logging_info('SSP emissivity: set dust absorption')
 
         # Spline of the emissivity
         log10_emiss[np.isnan(log10_emiss)] = -43.
         log10_emiss[np.invert(np.isfinite(log10_emiss))] = -43.
-        self._emi_spline = RectBivariateSpline(x=self._freq_array,
-                                               y=self._z_array, z=log10_emiss,
-                                               kx=1, ky=1)
+        # fast_interp2d
+        self._emi_spline = fast_interp2d(
+            [self._freq_array[0], self._z_array[0]],
+            [self._freq_array[-1], self._z_array[-1]],
+            [self._freq_array[1] - self._freq_array[0],
+             self._z_array[1] - self._z_array[0]],
+            log10_emiss,
+            k=1, p=[False, False], e=[0, 0])
 
         # Free memory and log the time
-        del log_t_ssp_intcube, kernel_emiss, s, t2z, ssp_spline
+        del kernel_emiss  # , ssp_spline
         del emissivity, log10_emiss
         self.logging_info('SSP emissivity: end')
+        self._last_ssp = [
+            yaml_data['path_SSP'], yaml_data['ssp_type'],
+            yaml_data['file_name'], yaml_data['cut_popstar']]
         return
 
     def ebl_ssp_calculation(self, yaml_data):
@@ -419,37 +612,35 @@ class EBL_model(object):
         Parameters
         ----------
         yaml_data: dictionary
-            Data necessary to reconstruct the EBL component from a SSP.
+            Data necessary to reconstruct the EBL component from an SSP.
         """
-
         self.emissivity_ssp_calculation(yaml_data)
 
-        ebl_z_intcube = self._z_cube + self._steps_integration_cube * (
-                np.max(self._z_array) - self._z_cube)
+        if (self._ebl_intcube is None
+                or np.shape(self._ebl_intcube) != np.shape(self._cube)):
+            self.ebl_ssp_cubes()
+
+        logging.info(
+            '%.2fs: %s' % (time.process_time()
+                           - self._process_time, yaml_data['sfr_params']))
+        self._process_time = time.process_time()
 
         self.logging_info('SSP EBL: calculation of z cube')
 
         # Calculate integration values
-        ebl_intcube = 10. ** self._emi_spline.ev(
-            (self._log_freq_cube + np.log10(
-                (1. + ebl_z_intcube) / (1. + self._z_cube))).flatten(),
-            ebl_z_intcube.flatten()).reshape(self._cube.shape)
-
-        ebl_intcube /= ((1. + ebl_z_intcube)
-                        * self._cosmo.H(ebl_z_intcube).to(u.s ** -1).value)
-
-        # Mpc^-3 -> m^-3, erg/s -> nW
-        ebl_intcube *= (u.erg * u.Mpc ** -3 * u.s ** -1).to(u.nW * u.m ** -3)
-        ebl_intcube *= 10. ** self._log_freq_cube * c.value / 4. / np.pi
-
-        self.logging_info('SSP EBL: calculation of kernel')
+        ebl_intcube = self._ebl_intcube * 10. ** self._emi_spline(
+            self._shifted_freq,
+            self._ebl_z_intcube)
+        self.logging_info('SSP EBL: calculation of kernel interpolation')
 
         # Integration of EBL from SSP
-        self._ebl_SSP = simpson(ebl_intcube, x=ebl_z_intcube, axis=-1)
+        self._ebl_SSP = simpson(ebl_intcube,
+                                x=self._ebl_z_intcube,
+                                axis=-1)
 
         self.logging_info('SSP EBL: integration')
 
-        # Spline of the IHL EBL intensity
+        # Spline of the SSP EBL intensity
         log10_ebl = np.log10(self._ebl_SSP)
         log10_ebl[np.isnan(log10_ebl)] = -43.
         log10_ebl[np.invert(np.isfinite(log10_ebl))] = -43.
@@ -458,9 +649,99 @@ class EBL_model(object):
                                                    z=log10_ebl, kx=1, ky=1)
 
         # Free memory and log the time
-        del ebl_z_intcube, ebl_intcube, log10_ebl
+        del ebl_intcube, log10_ebl
         self.logging_info('SSP EBL: done')
         return
+
+    def ebl_ssp_cubes(self, freq_positions=None):
+        # Cubes needed to calculate the EBL from an SSP
+        if freq_positions is None:
+            self._ebl_z_intcube = (self._z_cube
+                                   + self._steps_integration_cube
+                                   * (np.max(self._z_array)
+                                      - self._z_cube))
+
+            self._shifted_freq = (self._log_freq_cube + np.log10(
+                (1. + self._ebl_z_intcube) / (1. + self._z_cube)))
+
+            self._ebl_intcube = (10. ** self._log_freq_cube
+                                 * c.value / 4. / np.pi)
+            self._ebl_intcube = (self._ebl_intcube
+                                 / ((1. + self._ebl_z_intcube)
+                                    * self._cosmo.H(
+                                self._ebl_z_intcube).to(
+                                u.s ** -1).value))
+        else:
+            # Careful, the expressions are only prepared for z=0
+            self._ebl_z_intcube = np.ones((len(freq_positions),
+                                          self._t_intsteps))
+            self._ebl_z_intcube *= (self._z_cube[0, 0, :]
+                                    + self._steps_integration_cube[0, 0, :]
+                                    * (np.max(self._z_array)
+                                       - self._z_cube[0, 0, :]))
+
+            self._shifted_freq = (freq_positions[:, np.newaxis]
+                                  + np.log10((1. + self._ebl_z_intcube)
+                                             )
+                                  )
+
+            self._ebl_intcube = (c.value * 10 ** freq_positions
+                                  / 4. / np.pi)[:, np.newaxis]
+            self._ebl_intcube = (self._ebl_intcube
+                                 / ((1. + self._ebl_z_intcube)
+                                    * self._cosmo.H(
+                                self._ebl_z_intcube).to(
+                                u.s ** -1).value))
+
+
+        self.logging_info('Initialize cubes: calculation of division')
+
+        # Mpc^-3 -> m^-3, erg/s -> nW
+        self._ebl_intcube *= (u.erg * u.Mpc ** -3 * u.s ** -1
+                              ).to(u.nW * u.m ** -3)
+
+        self.logging_info('Initialize cubes: calculation of kernel')
+        return
+
+    def ebl_ssp_individualData(self, yaml_data, x_data):
+        """
+        Calculate the EBL SSP contribution. for the specific wavelength
+        data that we have available (and redshift z=0). Useful to avoid
+        big calculations with a wide grid on wavelengths and redshifts.
+
+        EBL units:
+        ----------
+            -> Cubes: nW m**-2 sr**-1
+
+        Parameters
+        ----------
+        yaml_data: dictionary
+            Data necessary to reconstruct the EBL component from an SSP.
+        """
+        self.logging_info('SSP EBL: enter program')
+        self.emissivity_ssp_calculation(yaml_data)
+
+        self.logging_info('SSP EBL: emissivity calculated')
+
+        new_individualFreq = np.log10(c.value / x_data[::-1] * 1e6)
+
+        if (self._ebl_intcube is None
+                or np.shape(self._ebl_intcube)[0]
+                == np.shape(self._cube)[0]):
+            self.ebl_ssp_cubes(freq_positions=new_individualFreq)
+
+        self.logging_info('SSP EBL: calculation of z cube')
+
+        # Calculate integration values
+        ebl_intcube = (self._ebl_intcube
+                       * 10. ** self._emi_spline(
+                    self._shifted_freq,
+                    self._ebl_z_intcube))
+        self.logging_info('SSP EBL: calculation of kernel interpolation')
+
+        return simpson(ebl_intcube,
+                       x=self._ebl_z_intcube,
+                       axis=-1)[::-1]
 
     def ebl_intrahalo_calculation(self, log10_Aihl, alpha):
         """
