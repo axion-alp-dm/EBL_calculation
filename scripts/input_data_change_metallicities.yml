@@ -1,0 +1,380 @@
+# COSMOLOGY CONSTANTS (flat LCDM assumed)
+cosmology_params:
+  cosmo: [ .7, .3, .7 ]   # [h_0, omega_matter, omega_L]
+  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
+
+# WAVELENGTH ARRAY FOR EBL [microns]
+wavelenght_array:
+  lmin: 1e-2
+  lmax: 3e3
+  lfsteps: 391
+
+# REDSHIFT ARRAY FOR MRF (ebl at any redshift)
+redshift_array:
+  zmin: 1e-6
+  zmax: 10.
+  zsteps: 181
+
+# INTEGRATION TIME STEP
+t_intsteps: 201
+
+# PRINT LOGGING OF OUR PROCESSES
+log_prints: True
+
+# AXION DECAY BEING CONSIDERED
+axion_params:
+  axion_mass:  1      # [eV]
+  axion_gamma: 5e-23  # [s**-1]
+
+# INTRA HALO LIGHT PARAMETERS
+ihl_params:
+  A_ihl: -3.23
+  alpha: 1
+
+# SSP INFORMATION
+# Maximum redshift at which we form SSPs
+z_intmax: 35.
+# List of SSP models we want to try
+ssp_models:
+
+#  pegase:
+#    name: 'Pegase Z=0.02 dust Finke model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: '0.02'
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022_2' ]
+#
+#  pegase_kneiske:
+#    name: 'Pegase Z=0.02 dust Kneiske'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [0.015, 2.7, 2.9, 5.6]
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: '0.02'
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+#
+#  pegase0.008:
+#    name: 'Pegase Z=0.008 dust Finke model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: '0.008'
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022_2' ]
+#
+#  pegase_kneiske0.008:
+#    name: 'Pegase Z=0.008 dust Kneiske'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: '0.008'
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+#
+#  pegase0.0001:
+#    name: 'Pegase Z=0.0001 dust Finke model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: '0.0001'
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022_2' ]
+#
+#  pegase_kneiske0.0001:
+#    name: 'Pegase Z=0.0001 dust Kneiske'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: '0.0001'
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+
+#  SB99:
+#    name: 'Starburst99 Z=0.02 dust Kneiske'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [0.015, 2.7, 2.9, 5.6]
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: ''
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+#  SB992:
+#    name: 'Starburst99 Z=0.02 dust Kneiske'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: ''
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+
+#  SB99_finke:
+#    name: 'Starburst99 Z=0.02 dust Finke'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: ''
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022' ]
+
+#  SB99_finke2:
+#    name: 'Starburst99 Z=0.02 dust Finke model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: ''
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022_2' ]
+
+#  SB99_finke22:
+#    name: 'Starburst99 Z=0.02 dust Finke model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: ''
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022_2' ]
+
+
+
+
+  PSZ0200:
+    name: 'Popstar09 Z=0.0200 dust Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+
+    # SSP DATA
+    ssp_type: 'Popstar09'
+    path_SSP: 'ssp/PopStar09/sp-kro-z0200/'
+    file_name: 'spneb_kro_0.15_100_z0200_t'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+
+#  PSZ0200Cut:
+#    name: 'Popstar09 Z=0.0200 dust Kneiske'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'Popstar09'
+#    path_SSP: 'ssp/PopStar09/sp-kro-z0200/'
+#    file_name: 'spneb_kro_0.15_100_z0200_t'
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+
+#  PSZ0200Finke:
+#    name: 'Popstar09 Z=0.0200 dust Finke'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'Popstar09'
+#    path_SSP: 'ssp/PopStar09/sp-kro-z0200/'
+#    file_name: 'spneb_kro_0.15_100_z0200_t'
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022' ]
+
+
+  PSZ0200Finke2:
+    name: 'Popstar09 Z=0.0200 dust Finke model A'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+
+    # SSP DATA
+    ssp_type: 'Popstar09'
+    path_SSP: 'ssp/PopStar09/sp-kro-z0200/'
+    file_name: 'spneb_kro_0.15_100_z0200_t'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'finke2022_2' ]
+
+#  PSZ0200Finke2Cut:
+#    name: 'Popstar09 Z=0.0200 dust Finke model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'Popstar09'
+#    path_SSP: 'ssp/PopStar09/sp-kro-z0001/'
+#    file_name: 'spneb_kro_0.15_100_z0001_t'
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022_2' ]
+
+
+  PSZ0200_Z0040:
+    name: 'Popstar09 Z=0.004 dust Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+
+    # SSP DATA
+    ssp_type: 'Popstar09'
+    path_SSP: 'ssp/PopStar09/sp-kro-z0040/'
+    file_name: 'spneb_kro_0.15_100_z0040_t'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+
+  PSZ0200Finke2_Z0040:
+    name: 'Popstar09 Z=0.004 dust Finke model A'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+
+    # SSP DATA
+    ssp_type: 'Popstar09'
+    path_SSP: 'ssp/PopStar09/sp-kro-z0040/'
+    file_name: 'spneb_kro_0.15_100_z0040_t'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'finke2022_2' ]
+
+
+  PSZ0200_Z0001:
+    name: 'Popstar09 Z=0.0001 dust Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+
+    # SSP DATA
+    ssp_type: 'Popstar09'
+    path_SSP: 'ssp/PopStar09/sp-kro-z0001/'
+    file_name: 'spneb_kro_0.15_100_z0001_t'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+#
+#  PSZ0200Finke_Z0001:
+#    name: 'Popstar09 Z=0.0001 dust Finke'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+#
+#    # SSP DATA
+#    ssp_type: 'Popstar09'
+#    path_SSP: 'ssp/PopStar09/sp-kro-z0001/'
+#    file_name: 'spneb_kro_0.15_100_z0001_t'
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022' ]
+#
+#
+  PSZ0200Finke2_Z0001:
+    name: 'Popstar09 Z=0.0001 dust Finke model A'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+
+    # SSP DATA
+    ssp_type: 'Popstar09'
+    path_SSP: 'ssp/PopStar09/sp-kro-z0001/'
+    file_name: 'spneb_kro_0.15_100_z0001_t'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'finke2022_2' ]
