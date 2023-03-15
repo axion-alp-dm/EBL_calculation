@@ -40,6 +40,9 @@ def plot_ebl_measurement_collection(file, color='.75', cm=plt.cm.rainbow, yearmi
             label = ""
         plt.errorbar(x=m[1]['data']['lambda'], y=m[1]['data']['ebl'],
                      yerr=yerr, label=label,
-                     marker=markers[mi % len(markers)], color=color, mec=color,
-                     linestyle='None', lolims=m[1]['is_lower_limit'], uplims=m[1]['is_upper_limit'])
+                     marker=markers[mi % len(markers)], color=color,
+                     mec=color,
+                     linestyle='None', capthick=2.,
+                     lolims=m[1]['is_lower_limit'],
+                     uplims=m[1]['is_upper_limit'])
 

@@ -12,7 +12,7 @@ from astropy.constants import c
 from iminuit import Minuit
 from iminuit.cost import LeastSquares
 
-from scipy.interpolate import UnivariateSpline
+from jacobi import propagate
 
 from ebl_codes.EBL_class import EBL_model
 
@@ -104,13 +104,14 @@ for key in config_data['ssp_models']:
 
 # our line model, unicode parameter names are supported
 plt.figure()
+plt.title(config_data['ssp_models'][key]['name'])
 ebl_class.logging_prints = False
 
 
-def spline_attempt(x, a, b, c, d):
-    config_data['ssp_models']['SB99']['sfr_params'] = [a, b, c, d]
+def spline_attempt(x, params):
+    config_data['ssp_models'][key]['sfr_params'] = params
     return ebl_class.ebl_ssp_individualData(
-        yaml_data=config_data['ssp_models']['SB99'],
+        yaml_data=config_data['ssp_models'][key],
         x_data=x)
 
 
@@ -141,21 +142,38 @@ least_squares = LeastSquares(data_x, data_y, data_yerr, spline_attempt)
 
 print('%.2fs' % (time.process_time() - init_time))
 init_time = time.process_time()
-m = Minuit(least_squares, a=0.015, b=2.7, c=2.9, d=5.6)  # starting values
-m.limits = [[0.005, 0.020], [2.5, 2.9], [2.8, 3.], [5.5, 5.7]]
+m = Minuit(least_squares, ([0.00691415, 2.87, 3.5, 5.]))  # starting
+# values
+m.limits = [[0.005, 0.020], [2., 2.9], [2.8, 3.5], [5., 5.7]]
 print(m.params)
 
 m.migrad()  # finds minimum of least_squares function
 m.hesse()  # accurately computes uncertainties
 
 # draw data and fitted line
+xx_plot = np.logspace(-1, 1, num=100)
+xx_plot_freq = np.log10(c.value / np.array(xx_plot) * 1e6)
+
 plt.errorbar(data_x, data_y, data_yerr, fmt="o", label="data")
-plt.plot(data_x, 10 ** ebl_class.ebl_ssp_spline(data_x_freq, 0., grid=False),
-         label="continuum")
-plt.plot(data_x, spline_attempt(x=data_x, a=0.015, b=2.7, c=2.9, d=5.6),
+plt.plot(xx_plot, 10 ** ebl_class.ebl_ssp_spline(xx_plot_freq, 0., grid=False),
          label="MD14")
-print(m.values)
-plt.plot(data_x, spline_attempt(data_x, *m.values), label="fit")
+# plt.plot(data_x, spline_attempt(x=data_x, a=0.015, b=2.7, c=2.9, d=5.6),
+#          label="MD14")
+
+config_data['ssp_models'][key]['sfr_params'] = [m.params[0].value,
+                                                m.params[1].value,
+                                                m.params[2].value,
+                                                m.params[3].value]
+ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+plt.plot(xx_plot, 10 ** ebl_class.ebl_ssp_spline(xx_plot_freq, 0., grid=False),
+         label="fit")
+
+y, y_cov = propagate(lambda pars:
+                     spline_attempt(xx_plot, pars),
+                     m.values, m.covariance)
+yerr_prop = np.diag(y_cov) ** 0.5
+plt.fill_between(xx_plot, y - yerr_prop, y + yerr_prop,
+                 facecolor="C1", alpha=0.5)
 
 # display legend with some fit info
 fit_info = [
@@ -164,9 +182,12 @@ fit_info = [
 for p, v, e in zip(m.parameters, m.values, m.errors):
     fit_info.append(f"{p} = ${v:.3f} \\pm {e:.3f}$")
 
+print(m.values)
 plt.legend(title="\n".join(fit_info))
 plt.yscale('log')
 plt.xscale('log')
+plt.ylim(1, 20)
+plt.xlim(0.3, 5.5)
 # plt.xlabel(r'Frequency log10(Hz)')
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
@@ -174,13 +195,22 @@ print('%.2fs' % (time.process_time() - init_time))
 
 
 plt.figure()
+plt.title(config_data['ssp_models'][key]['name'])
 x_sfr = np.linspace(0, 10)
 m1 = [0.015, 2.7, 2.9, 5.6]
-sfr = (lambda mi, x: eval(config_data['ssp_models']['SB99']['sfr'])(mi, x))
-plt.plot(x_sfr, sfr(m1, x_sfr), label='MD14')
+sfr = (lambda mi, x: eval(config_data['ssp_models'][key]['sfr'])(mi, x))
+plt.plot(x_sfr, sfr(m1, x_sfr), color='orange', label='MD14')
 m2 = [m.params[0].value, m.params[1].value,
       m.params[2].value, m.params[3].value]
-plt.plot(x_sfr, sfr(m2, x_sfr), label='fit')
+plt.plot(x_sfr, sfr(m2, x_sfr), '-g', label='fit')
+
+y, y_cov = propagate(lambda pars:
+                     sfr(pars, x_sfr),
+                     m.values, m.covariance)
+yerr_prop = np.diag(y_cov) ** 0.5
+plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+                 facecolor="C1", alpha=0.5)
+
 plt.yscale('log')
 plt.xlabel('z')
 plt.ylabel('sfr(z)')

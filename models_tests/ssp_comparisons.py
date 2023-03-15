@@ -3,6 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import c
 
+from matplotlib.pyplot import cycler
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+import matplotlib.cm
+
+# import matplotlib.pylab as pl
+# import matplotlib as mpl
+
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 plt.rcParams['axes.labelsize'] = 20
@@ -19,6 +26,45 @@ plt.rc('xtick.major', size=7, width=1.5, top=True)
 plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
+
+bi = LinearSegmentedColormap.from_list("",
+                                       ["#ff0080", "#ff0080",
+                                        "#a349a4", "#0000ff",
+                                        "#0000ff"])
+bi_r = LinearSegmentedColormap.from_list("",
+                                         ["#0000ff", "#0000ff",
+                                          "#a349a4", "#ff0080",
+                                          "#ff0080"])  # reversed
+
+
+def get_cycle(cmap, N=None, use_index="auto"):
+    if isinstance(cmap, str):
+        if use_index == "auto":
+            if cmap in ['Pastel1', 'Pastel2', 'Paired', 'Accent',
+                        'Dark2', 'Set1', 'Set2', 'Set3',
+                        'tab10', 'tab20', 'tab20b', 'tab20c']:
+                use_index = True
+            else:
+                use_index = False
+        cmap = matplotlib.cm.get_cmap(cmap)
+    if not N:
+        N = cmap.N
+    if use_index == "auto":
+        if cmap.N > 100:
+            use_index = False
+        elif isinstance(cmap, LinearSegmentedColormap):
+            use_index = False
+        elif isinstance(cmap, ListedColormap):
+            use_index = True
+    if use_index:
+        ind = np.arange(int(N)) % cmap.N
+        return cycler("color", cmap(ind))
+    else:
+        colors = cmap(np.linspace(0, 1, N))
+        return cycler("color", colors)
+
+N = 7
+plt.rcParams["axes.prop_cycle"] = get_cycle(bi_r, N)
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'models_tests':
@@ -330,12 +376,10 @@ for n_met, met in enumerate(pegase_metall):
              label=met,
              color=color)
 
-
 plt.xscale('log')
 plt.xlim(1e2, 1e5)
 plt.ylim(-7, 1)
 legend11 = plt.legend()
-
 
 axes.add_artist(legend11)
 
@@ -346,5 +390,78 @@ if work_with_Lnu is True:
     plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun [erg s$^{-1}$ Hz$^{-1}$ Msun$^{'
                r'-1}$])')
     plt.ylim(10, 22)
+
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams['axes.labelsize'] = 24
+plt.rcParams['lines.markersize'] = 10
+plt.rc('font', size=24)
+plt.rc('axes', titlesize=30)
+plt.rc('axes', labelsize=30)
+plt.rc('xtick', labelsize=30)
+plt.rc('ytick', labelsize=30)
+plt.rc('legend', fontsize=22)
+plt.rc('figure', titlesize=20)
+plt.rc('xtick', top=True, direction='in')
+plt.rc('ytick', right=True, direction='in')
+plt.rc('xtick.major', size=10, width=2, top=True)
+plt.rc('ytick.major', size=10, width=2, right=True)
+plt.rc('xtick.minor', size=7, width=1.5)
+plt.rc('ytick.minor', size=7, width=1.5)
+
+# ---------------------------------------------
+fig = plt.figure()
+axes = fig.gca()
+# plt.title('ssp pegase')
+
+print(pegase_metall[2])
+
+fig, ax = plt.subplots(12)
+
+plt.subplot(121)
+# mpl.rcParams['axes.color_cycle'] = ["#0000ff", "#0000ff",
+#                                                  "#a349a4", "#ff0080",
+#                                                  "#ff0080"]
+
+alpha_arr = [1, 0.85, 0.7, 0.55, 0.45, 0.25, 0.1]
+for n_age, age in enumerate([1, 5, 10, 50, 100, 500, 1000]):
+    alpha = alpha_arr[n_age]  # 1-0.15*n_age
+    print(alpha)
+
+    aaa = np.abs(t_pegase - age).argmin()
+    plt.plot(l_pegase, pegase_log_emis[:, aaa, 2],
+            linestyle='-',
+            label='%s Myrs' % age)
+
+plt.xscale('log')
+plt.xlim(1e2, 1e5)
+plt.ylim(26, 33.5)
+legend11 = plt.legend(ncol=2)
+
+
+plt.xlabel(r'Wavelength [$Å$]')
+plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '
+           r'[erg s$^{-1}$ $Å^{-1}$ M$_{\odot}^{-1}$])')
+if work_with_Lnu is True:
+    plt.ylabel(r'log$_{10}$(L$_{\nu}$/L_{\odot}'
+               r' [erg s$^{-1}$ Hz$^{-1}$ M_{\odot}$^{-1}$])')
+    plt.ylim(10, 22)
+
+
+plt.subplot(122)
+x_sfr = np.linspace(0, 10)
+m1 = [0.015, 2.7, 2.9, 5.6]
+sfr = (lambda mi, x: eval(
+    'lambda ci, x : ci[0] * (1 + x)**ci[1]'
+    ' / (1 + ((1+x)/ci[2])**ci[3])')(mi, x))
+plt.plot(x_sfr, sfr(m1, x_sfr), color='green',
+         label='Madau&Dickinson 14')
+
+plt.yscale('log')
+plt.xlabel('z')
+plt.ylabel('sfr(z)')
+
+plt.xlim(0, 10)
+plt.legend()
 
 plt.show()

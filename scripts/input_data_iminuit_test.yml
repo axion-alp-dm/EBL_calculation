@@ -69,8 +69,8 @@ ssp_models:
 #    # DUST ABSORPTION MODELS
 #    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 #
-#  pegase0.008:
-#    name: 'Pegase Z=0.008 dust Finke model A'
+#  pegase0.004:
+#    name: 'Pegase Z=0.004 dust Finke model A'
 #
 #    # SFR INPUTS
 #    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
@@ -79,7 +79,7 @@ ssp_models:
 #    # SSP DATA
 #    ssp_type: 'pegase3'
 #    path_SSP: 'ssp/final_run_spectrum'
-#    file_name: '0.008'
+#    file_name: '0.004'
 #    cut_popstar: True
 #
 #    # DUST ABSORPTION MODELS
