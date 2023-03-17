@@ -103,8 +103,9 @@ for key in config_data['ssp_models']:
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 
 # our line model, unicode parameter names are supported
-plt.figure()
-plt.title(config_data['ssp_models'][key]['name'])
+plt.subplots(12)
+plt.subplot(121)
+# plt.title(config_data['ssp_models'][key]['name'])
 ebl_class.logging_prints = False
 
 
@@ -142,7 +143,7 @@ least_squares = LeastSquares(data_x, data_y, data_yerr, spline_attempt)
 
 print('%.2fs' % (time.process_time() - init_time))
 init_time = time.process_time()
-m = Minuit(least_squares, ([0.00691415, 2.87, 3.5, 5.]))  # starting
+m = Minuit(least_squares, ([0.02, 2.05, 3.5, 5.02]))  # starting
 # values
 m.limits = [[0.005, 0.020], [2., 2.9], [2.8, 3.5], [5., 5.7]]
 print(m.params)
@@ -154,8 +155,11 @@ m.hesse()  # accurately computes uncertainties
 xx_plot = np.logspace(-1, 1, num=100)
 xx_plot_freq = np.log10(c.value / np.array(xx_plot) * 1e6)
 
-plt.errorbar(data_x, data_y, data_yerr, fmt="o", label="data")
+plt.errorbar(data_x, data_y, data_yerr,
+             markerfacecolor='k', fmt="o",
+             label="lower limits")
 plt.plot(xx_plot, 10 ** ebl_class.ebl_ssp_spline(xx_plot_freq, 0., grid=False),
+         'b',
          label="MD14")
 # plt.plot(data_x, spline_attempt(x=data_x, a=0.015, b=2.7, c=2.9, d=5.6),
 #          label="MD14")
@@ -166,6 +170,7 @@ config_data['ssp_models'][key]['sfr_params'] = [m.params[0].value,
                                                 m.params[3].value]
 ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 plt.plot(xx_plot, 10 ** ebl_class.ebl_ssp_spline(xx_plot_freq, 0., grid=False),
+         'r',
          label="fit")
 
 y, y_cov = propagate(lambda pars:
@@ -190,19 +195,19 @@ plt.ylim(1, 20)
 plt.xlim(0.3, 5.5)
 # plt.xlabel(r'Frequency log10(Hz)')
 plt.xlabel(r'Wavelength ($\mu$m)')
-plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
+plt.ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ sr)')
 print('%.2fs' % (time.process_time() - init_time))
 
 
-plt.figure()
-plt.title(config_data['ssp_models'][key]['name'])
+plt.subplot(122)
+# plt.title(config_data['ssp_models'][key]['name'])
 x_sfr = np.linspace(0, 10)
 m1 = [0.015, 2.7, 2.9, 5.6]
 sfr = (lambda mi, x: eval(config_data['ssp_models'][key]['sfr'])(mi, x))
-plt.plot(x_sfr, sfr(m1, x_sfr), color='orange', label='MD14')
+plt.plot(x_sfr, sfr(m1, x_sfr), color='b', label='MD14')
 m2 = [m.params[0].value, m.params[1].value,
       m.params[2].value, m.params[3].value]
-plt.plot(x_sfr, sfr(m2, x_sfr), '-g', label='fit')
+plt.plot(x_sfr, sfr(m2, x_sfr), '-r', label='fit')
 
 y, y_cov = propagate(lambda pars:
                      sfr(pars, x_sfr),

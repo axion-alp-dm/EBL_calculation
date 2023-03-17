@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_ebl_measurement_collection(file, color='.75', cm=plt.cm.rainbow, yearmin=None, yearmax=None, nolabel=False): # Dark2
+def plot_ebl_measurement_collection(file, color='.75', cm=plt.cm.rainbow,
+                                    yearmin=None, yearmax=None, nolabel=False):
 
     with open(file, 'r') as stream:
         try:
@@ -23,6 +24,8 @@ def plot_ebl_measurement_collection(file, color='.75', cm=plt.cm.rainbow, yearmi
         ebl_m = ebl_m_n
 
     markers = ['*', '<', '>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
+    markers = ['<', 'H']
+    colors = ['b', 'r']
 
     for mi, m in enumerate(ebl_m):
         yerr = [m[1]['data']['ebl_err_low'], m[1]['data']['ebl_err_high']]
@@ -38,10 +41,18 @@ def plot_ebl_measurement_collection(file, color='.75', cm=plt.cm.rainbow, yearmi
         label = m[1]['full_name']
         if nolabel:
             label = ""
+        # plt.errorbar(x=m[1]['data']['lambda'], y=m[1]['data']['ebl'],
+        #              yerr=yerr, label=label,
+        #              marker=markers[mi % len(markers)], color=color,
+        #              mec=color,
+        #              linestyle='None', capthick=2.,
+        #              lolims=m[1]['is_lower_limit'],
+        #              uplims=m[1]['is_upper_limit'])
+
         plt.errorbar(x=m[1]['data']['lambda'], y=m[1]['data']['ebl'],
                      yerr=yerr, label=label,
-                     marker=markers[mi % len(markers)], color=color,
-                     mec=color,
+                     marker=markers[mi % len(markers)], color=colors[mi],
+                     mec=colors[mi],
                      linestyle='None', capthick=2.,
                      lolims=m[1]['is_lower_limit'],
                      uplims=m[1]['is_upper_limit'])
