@@ -69,7 +69,7 @@ def input_yaml_data_into_class(yaml_data, log_prints=False):
 
 fig = plt.figure(figsize=(15, 8))
 axes = fig.gca()
-plt.title('Popstar different metallicities')
+plt.title('Pegase different metallicities and SFRs')
 
 waves_ebl = np.logspace(-1, 3, num=700)
 freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
@@ -95,10 +95,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
     ebl_class.ebl_sum_contributions()
     print('Time for SSP calculation: %.2fs' % (time.process_time() - init))
 
-    if config_data['ssp_models'][key]['dust_abs_models'] == ['finke2022_2']:
+    if config_data['ssp_models'][key]['sfr_params']\
+            == [ 0.0092, 2.79, 3.10, 6.97 ]:
         linestyle = '-'
-    elif config_data['ssp_models'][key]['dust_abs_models'] == ['finke2022']:
-        linestyle = '--'
     else:
         linestyle = 'dotted'
 
@@ -106,10 +105,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
     #     color = colors[0]
 
     if config_data['ssp_models'][key]['file_name'] \
-            == 'spneb_kro_0.15_100_z0200_t':
+            == '0.02':
             color = colors[0]
     elif config_data['ssp_models'][key]['file_name']\
-            == 'spneb_kro_0.15_100_z0040_t':
+            == '0.008':
             color = colors[1]
     else:
             color = colors[2]
@@ -152,13 +151,13 @@ legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left",
 legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
                                   color=colors[i])
                        for i in range(3)],
-                      ['0.02', '0.004', '0.0001'],
+                      ['0.02', '0.008', '0.0001'],
                       loc=8,
                       title=r'Metallicity')
 legend33 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
                                   color='k') for i in [0, 2]],  # range(3)],
-                      ['Finke model A', 'Kneiske02', 'Razzaque14 + z Finke'],
-                      title=r'Dust absorption model',
+                      ['Finke model A', 'MD14', 'MD14'],
+                      title=r'SFR',
                       bbox_to_anchor=(1.04, 0.1),
                       loc="lower left")
 axes.add_artist(legend11)

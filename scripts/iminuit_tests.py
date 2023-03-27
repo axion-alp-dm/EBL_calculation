@@ -18,20 +18,21 @@ from ebl_codes.EBL_class import EBL_model
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
-plt.rcParams['axes.labelsize'] = 20
-plt.rc('font', size=20)
-plt.rc('axes', titlesize=20)
-plt.rc('axes', labelsize=20)
-plt.rc('xtick', labelsize=18)
-plt.rc('ytick', labelsize=18)
-plt.rc('legend', fontsize=18)
-plt.rc('figure', titlesize=17)
+plt.rcParams['axes.labelsize'] = 24
+plt.rcParams['lines.markersize'] = 10
+plt.rc('font', size=24)
+plt.rc('axes', titlesize=30)
+plt.rc('axes', labelsize=30)
+plt.rc('xtick', labelsize=30)
+plt.rc('ytick', labelsize=30)
+plt.rc('legend', fontsize=26)
+plt.rc('figure', titlesize=24)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=7, width=1.5, top=True)
-plt.rc('ytick.major', size=7, width=1.5, right=True)
-plt.rc('xtick.minor', size=4, width=1)
-plt.rc('ytick.minor', size=4, width=1)
+plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
+plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
+plt.rc('xtick.minor', size=7, width=1.5)
+plt.rc('ytick.minor', size=7, width=1.5)
 
 init_time = time.process_time()
 # Check that the working directory is correct for the paths
@@ -143,9 +144,12 @@ least_squares = LeastSquares(data_x, data_y, data_yerr, spline_attempt)
 
 print('%.2fs' % (time.process_time() - init_time))
 init_time = time.process_time()
-m = Minuit(least_squares, ([0.02, 2.05, 3.5, 5.02]))  # starting
+# m = Minuit(least_squares, ([0.02, 2.05, 3.5, 5.02]))  # starting
+m = Minuit(least_squares, ([0.0092, 2.79, 3.10, 6.97]))  # starting
+
 # values
-m.limits = [[0.005, 0.020], [2., 2.9], [2.8, 3.5], [5., 5.7]]
+# m.limits = [[0.005, 0.020], [2., 2.9], [2.8, 3.5], [5., 5.7]]
+# m.limits = [[0.001, 0.020], [2., 3.5], [2.8, 3.7], [5., 9.]]
 print(m.params)
 
 m.migrad()  # finds minimum of least_squares function
@@ -156,11 +160,11 @@ xx_plot = np.logspace(-1, 1, num=100)
 xx_plot_freq = np.log10(c.value / np.array(xx_plot) * 1e6)
 
 plt.errorbar(data_x, data_y, data_yerr,
-             markerfacecolor='k', fmt="o",
+             color='k', fmt="o",
              label="lower limits")
 plt.plot(xx_plot, 10 ** ebl_class.ebl_ssp_spline(xx_plot_freq, 0., grid=False),
          'b',
-         label="MD14")
+         label="MF17")
 # plt.plot(data_x, spline_attempt(x=data_x, a=0.015, b=2.7, c=2.9, d=5.6),
 #          label="MD14")
 
@@ -192,12 +196,11 @@ plt.legend(title="\n".join(fit_info))
 plt.yscale('log')
 plt.xscale('log')
 plt.ylim(1, 20)
-plt.xlim(0.3, 5.5)
+plt.xlim(0.1, 10.)
 # plt.xlabel(r'Frequency log10(Hz)')
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ sr)')
 print('%.2fs' % (time.process_time() - init_time))
-
 
 plt.subplot(122)
 # plt.title(config_data['ssp_models'][key]['name'])
@@ -205,6 +208,8 @@ x_sfr = np.linspace(0, 10)
 m1 = [0.015, 2.7, 2.9, 5.6]
 sfr = (lambda mi, x: eval(config_data['ssp_models'][key]['sfr'])(mi, x))
 plt.plot(x_sfr, sfr(m1, x_sfr), color='b', label='MD14')
+m11 = [0.0092, 2.79, 3.10, 6.97]
+plt.plot(x_sfr, sfr(m11, x_sfr), color='g', label='MF17')
 m2 = [m.params[0].value, m.params[1].value,
       m.params[2].value, m.params[3].value]
 plt.plot(x_sfr, sfr(m2, x_sfr), '-r', label='fit')
@@ -217,8 +222,8 @@ plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
                  facecolor="C1", alpha=0.5)
 
 plt.yscale('log')
-plt.xlabel('z')
-plt.ylabel('sfr(z)')
+plt.xlabel('redshift z')
+plt.ylabel(r'SFR [M$_{\odot}$ yr$^{-1}$Mpc$^{-3}$]')
 plt.legend()
 
 plt.show()
