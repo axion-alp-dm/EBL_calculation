@@ -37,103 +37,104 @@ z_intmax: 35.
 # List of SSP models we want to try
 ssp_models:
 
-#  pegase:
-#    name: 'Pegase Z=0.02 dust Finke model A'
+  pegase0.02_Finke:
+    name: 'Pegase Z=0.02 dust Finke model A'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'ssp/final_run_spectrum'
+    file_name: '0.02'
+    cut_popstar: True
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'finke2022_2' ]
+
+  pegase0.02_kneiske:
+    name: 'Pegase Z=0.02 dust Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'ssp/final_run_spectrum'
+    file_name: '0.02'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 #
-#    # SFR INPUTS
-#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
+  pegase0.004_Finke:
+    name: 'Pegase Z=0.004 dust Finke model A'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'ssp/final_run_spectrum'
+    file_name: '0.004'
+    cut_popstar: True
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'finke2022_2' ]
+
+  pegase0.004_kneiske:
+    name: 'Pegase Z=0.004 Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'ssp/final_run_spectrum'
+    file_name: '0.004'
+    cut_popstar: True
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 #
-#    # SSP DATA
-#    ssp_type: 'pegase3'
-#    path_SSP: 'ssp/final_run_spectrum'
-#    file_name: '0.02'
-#    cut_popstar: True
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'finke2022_2' ]
-#
-#  pegase_kneiske:
-#    name: 'Pegase Z=0.02 dust Kneiske'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [0.015, 2.7, 2.9, 5.6]
-#
-#    # SSP DATA
-#    ssp_type: 'pegase3'
-#    path_SSP: 'ssp/final_run_spectrum'
-#    file_name: '0.02'
-#    cut_popstar: False
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
-#
-#  pegase0.004:
-#    name: 'Pegase Z=0.004 dust Finke model A'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
-#
-#    # SSP DATA
-#    ssp_type: 'pegase3'
-#    path_SSP: 'ssp/final_run_spectrum'
-#    file_name: '0.004'
-#    cut_popstar: True
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'finke2022_2' ]
-#
-#  pegase_kneiske0.008:
-#    name: 'Pegase Z=0.008 dust Kneiske'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
-#
-#    # SSP DATA
-#    ssp_type: 'pegase3'
-#    path_SSP: 'ssp/final_run_spectrum'
-#    file_name: '0.008'
-#    cut_popstar: False
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
-#
-#  pegase0.0001:
-#    name: 'Pegase Z=0.0001 dust Finke model A'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
-#
-#    # SSP DATA
-#    ssp_type: 'pegase3'
-#    path_SSP: 'ssp/final_run_spectrum'
-#    file_name: '0.0001'
-#    cut_popstar: True
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'finke2022_2' ]
-#
-#  pegase_kneiske0.0001:
-#    name: 'Pegase Z=0.0001 dust Kneiske'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [ 0.015, 2.7, 2.9, 5.6 ]
-#
-#    # SSP DATA
-#    ssp_type: 'pegase3'
-#    path_SSP: 'ssp/final_run_spectrum'
-#    file_name: '0.0001'
-#    cut_popstar: False
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
-  pegase0.0001:
-    name: 'Pegase Z=0.0001 Finke model A'
+  pegase0.008_Finke:
+    name: 'Pegase Z=0.008 dust Finke model A'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'ssp/final_run_spectrum'
+    file_name: '0.008'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: ['finke2022_2']
+
+  pegase0.008_kneiske:
+    name: 'Pegase Z=0.008 dust Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'ssp/final_run_spectrum'
+    file_name: '0.008'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+
+  pegase0.0001_Finke:
+    name: 'Pegase Z=0.0001 dust Finke model A'
 
     # SFR INPUTS
     sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
@@ -147,6 +148,38 @@ ssp_models:
 
     # DUST ABSORPTION MODELS
     dust_abs_models: [ 'finke2022_2' ]
+
+  pegase0.0001_kneiske:
+    name: 'Pegase Z=0.0001 dust Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'ssp/final_run_spectrum'
+    file_name: '0.0001'
+    cut_popstar: False
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+
+#  pegase0.02:
+#    name: 'Pegase Z=0.02 Finke model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda ci, x : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 0.0092, 2.79, 3.10, 6.97 ]
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: '0.02'
+#    cut_popstar: True
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'finke2022_2' ]
 #  SB99:
 #    name: 'Starburst99 Z=0.02 dust Kneiske'
 #
@@ -159,7 +192,7 @@ ssp_models:
 #    path_SSP: 'ssp/final_run_spectrum'
 #    file_name: ''
 #    cut_popstar: True
-#
+##
 #    # DUST ABSORPTION MODELS
 #    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 #  SB992:

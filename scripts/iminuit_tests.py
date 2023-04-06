@@ -15,6 +15,7 @@ from iminuit.cost import LeastSquares
 from jacobi import propagate
 
 from ebl_codes.EBL_class import EBL_model
+from ebl_measurements.read_ebl_biteau import dictionary_datatype
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -25,7 +26,7 @@ plt.rc('axes', titlesize=30)
 plt.rc('axes', labelsize=30)
 plt.rc('xtick', labelsize=30)
 plt.rc('ytick', labelsize=30)
-plt.rc('legend', fontsize=26)
+plt.rc('legend', fontsize=18)
 plt.rc('figure', titlesize=24)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
@@ -78,22 +79,6 @@ def input_yaml_data_into_class(yaml_data, log_prints=False):
 
 
 # FIGURE: AXION MASS-GAYY AND MASS-GAMMA PARAMETER SPACES -------
-def gamma_from_rest(mass, gay):
-    return (((mass * u.eV) ** 3. * (gay * u.GeV ** -1) ** 2. / 32. /
-             h_plank.to(u.eV * u.s)).to(u.s ** -1).value)
-
-
-axion_mac2 = np.logspace(np.log10(3), 1, num=20)
-axion_gay = np.logspace(np.log10(5e-11), -9, num=20)
-
-axion_gamma = np.logspace(np.log10(gamma_from_rest(axion_mac2[0],
-                                                   axion_gay[0])),
-                          np.log10(gamma_from_rest(axion_mac2[-1],
-                                                   axion_gay[-1])),
-                          num=len(axion_gay))
-
-values_gamma_array = np.zeros((len(axion_mac2), len(axion_gamma)))
-values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
 
 config_data = read_config_file('scripts/input_data_iminuit_test.yml')
 ebl_class = input_yaml_data_into_class(config_data)
@@ -106,7 +91,7 @@ for key in config_data['ssp_models']:
 # our line model, unicode parameter names are supported
 plt.subplots(12)
 plt.subplot(121)
-# plt.title(config_data['ssp_models'][key]['name'])
+plt.title(config_data['ssp_models'][key]['name'])
 ebl_class.logging_prints = False
 
 
@@ -117,28 +102,15 @@ def spline_attempt(x, params):
         x_data=x)
 
 
-# data_x = [0.153, 0.225, 0.356, 0.470, 0.618, 0.749, 0.895, 1.021, 1.252,
-#           1.643, 2.150, 3.544, 4.487, 7.841]#, 23.675,
-#           #70.890, 101.000, 161.000, 161.000, 249.000, 357.000, 504.000]
-# data_x_freq = np.log10(c.value / np.array(data_x)[::-1] * 1e6)
-#
-# data_y = [1.45, 3.15, 4.03, 5.36, 7.47, 9.55, 10.15, 10.44, 10.38,
-#           10.12, 8.72, 5.17, 3.60, 2.45]#, 3.01,
-#           #6.90, 10.22, 16.47, 13.14, 10.00, 5.83, 2.46]
-#
-# data_yerr = [0.27, 0.67, 0.78, 0.93, 1.12, 1.41, 1.51, 1.60, 1.52,
-#              1.51, 1.22, 0.76, 0.52, 1.11]#, 0.32,
-#              # 1.36, 2.01, 6.13, 2.82, 2.10, 1.87, 2.81]
+table_measurs = dictionary_datatype(
+    'ebl_measurements/optical_data_2023', 'IGL', plot_measurs=True)
 
-data_x = [0.356, 0.470, 0.618, 0.749, 0.895, 1.021, 1.252,
-          1.643, 2.150, 3.544, 4.487]
-data_x_freq = np.log10(c.value / np.array(data_x) * 1e6)
+data_x = table_measurs['lambda']
+data_x_freq = data_x.to(u.Hz, equivalencies=u.spectral())
 
-data_y = [4.03, 5.36, 7.47, 9.55, 10.15, 10.44, 10.38,
-          10.12, 8.72, 5.17, 3.60]
+data_y = table_measurs['nuInu']
 
-data_yerr = [0.78, 0.93, 1.12, 1.41, 1.51, 1.60, 1.52,
-             1.51, 1.22, 0.76, 0.52]
+data_yerr = table_measurs['nuInu_errp']
 
 least_squares = LeastSquares(data_x, data_y, data_yerr, spline_attempt)
 
@@ -149,7 +121,7 @@ m = Minuit(least_squares, ([0.0092, 2.79, 3.10, 6.97]))  # starting
 
 # values
 # m.limits = [[0.005, 0.020], [2., 2.9], [2.8, 3.5], [5., 5.7]]
-# m.limits = [[0.001, 0.020], [2., 3.5], [2.8, 3.7], [5., 9.]]
+m.limits = [[0.005, 0.019], [2., 3.5], [1., 3.], [6., 7.]]
 print(m.params)
 
 m.migrad()  # finds minimum of least_squares function
@@ -159,9 +131,9 @@ m.hesse()  # accurately computes uncertainties
 xx_plot = np.logspace(-1, 1, num=100)
 xx_plot_freq = np.log10(c.value / np.array(xx_plot) * 1e6)
 
-plt.errorbar(data_x, data_y, data_yerr,
-             color='k', fmt="o",
-             label="lower limits")
+# plt.errorbar(data_x, data_y, data_yerr,
+#              color='k', fmt="o",
+#              label="lower limits")
 plt.plot(xx_plot, 10 ** ebl_class.ebl_ssp_spline(xx_plot_freq, 0., grid=False),
          'b',
          label="MF17")
@@ -191,6 +163,7 @@ fit_info = [
 for p, v, e in zip(m.parameters, m.values, m.errors):
     fit_info.append(f"{p} = ${v:.3f} \\pm {e:.3f}$")
 
+print(m.params)
 print(m.values)
 plt.legend(title="\n".join(fit_info))
 plt.yscale('log')
