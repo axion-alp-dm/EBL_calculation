@@ -25,113 +25,12 @@ plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
 
-def read_singular_file(parent_dir, no_label=True):
-    list_files = os.listdir(parent_dir)
-    list_files.sort()
-
-    markers = ['*', '<', '>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
-
-    for ni, name in enumerate(list_files):
-
-        data = Table.read(parent_dir + '/' + name,
-                          format='ascii.ecsv')
-
-        x_data = data.colnames[0]
-        data[x_data] = data[x_data].to(u.um, equivalencies=u.spectral())
-
-        if data['nuInu'].unit.is_equivalent(u.Jy / u.sr):
-            data['nuInu'] = (data['nuInu'].to(u.W / u.m ** 2 / u.Hz / u.sr)
-                             * data[x_data].to(
-                        u.Hz, equivalencies=u.spectral()))
-            data['nuInu_errn'] = (
-                    data['nuInu_errn'].to(u.W / u.m ** 2 / u.Hz / u.sr)
-                    * data[x_data].to(
-                u.Hz, equivalencies=u.spectral()))
-            data['nuInu_errp'] = (
-                    data['nuInu_errp'].to(u.W / u.m ** 2 / u.Hz / u.sr)
-                    * data[x_data].to(
-                u.Hz, equivalencies=u.spectral()))
-
-        if no_label:
-            label = ''
-        else:
-            label = data.meta['label']
-
-        plt.errorbar(x=data[x_data],
-                     y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
-                     yerr=[data['nuInu_errn'].to(u.nW / u.m ** 2 / u.sr),
-                           data['nuInu_errp'].to(u.nW / u.m ** 2 / u.sr)],
-                     label=label, linestyle='',
-                     marker=markers[ni % len(markers)]
-                     )
-
-
-def read_specific_obs_type(parent_dir, obs_type, no_label=False):
-    list_dirs = os.listdir(parent_dir)
-    list_dirs.sort()
-
-    for directory in list_dirs:
-
-        list_files = os.listdir(parent_dir + '/' + directory)
-        list_files.sort()
-
-        markers = ['*', '<', '>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
-
-        for ni, name in enumerate(list_files):
-
-            data = Table.read(parent_dir + '/' + directory + '/' + name,
-                              format='ascii.ecsv')
-
-            if data.meta['observable_type'] == obs_type:
-                x_data = data.colnames[0]
-                data[x_data] = data[x_data].to(u.um,
-                                               equivalencies=u.spectral())
-
-                if data['nuInu'].unit.is_equivalent(u.Jy / u.sr):
-                    data['nuInu'] = (
-                            data['nuInu'].to(
-                                u.W / u.m ** 2 / u.Hz / u.sr)
-                            * data[x_data].to(
-                        u.Hz, equivalencies=u.spectral()))
-                    data['nuInu_errn'] = (data['nuInu_errn'].to(
-                        u.W / u.m ** 2 / u.Hz / u.sr)
-                                          * data[x_data].to(
-                                u.Hz, equivalencies=u.spectral()))
-                    data['nuInu_errp'] = (data['nuInu_errp'].to(
-                        u.W / u.m ** 2 / u.Hz / u.sr)
-                                          * data[x_data].to(
-                                u.Hz, equivalencies=u.spectral()))
-
-                if no_label:
-                    label = ''
-                else:
-                    label = data.meta['label']
-
-                if obs_type == 'IGL':
-                    plt.errorbar(x=data[x_data],
-                                 y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
-                                 yerr=[data['nuInu_errn'].to(
-                                     u.nW / u.m ** 2 / u.sr),
-                                     data['nuInu_errp'].to(
-                                         u.nW / u.m ** 2 / u.sr)],
-                                 label=label, linestyle='',
-                                 marker=markers[ni % len(markers)]
-                                 )
-                else:
-                    plt.errorbar(x=data[x_data],
-                                 y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
-                                 yerr=[data['nuInu_errn'].to(
-                                     u.nW / u.m ** 2 / u.sr),
-                                     data['nuInu_errp'].to(
-                                         u.nW / u.m ** 2 / u.sr)],
-                                 label=label, linestyle='',
-                                 marker=markers[ni % len(markers)], mfc='white'
-                                 )
-
-
 def dictionary_datatype(parent_dir, obs_type,
                         lambda_min=0., lambda_max=5,
-                        plot_measurs=False):
+                        plot_measurs=False,
+                        obs_not_taken=None):
+    if obs_not_taken is None:
+        obs_not_taken = []
     list_dirs = os.listdir(parent_dir)
     list_dirs.sort()
 
@@ -152,7 +51,8 @@ def dictionary_datatype(parent_dir, obs_type,
             data = Table.read(parent_dir + '/' + directory + '/' + name,
                               format='ascii.ecsv')
 
-            if data.meta['observable_type'] == obs_type:
+            if (data.meta['observable_type'] == obs_type
+                    and name not in str(obs_not_taken)):
 
                 x_data = data.colnames[0]
 
@@ -179,34 +79,42 @@ def dictionary_datatype(parent_dir, obs_type,
                     u.nW / u.m ** 2 / u.sr)
                 data['nuInu_errp'] = data['nuInu_errp'].to(
                     u.nW / u.m ** 2 / u.sr)
-                lambdas = np.append(lambdas, data[x_data])
 
+                lambda_accepted = (
+                    (data[x_data] >= lambda_min)
+                    * (data[x_data] <= lambda_max))
+
+                lambdas = np.append(lambdas, data[x_data][lambda_accepted])
                 nuInu = np.append(nuInu,
-                                  data['nuInu'])
+                                  data['nuInu'][lambda_accepted])
                 nuInu_errn = np.append(nuInu_errn,
-                                       data['nuInu_errn'])
+                                       data['nuInu_errn'][lambda_accepted])
                 nuInu_errp = np.append(nuInu_errp,
-                                       data['nuInu_errp'])
+                                       data['nuInu_errp'][lambda_accepted])
 
                 if plot_measurs is True:
                     if obs_type == 'IGL':
-                        plt.errorbar(x=data[x_data],
-                                     y=data['nuInu'].to(
+                        plt.errorbar(x=data[x_data][lambda_accepted],
+                                     y=data['nuInu'][lambda_accepted].to(
                                          u.nW / u.m ** 2 / u.sr),
-                                     yerr=[data['nuInu_errn'].to(
+                                     yerr=[data['nuInu_errn']
+                                     [lambda_accepted].to(
                                          u.nW / u.m ** 2 / u.sr),
-                                         data['nuInu_errp'].to(
+                                         data['nuInu_errp']
+                                         [lambda_accepted].to(
                                              u.nW / u.m ** 2 / u.sr)],
                                      linestyle='',
                                      marker=markers[ni % len(markers)]
                                      )
                     else:
-                        plt.errorbar(x=data[x_data],
-                                     y=data['nuInu'].to(
+                        plt.errorbar(x=data[x_data][lambda_accepted],
+                                     y=data['nuInu'][lambda_accepted].to(
                                          u.nW / u.m ** 2 / u.sr),
-                                     yerr=[data['nuInu_errn'].to(
+                                     yerr=[data['nuInu_errn']
+                                     [lambda_accepted].to(
                                          u.nW / u.m ** 2 / u.sr),
-                                         data['nuInu_errp'].to(
+                                         data['nuInu_errp']
+                                     [lambda_accepted].to(
                                              u.nW / u.m ** 2 / u.sr)],
                                      linestyle='',
                                      marker=markers[ni % len(markers)],
@@ -217,19 +125,121 @@ def dictionary_datatype(parent_dir, obs_type,
               names=('lambda', 'nuInu', 'nuInu_errn', 'nuInu_errp'),
               units=(u.um, u.nW / u.m ** 2 / u.sr,
                      u.nW / u.m ** 2 / u.sr, u.nW / u.m ** 2 / u.sr))
-
-    t = t[(t['lambda'] >= lambda_min) * (t['lambda'] <= lambda_max)]
-
     return t
-
-
-# dictionary_datatype('optical_data_2023', 'IGL', plot_measurs=True)
+#
+# def read_singular_file(parent_dir, no_label=True):
+#     list_files = os.listdir(parent_dir)
+#     list_files.sort()
+#
+#     markers = ['*', '<', '>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
+#
+#     for ni, name in enumerate(list_files):
+#
+#         data = Table.read(parent_dir + '/' + name,
+#                           format='ascii.ecsv')
+#
+#         x_data = data.colnames[0]
+#         data[x_data] = data[x_data].to(u.um, equivalencies=u.spectral())
+#
+#         if data['nuInu'].unit.is_equivalent(u.Jy / u.sr):
+#             data['nuInu'] = (data['nuInu'].to(u.W / u.m ** 2 / u.Hz / u.sr)
+#                              * data[x_data].to(
+#                         u.Hz, equivalencies=u.spectral()))
+#             data['nuInu_errn'] = (
+#                     data['nuInu_errn'].to(u.W / u.m ** 2 / u.Hz / u.sr)
+#                     * data[x_data].to(
+#                 u.Hz, equivalencies=u.spectral()))
+#             data['nuInu_errp'] = (
+#                     data['nuInu_errp'].to(u.W / u.m ** 2 / u.Hz / u.sr)
+#                     * data[x_data].to(
+#                 u.Hz, equivalencies=u.spectral()))
+#
+#         if no_label:
+#             label = ''
+#         else:
+#             label = data.meta['label']
+#
+#         plt.errorbar(x=data[x_data],
+#                      y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
+#                      yerr=[data['nuInu_errn'].to(u.nW / u.m ** 2 / u.sr),
+#                            data['nuInu_errp'].to(u.nW / u.m ** 2 / u.sr)],
+#                      label=label, linestyle='',
+#                      marker=markers[ni % len(markers)]
+#                      )
 #
 #
+# def read_specific_obs_type(parent_dir, obs_type, no_label=False):
+#     list_dirs = os.listdir(parent_dir)
+#     list_dirs.sort()
+#
+#     for directory in list_dirs:
+#
+#         list_files = os.listdir(parent_dir + '/' + directory)
+#         list_files.sort()
+#
+#         markers = ['*', '<', '>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
+#
+#         for ni, name in enumerate(list_files):
+#
+#             data = Table.read(parent_dir + '/' + directory + '/' + name,
+#                               format='ascii.ecsv')
+#
+#             if data.meta['observable_type'] == obs_type:
+#                 x_data = data.colnames[0]
+#                 data[x_data] = data[x_data].to(u.um,
+#                                                equivalencies=u.spectral())
+#
+#                 if data['nuInu'].unit.is_equivalent(u.Jy / u.sr):
+#                     data['nuInu'] = (
+#                             data['nuInu'].to(
+#                                 u.W / u.m ** 2 / u.Hz / u.sr)
+#                             * data[x_data].to(
+#                         u.Hz, equivalencies=u.spectral()))
+#                     data['nuInu_errn'] = (data['nuInu_errn'].to(
+#                         u.W / u.m ** 2 / u.Hz / u.sr)
+#                                           * data[x_data].to(
+#                                 u.Hz, equivalencies=u.spectral()))
+#                     data['nuInu_errp'] = (data['nuInu_errp'].to(
+#                         u.W / u.m ** 2 / u.Hz / u.sr)
+#                                           * data[x_data].to(
+#                                 u.Hz, equivalencies=u.spectral()))
+#
+#                 if no_label:
+#                     label = ''
+#                 else:
+#                     label = data.meta['label']
+#
+#                 if obs_type == 'IGL':
+#                     plt.errorbar(x=data[x_data],
+#                                  y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
+#                                  yerr=[data['nuInu_errn'].to(
+#                                      u.nW / u.m ** 2 / u.sr),
+#                                      data['nuInu_errp'].to(
+#                                          u.nW / u.m ** 2 / u.sr)],
+#                                  label=label, linestyle='',
+#                                  marker=markers[ni % len(markers)]
+#                                  )
+#                 else:
+#                     plt.errorbar(x=data[x_data],
+#                                  y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
+#                                  yerr=[data['nuInu_errn'].to(
+#                                      u.nW / u.m ** 2 / u.sr),
+#                                      data['nuInu_errp'].to(
+#                                          u.nW / u.m ** 2 / u.sr)],
+#                                  label=label, linestyle='',
+#                                  marker=markers[ni % len(markers)], mfc='white'
+#                                  )
+
+
+
+
+
 # fig = plt.figure(figsize=(15, 8))
 # plt.title('CIB')
 # axes = fig.gca()
-# read_singular_file('optical_data_2023/CIB', no_label=False)
+# dictionary_datatype('optical_data_2023', 'UL', plot_measurs=True,
+#                     obs_not_take=['lauer2022.ecsv'])
+# # read_singular_file('optical_data_2023/CIB', no_label=False)
 # # read_singular_file('optical_data_2023/COB', no_label=False)
 # # read_singular_file('optical_data_2023/ZL', no_label=False)
 #
@@ -380,4 +390,4 @@ def dictionary_datatype(parent_dir, obs_type,
 #
 # plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 
-plt.show()
+# plt.show()

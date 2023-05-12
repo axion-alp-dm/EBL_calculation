@@ -47,7 +47,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('chi2_withemissivities' +
+direct_name = str('chi2_with_emissivities' +
                   time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime()))
 if not os.path.exists("outputs/"):
     # if the directory for outputs is not present, create it.
@@ -105,13 +105,18 @@ def gamma_from_rest(mass, gay):
 config_data = read_config_file('scripts/input_data_iminuit_test.yml')
 ebl_class = input_yaml_data_into_class(config_data)
 
-axion_mac2 = np.logspace(-1, 3, num=70)
+axion_mac2 = np.logspace(-1, 4, num=100)
 axion_gay = np.logspace(-12, -8, num=70)
 
-upper_lims_ebldata = dictionary_datatype(
-    'ebl_measurements/optical_data_2023', 'UL')
 igl_ebldata = dictionary_datatype(
-    'ebl_measurements/optical_data_2023', 'IGL')
+    'ebl_measurements/optical_data_2023', 'IGL', lambda_max=5.)
+
+upper_lims_ebldata = dictionary_datatype(
+    'ebl_measurements/optical_data_2023', 'UL', lambda_max=5.)
+
+upper_lims_ebldata_woNH = dictionary_datatype(
+    'ebl_measurements/optical_data_2023', 'UL', lambda_max=5.,
+    obs_not_taken=['lauer2022.ecsv'])
 
 emiss_data = emissivity_data(directory='emissivity_data/')
 freq_emiss = 3e8 / (emiss_data['lambda'] * 1e-6)
@@ -136,7 +141,39 @@ for m, e in ebl.items():
     nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
 
 spline_finke = UnivariateSpline(waves_ebl, nuInu['finke2022'], s=0, k=1)
+
+fig_ebl = plt.figure(figsize=(11, 11))
+axes_ebl = fig_ebl.gca()
+
+plt.plot(waves_ebl, nuInu['finke2022'], ls='--', color='k', lw=2.,
+         label='Finke22')
+ebl_class.change_axion_contribution(
+            1e3, gamma_from_rest(1e3, 3e-11))
+print(gamma_from_rest(1e3, 3e-11))
+plt.plot(waves_ebl,
+         10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False),
+         linestyle=models[2], color='k')
+plt.plot(waves_ebl,
+         10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False)
+         + spline_finke(waves_ebl),
+         linestyle=models[0], color='k')
+
+plt.yscale('log')
+plt.xscale('log')
+
+plt.ylim(0.1, 120)
+# plt.xlim(0.1, 20.)
+
+plt.xlabel(r'Wavelength ($\mu$m)')
+plt.ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ sr)')
+
+dictionary_datatype('ebl_measurements/optical_data_2023', 'UL',
+                    plot_measurs=True, lambda_max=20.)
+dictionary_datatype('ebl_measurements/optical_data_2023', 'IGL',
+                    plot_measurs=True, lambda_max=20.)
+
 values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
+values_gay_array_NH = np.zeros((len(axion_mac2), len(axion_gay)))
 
 for na, aa in enumerate(axion_mac2):
     for nb, bb in enumerate(axion_gay):
@@ -151,7 +188,23 @@ for na, aa in enumerate(axion_mac2):
                      + spline_finke(upper_lims_ebldata['lambda'])),
             x_obs=upper_lims_ebldata['nuInu'],
             err_obs=upper_lims_ebldata['nuInu_errp'])
-# FIGURE: AXION PARAMETER SPACE FOR THE DIFFERENT AXION PARAMETERS
+
+        # values_gay_array_NH[na, nb] += 2. * chi2_upperlims(
+        #     x_model=10 ** ebl_class.ebl_total_spline(
+        #         np.log10(3e8 / (upper_lims_ebldata_woNH['lambda']
+        #                         * 1e-6)),
+        #         0.,
+        #         grid=False),
+        #     x_obs=upper_lims_ebldata_woNH['nuInu'],
+        #     err_obs=(upper_lims_ebldata_woNH['nuInu_errn'] +
+        #              upper_lims_ebldata_woNH['nuInu_errp']) / 2.)
+
+        values_gay_array_NH[na, nb] += (
+                ((16.7 - 10 ** ebl_class.ebl_total_spline(
+                            np.log10(3e8 / (0.608 * 1e-6)),
+                            0.,
+                            grid=False)) / 1.47) ** 2.)
+
 fig_params = plt.figure(figsize=(12, 10))
 axes_params = fig_params.gca()
 plt.title('Finke 2022 model A')
@@ -161,7 +214,7 @@ plt.yscale('log')
 
 bbb = plt.pcolor(axion_mac2, axion_gay,
                  (values_gay_array.T - np.min(values_gay_array)),
-                 vmin=0., vmax=25., rasterized=True
+                 vmin=0., vmax=100., rasterized=True
                  )
 aaa = plt.contour(axion_mac2, axion_gay,
                   (values_gay_array.T - np.min(values_gay_array)),
@@ -169,11 +222,9 @@ aaa = plt.contour(axion_mac2, axion_gay,
                   origin='lower',
                   colors=('r', 'cyan'))
 plt.clabel(aaa, inline=True, fontsize=16, levels=[2.30, 5.99],
-           # manual=[(2, 2e-10), (5, 2e-11)],
            fmt={2.30: r'69%', 5.99: r'95%'})
 cbar = plt.colorbar(bbb)
 cbar.set_label(r'$\Delta\chi^2_{total}$')
-# plt.ticklabel_format(style='plain', axis='x') #scilimits=(-50, 50)
 
 plt.xlabel(r'm$_a\,$c$^2$ [eV]')
 plt.ylabel(r'$g_{a\gamma}$ [GeV$^{-1}$]')
@@ -182,6 +233,35 @@ plt.savefig('outputs/' + direct_name + '/'
             + 'z_Finke22' + '_param_space' + '.png')
 plt.savefig('outputs/' + direct_name + '/'
             + 'z_Finke22' + '_param_space' + '.pdf')
+
+# FIGURE: AXION PARAMETER SPACE FOR THE DIFFERENT AXION PARAMETERS WO NH
+plt.figure(figsize=(12, 10))
+plt.title('Finke 2022 model A')
+
+plt.xscale('log')
+plt.yscale('log')
+
+bbb = plt.pcolor(axion_mac2, axion_gay,
+                 (values_gay_array_NH.T - np.min(values_gay_array_NH)),
+                 vmin=0., vmax=100., rasterized=True
+                 )
+aaa = plt.contour(axion_mac2, axion_gay,
+                  (values_gay_array_NH.T - np.min(values_gay_array_NH)),
+                  levels=[2.30, 5.99],
+                  origin='lower',
+                  colors=('r', 'cyan'))
+plt.clabel(aaa, inline=True, fontsize=16, levels=[2.30, 5.99],
+           fmt={2.30: r'69%', 5.99: r'95%'})
+cbar = plt.colorbar(bbb)
+cbar.set_label(r'$\Delta\chi^2_{total}$')
+
+plt.xlabel(r'm$_a\,$c$^2$ [eV]')
+plt.ylabel(r'$g_{a\gamma}$ [GeV$^{-1}$]')
+
+plt.savefig('outputs/' + direct_name + '/'
+            + 'z_Finke22' + '_param_space_NH' + '.png')
+plt.savefig('outputs/' + direct_name + '/'
+            + 'z_Finke22' + '_param_space_NH' + '.pdf')
 
 # MINIMIZATION OF CHI2 OF SSPs
 for nkey, key in enumerate(config_data['ssp_models']):
@@ -261,24 +341,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                                     m.params[3].value]
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 
-    values_gay_array = (np.ones((len(axion_mac2), len(axion_gay)))
-                        * (chi2_measurs(
-                x_model=10 ** ebl_class.ebl_ssp_spline(
-                    np.log10(3e8 / (igl_ebldata['lambda'] * 1e-6)),
-                    0.,
-                    grid=False),
-                x_obs=igl_ebldata['nuInu'],
-                err_obs=(igl_ebldata['nuInu_errn']
-                         + igl_ebldata['nuInu_errp']) / 2.)
-                               + chi2_measurs(
-                            x_model=freq_emiss * 1e-7
-                                    * 10 ** ebl_class.emiss_ssp_spline(
-                                np.log10(freq_emiss),
-                                emiss_data['z']),
-                            x_obs=emiss_data['eje'],
-                            err_obs=(emiss_data['eje_n']
-                                     + emiss_data['eje_p']) / 2.)
-                        ))
+    values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
+    values_gay_array_NH = np.zeros((len(axion_mac2), len(axion_gay)))
 
     for na, aa in enumerate(axion_mac2):
         for nb, bb in enumerate(axion_gay):
@@ -291,7 +355,25 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     0.,
                     grid=False),
                 x_obs=upper_lims_ebldata['nuInu'],
-                err_obs=upper_lims_ebldata['nuInu_errp'])
+                err_obs=(upper_lims_ebldata['nuInu_errn'] +
+                         upper_lims_ebldata['nuInu_errp']) / 2.)
+
+            # values_gay_array_NH[na, nb] += 2. * chi2_upperlims(
+            #     x_model=10 ** ebl_class.ebl_total_spline(
+            #         np.log10(3e8 / (upper_lims_ebldata_woNH['lambda']
+            #                         * 1e-6)),
+            #         0.,
+            #         grid=False),
+            #     x_obs=upper_lims_ebldata_woNH['nuInu'],
+            #     err_obs=(upper_lims_ebldata_woNH['nuInu_errn'] +
+            #              upper_lims_ebldata_woNH['nuInu_errp']) / 2.)
+
+            values_gay_array_NH[na, nb] += (
+                ((16.7 - 10 ** ebl_class.ebl_total_spline(
+                            np.log10(3e8 / (0.608 * 1e-6)),
+                            0.,
+                            grid=False))
+                 / 1.47) ** 2.)
 
     print('Axion param space: %.2fs' % (time.process_time() - init_time))
 
@@ -336,9 +418,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
     plt.ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ sr)')
 
     dictionary_datatype('ebl_measurements/optical_data_2023', 'UL',
-                        plot_measurs=True)
+                        plot_measurs=True, lambda_max=20.)
     dictionary_datatype('ebl_measurements/optical_data_2023', 'IGL',
-                        plot_measurs=True)
+                        plot_measurs=True, lambda_max=20.)
 
     plt.savefig('outputs/' + direct_name + '/' + key + '_ebl' + '.png')
     plt.savefig('outputs/' + direct_name + '/' + key + '_ebl' + '.pdf')
@@ -402,7 +484,6 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     # FIGURE: AXION PARAMETER SPACE FOR THE DIFFERENT AXION PARAMETERS
     fig_params = plt.figure(figsize=(12, 10))
-    axes_params = fig_params.gca()
     plt.title(config_data['ssp_models'][key]['name'])
 
     plt.xscale('log')
@@ -410,7 +491,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     bbb = plt.pcolor(axion_mac2, axion_gay,
                      (values_gay_array.T - np.min(values_gay_array)),
-                     vmin=0., vmax=25., rasterized=True
+                     vmin=0., vmax=100., rasterized=True
                      )
     aaa = plt.contour(axion_mac2, axion_gay,
                       (values_gay_array.T - np.min(values_gay_array)),
@@ -418,11 +499,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
                       origin='lower',
                       colors=('r', 'cyan'))
     plt.clabel(aaa, inline=True, fontsize=16, levels=[2.30, 5.99],
-               # manual=[(2, 2e-10), (5, 2e-11)],
                fmt={2.30: r'69%', 5.99: r'95%'})
     cbar = plt.colorbar(bbb)
     cbar.set_label(r'$\Delta\chi^2_{total}$')
-    # plt.ticklabel_format(style='plain', axis='x') #scilimits=(-50, 50)
 
     plt.xlabel(r'm$_a\,$c$^2$ [eV]')
     plt.ylabel(r'$g_{a\gamma}$ [GeV$^{-1}$]')
@@ -431,6 +510,35 @@ for nkey, key in enumerate(config_data['ssp_models']):
                 + key + '_param_space' + '.png')
     plt.savefig('outputs/' + direct_name + '/'
                 + key + '_param_space' + '.pdf')
+
+    # FIGURE: AXION PARAMETER SPACE FOR THE DIFFERENT AXION PARAMETERS WO NH
+    plt.figure(figsize=(12, 10))
+    plt.title(config_data['ssp_models'][key]['name'])
+
+    plt.xscale('log')
+    plt.yscale('log')
+
+    bbb = plt.pcolor(axion_mac2, axion_gay,
+                     (values_gay_array_NH.T - np.min(values_gay_array_NH)),
+                     vmin=0., vmax=100., rasterized=True
+                     )
+    aaa = plt.contour(axion_mac2, axion_gay,
+                      (values_gay_array_NH.T - np.min(values_gay_array_NH)),
+                      levels=[2.30, 5.99],
+                      origin='lower',
+                      colors=('r', 'cyan'))
+    plt.clabel(aaa, inline=True, fontsize=16, levels=[2.30, 5.99],
+               fmt={2.30: r'69%', 5.99: r'95%'})
+    cbar = plt.colorbar(bbb)
+    cbar.set_label(r'$\Delta\chi^2_{total}$')
+
+    plt.xlabel(r'm$_a\,$c$^2$ [eV]')
+    plt.ylabel(r'$g_{a\gamma}$ [GeV$^{-1}$]')
+
+    plt.savefig('outputs/' + direct_name + '/'
+                + key + '_param_space_NH' + '.png')
+    plt.savefig('outputs/' + direct_name + '/'
+                + key + '_param_space_NH' + '.pdf')
 
     # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS
     plt.subplots(4, 3, figsize=(15, 15))
@@ -546,6 +654,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     plt.savefig('outputs/' + direct_name + '/'
                 + key + '_luminosities' + '.pdf')
 
-    plt.close('all')
+    # plt.close('all')
+    plt.show()
 
 plt.show()
