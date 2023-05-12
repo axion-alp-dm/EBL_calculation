@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 from astropy.table import Table
 
+from ebltable.ebl_from_model import EBL
+
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 plt.rcParams['axes.labelsize'] = 20
@@ -13,7 +15,7 @@ plt.rc('axes', titlesize=20)
 plt.rc('axes', labelsize=20)
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
-plt.rc('legend', fontsize=14)
+plt.rc('legend', fontsize=10)
 plt.rc('figure', titlesize=17)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
@@ -105,21 +107,31 @@ def read_specific_obs_type(parent_dir, obs_type, no_label=False):
                 else:
                     label = data.meta['label']
 
-                plt.errorbar(x=data[x_data],
-                             y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
-                             yerr=[data['nuInu_errn'].to(
-                                 u.nW / u.m ** 2 / u.sr),
-                                 data['nuInu_errp'].to(
-                                     u.nW / u.m ** 2 / u.sr)],
-                             label=label, linestyle='',
-                             marker=markers[ni % len(markers)]
-                             )
+                if obs_type == 'IGL':
+                    plt.errorbar(x=data[x_data],
+                                 y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
+                                 yerr=[data['nuInu_errn'].to(
+                                     u.nW / u.m ** 2 / u.sr),
+                                     data['nuInu_errp'].to(
+                                         u.nW / u.m ** 2 / u.sr)],
+                                 label=label, linestyle='',
+                                 marker=markers[ni % len(markers)]
+                                 )
+                else:
+                    plt.errorbar(x=data[x_data],
+                                 y=data['nuInu'].to(u.nW / u.m ** 2 / u.sr),
+                                 yerr=[data['nuInu_errn'].to(
+                                     u.nW / u.m ** 2 / u.sr),
+                                     data['nuInu_errp'].to(
+                                         u.nW / u.m ** 2 / u.sr)],
+                                 label=label, linestyle='',
+                                 marker=markers[ni % len(markers)], mfc='white'
+                                 )
 
 
 def dictionary_datatype(parent_dir, obs_type,
                         lambda_min=0., lambda_max=5,
                         plot_measurs=False):
-    print(os.getcwd())
     list_dirs = os.listdir(parent_dir)
     list_dirs.sort()
 
@@ -127,7 +139,6 @@ def dictionary_datatype(parent_dir, obs_type,
     nuInu = np.array([])
     nuInu_errn = np.array([])
     nuInu_errp = np.array([])
-
 
     markers = ['*', '<', '>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
 
@@ -178,13 +189,29 @@ def dictionary_datatype(parent_dir, obs_type,
                                        data['nuInu_errp'])
 
                 if plot_measurs is True:
-                    plt.errorbar(x=data[x_data], y=data['nuInu'],
-                                 yerr=[data['nuInu_errn'],
-                                       data['nuInu_errp']],
-                                 # label=data.meta['label'],
-                                 linestyle='',
-                                 marker=markers[ni % len(markers)]
-                                 )
+                    if obs_type == 'IGL':
+                        plt.errorbar(x=data[x_data],
+                                     y=data['nuInu'].to(
+                                         u.nW / u.m ** 2 / u.sr),
+                                     yerr=[data['nuInu_errn'].to(
+                                         u.nW / u.m ** 2 / u.sr),
+                                         data['nuInu_errp'].to(
+                                             u.nW / u.m ** 2 / u.sr)],
+                                     linestyle='',
+                                     marker=markers[ni % len(markers)]
+                                     )
+                    else:
+                        plt.errorbar(x=data[x_data],
+                                     y=data['nuInu'].to(
+                                         u.nW / u.m ** 2 / u.sr),
+                                     yerr=[data['nuInu_errn'].to(
+                                         u.nW / u.m ** 2 / u.sr),
+                                         data['nuInu_errp'].to(
+                                             u.nW / u.m ** 2 / u.sr)],
+                                     linestyle='',
+                                     marker=markers[ni % len(markers)],
+                                     mfc='white'
+                                     )
 
     t = Table(np.column_stack((lambdas, nuInu, nuInu_errn, nuInu_errp)),
               names=('lambda', 'nuInu', 'nuInu_errn', 'nuInu_errp'),
@@ -193,18 +220,12 @@ def dictionary_datatype(parent_dir, obs_type,
 
     t = t[(t['lambda'] >= lambda_min) * (t['lambda'] <= lambda_max)]
 
-    if plot_measurs is True:
-        plt.scatter(x=t['lambda'], y=t['nuInu'],
-                      s=80, facecolors='none', edgecolors='r',
-                      label='chosen'
-                      )
-
     return t
 
 
 # dictionary_datatype('optical_data_2023', 'IGL', plot_measurs=True)
-
-
+#
+#
 # fig = plt.figure(figsize=(15, 8))
 # plt.title('CIB')
 # axes = fig.gca()
@@ -247,17 +268,42 @@ def dictionary_datatype(parent_dir, obs_type,
 # axes.add_artist(legend1)
 #
 # plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
-#
+
 # fig = plt.figure(figsize=(15, 8))
-# plt.title('IGL')
+# # plt.title('IGL')
 # axes = fig.gca()
 # read_specific_obs_type('optical_data_2023', 'IGL')
+# read_specific_obs_type('optical_data_2023', 'UL')
 #
 # model_finke = np.loadtxt('../ebl_codes/EBL_intensity_total_z0.00.dat')
 # plt.plot(model_finke[:, 0] / 1e4, model_finke[:, 1], '-k')
 #
+# z = np.array([0.])
+# lmu = np.logspace(-1, 3., 100)
+#
+# ebl = {}
+# for m in EBL.get_models():
+#     ebl[m] = EBL.readmodel(m)
+#
+# nuInu = {}
+# for m, e in ebl.items():
+#     nuInu[m] = e.ebl_array(z, lmu)
+#
+# m = 'saldana-lopez'
+# plt.loglog(lmu, nuInu[m],
+#                ls='--', color='k',
+#                lw=2.)
+#
 # legend1 = plt.legend(bbox_to_anchor=(1.04, 1),
 #                      loc="upper left", title=r'Measurements')
+#
+# legend2 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
+#                                   color='k'),
+#                       plt.Line2D([], [], linewidth=2, linestyle='--',
+#                                   color='k')],
+#                      ['Finke+ \'22', 'Saldana-Lopez+ \'21'],
+#                      loc=1, fontsize=16)
+# axes.add_artist(legend1)
 #
 # plt.yscale('log')
 # plt.xscale('log')
@@ -266,10 +312,10 @@ def dictionary_datatype(parent_dir, obs_type,
 # plt.xlabel(r'Wavelength ($\mu$m)')
 # plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
 #
-# axes.add_artist(legend1)
-#
 # plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 #
+# plt.savefig('overview.pdf')
+
 # fig = plt.figure(figsize=(15, 8))
 # plt.title('UL')
 # axes = fig.gca()
@@ -334,4 +380,4 @@ def dictionary_datatype(parent_dir, obs_type,
 #
 # plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 
-# plt.show()
+plt.show()

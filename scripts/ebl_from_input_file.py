@@ -93,7 +93,7 @@ plt.plot(waves_ebl,
 #                                       config_data['ihl_params']['A_ihl']),
 #                                     float(
 #                                     config_data['ihl_params']['alpha']))
-# plt.plot(waves_ebl, 10 ** ebl_class.ebl_intra_spline(
+# plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(
 # freq_array_ebl, 0., grid=False),
 # linestyle=models[2], color='k')
 

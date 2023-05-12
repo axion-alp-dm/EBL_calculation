@@ -100,15 +100,19 @@ models = ['solid', 'dashed', 'dotted']
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
-    ebl_class.emissivity_ssp_calculation(
-        config_data['ssp_models'][key])
+    ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
+    ebl_class.emiss_axion_calculation(config_data['axion_params'][
+                                          'axion_mass'],
+                                      config_data['axion_params'][
+                                          'axion_gamma'])
+    ebl_class.emiss_sum_contributions()
 
-    if config_data['ssp_models'][key]['dust_abs_models'] == ['finke2022_2']:
-        linestyle = '-'
-    elif config_data['ssp_models'][key]['dust_abs_models'] == ['finke2022']:
-        linestyle = '--'
-    else:
-        linestyle = 'dotted'
+    # if config_data['ssp_models'][key]['dust_abs_models'] == ['finke2022_2']:
+    #     linestyle = '-'
+    # elif config_data['ssp_models'][key]['dust_abs_models'] == ['finke2022']:
+    #     linestyle = '--'
+    # else:
+    #     linestyle = 'dotted'
 
     if config_data['ssp_models'][key]['file_name'] \
             == '0.0001':
@@ -124,15 +128,27 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     plt.plot(waves_ebl,
              10 ** freq_array_ebl
-             * 10 ** ebl_class.emi_spline(freq_array_ebl, z_array)
+             * 10 ** ebl_class.emiss_ssp_spline(
+                 freq_array_ebl, z_array)
              * 1e-7,
-             linestyle=linestyle, color=color)
-
+             linestyle='--', color=color)
+    plt.plot(waves_ebl,
+             10 ** freq_array_ebl
+             * 10 ** ebl_class.emiss_axion_spline(
+                 freq_array_ebl, z_array, grid=False)
+             * 1e-7,
+             linestyle='dotted', color=color)
+    plt.plot(waves_ebl,
+             10 ** freq_array_ebl
+             * 10 ** ebl_class.emiss_total_spline(
+                 freq_array_ebl, z_array, grid=False)
+             * 1e-7,
+             linestyle='-', color=color)
 
 plt.title('pegase, z=0, sfr MD14 formula, FinkeA params')
-data_emiss = emissivity_data()
-plt.errorbar(x=data_emiss[:13, 1], y=data_emiss[:13, 2],
-             yerr=data_emiss[:13, 3], linestyle='', marker='o')
+data_emiss = emissivity_data(z_max=1)
+plt.errorbar(x=data_emiss['lambda'], y=data_emiss['e.j_e'],
+             yerr=data_emiss['e.j_e_n'], linestyle='', marker='o')
 
 plt.yscale('log')
 plt.xscale('log')
@@ -140,8 +156,8 @@ plt.xscale('log')
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'$\nu \mathrm{L}_{\nu}$ (W / Mpc$^3$)')
 
-plt.xlim(0.09, 10)
-plt.ylim(1e33, 1e35)
+# plt.xlim(0.09, 10)
+# plt.ylim(1e33, 1e35)
 
 legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
                                   color=colors[i])
@@ -161,6 +177,6 @@ axes.add_artist(legend22)
 axes.add_artist(legend33)
 
 # plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
-plt.savefig('outputs/luminosities_sfrFinke22A' + '.png')
+# plt.savefig('outputs/luminosities_sfrFinke22A' + '.png')
 
 plt.show()

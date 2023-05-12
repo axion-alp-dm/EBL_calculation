@@ -104,8 +104,8 @@ for n_h0, h0 in enumerate(h0_parameters):
 
     plt.plot(waves_ebl, 10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False),
              linestyle=models[3], color='k', alpha=alphas[n_h0])
-    plt.plot(waves_ebl, 10 ** ebl_class.ebl_intra_spline(freq_array_ebl, 0., grid=False),
-    linestyle=models[2], color='k', alpha=alphas[n_h0])
+    plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(freq_array_ebl, 0., grid=False),
+             linestyle=models[2], color='k', alpha=alphas[n_h0])
 
 plot_ebl_measurement_collection('ebl_measurements/EBL_measurements.yml')
 
