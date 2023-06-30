@@ -469,7 +469,35 @@ class EBL_model(object):
         self.logging_info('Initialize cubes: end')
         return
 
-    def emiss_ssp_calculation(self, yaml_data):
+    def sfr_function(self, function_input, xx_array, params=None):
+        """
+        Stellar Formation Rate (SFR) is the density of stars that are born
+        as a function of time/redshift.
+
+        function_input: string or callable
+            Formula (analytical or numerical) of the SFR.
+        xx_array: 1D array
+            Redshift values to input in the formula.
+        params: 1D array or list
+            Optional parameters that can enter the sfr formula.
+
+        :return: 1D array
+            SFR values with the same length of the xx-array.
+        """
+        if params is None:
+            params = []
+
+        if type(function_input) == str:
+            return (lambda x: eval(function_input)(x, params))(xx_array)
+        elif callable(function_input):
+            return function_input(xx_array)
+        else:
+            print(
+                'Unrecognized type of sfr '
+                '(required string or UnivariateSpline')
+            return 0.
+
+    def emiss_ssp_calculation(self, yaml_data, sfr=None):
         """
         Calculation of SSP emissivity from the parameters given in
         the dictionary.
@@ -483,16 +511,22 @@ class EBL_model(object):
         ----------
         yaml_data: dict
             Data necessary to reconstruct the EBL component from a SSP.
+        sfr: string or callable (spline, function...)
+            Formula of the sfr used to calculate the emissivity.
         """
         self.logging_info('SSP parameters: %s' % yaml_data['name'])
 
-        sfr = lambda x: eval(yaml_data['sfr'])(x, yaml_data['sfr_params'])
+        if sfr is None:
+            sfr_formula = yaml_data['sfr']
+            sfr_params = yaml_data['sfr_params']
+        else:
+            sfr_formula = sfr
+            sfr_params = None
 
         if (self._ssp_log_emis is None
                 or (self._last_ssp != [
                     yaml_data['path_SSP'], yaml_data['ssp_type'],
                     yaml_data['file_name'], yaml_data['cut_popstar']])):
-
             self.read_SSP_file(yaml_data['path_SSP'],
                                yaml_data['ssp_type'],
                                pop_filename=yaml_data['file_name'],
@@ -555,8 +589,12 @@ class EBL_model(object):
             self.logging_info('SSP emissivity: set the initial kernel')
 
         kernel_emiss = self._cube * 1e-43
-        kernel_emiss[self._s] = (self._kernel_emiss[self._s]  # sfr(z(t))
-                                 * (sfr(self._shifted_times_emiss)))
+        kernel_emiss[self._s] = (
+                self._kernel_emiss[self._s]  # sfr(z(t))
+                * (self.sfr_function(sfr_formula,
+                                     self._shifted_times_emiss,
+                                     sfr_params)))
+
 
         self.logging_info('SSP emissivity: calculate ssp kernel')
 
@@ -621,7 +659,7 @@ class EBL_model(object):
             yaml_data['file_name'], yaml_data['cut_popstar']]
         return
 
-    def ebl_ssp_calculation(self, yaml_data):
+    def ebl_ssp_calculation(self, yaml_data, sfr=None):
         """
         Calculate the EBL SSP contribution.
 
@@ -634,8 +672,10 @@ class EBL_model(object):
         ----------
         yaml_data: dictionary
             Data necessary to reconstruct the EBL component from an SSP.
+        sfr: string or callable (spline, function...)
+            Formula of the sfr used to calculate the emissivity.
         """
-        self.emiss_ssp_calculation(yaml_data)
+        self.emiss_ssp_calculation(yaml_data, sfr=sfr)
 
         if (self._ebl_intcube is None
                 or np.shape(self._ebl_intcube) != np.shape(self._cube)):
@@ -723,7 +763,7 @@ class EBL_model(object):
         self.logging_info('Initialize cubes: calculation of kernel')
         return
 
-    def ebl_ssp_individualData(self, yaml_data, x_data):
+    def ebl_ssp_individualData(self, yaml_data, x_data, sfr=None):
         """
         Calculate the EBL SSP contribution. for the specific wavelength
         data that we have available (and redshift z=0). Useful to avoid
@@ -737,9 +777,11 @@ class EBL_model(object):
         ----------
         yaml_data: dictionary
             Data necessary to reconstruct the EBL component from an SSP.
+        sfr: string or callable (spline, function...)
+            Formula of the sfr used to calculate the emissivity.
         """
         self.logging_info('SSP EBL: enter program')
-        self.emiss_ssp_calculation(yaml_data)
+        self.emiss_ssp_calculation(yaml_data, sfr=sfr)
 
         self.logging_info('SSP EBL: emissivity calculated')
 
