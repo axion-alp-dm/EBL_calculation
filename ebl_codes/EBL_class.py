@@ -33,6 +33,39 @@ class EBL_model(object):
     Emissivity spline: log10(erg s^-1 Hz^-1 Mpc^-3)
     """
 
+    @staticmethod
+    def input_yaml_data_into_class(yaml_data, log_prints=False):
+        """
+        Function to initialize the EBL class with a yaml file or
+        dictionary.
+
+        :param yaml_data: dictionary
+            It has the necessary data to initialize the EBL class.
+        :param log_prints: Bool
+            Boolean to decide whether logging prints are enabled.
+        :return: class
+            The EBL calculation class.
+        """
+        z_array = np.linspace(
+            float(yaml_data['redshift_array']['zmin']),
+            float(yaml_data['redshift_array']['zmax']),
+            yaml_data['redshift_array']['zsteps'])
+        lamb_array = np.logspace(np.log10(float(
+            yaml_data['wavelenght_array']['lmin'])),
+            np.log10(float(
+                yaml_data['wavelenght_array']['lmax'])),
+            yaml_data['wavelenght_array']['lfsteps'])
+        return EBL_model(
+            z_array, lamb_array,
+            h=float(yaml_data['cosmology_params']['cosmo'][0]),
+            omegaM=float(
+                yaml_data['cosmology_params']['cosmo'][1]),
+            omegaBar=float(
+                yaml_data['cosmology_params']['omegaBar']),
+            t_intsteps=yaml_data['t_intsteps'],
+            z_max=yaml_data['z_intmax'],
+            log_prints=log_prints)
+
     def logging_info(self, text):
         if self._log_prints:
             logging.info(
@@ -494,7 +527,7 @@ class EBL_model(object):
         else:
             print(
                 'Unrecognized type of sfr '
-                '(required string or UnivariateSpline')
+                '(required string or callable)')
             return 0.
 
     def emiss_ssp_calculation(self, yaml_data, sfr=None):
@@ -594,7 +627,6 @@ class EBL_model(object):
                 * (self.sfr_function(sfr_formula,
                                      self._shifted_times_emiss,
                                      sfr_params)))
-
 
         self.logging_info('SSP emissivity: calculate ssp kernel')
 
