@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
+
 from emissivity_data.emissivity_read_data import emissivity_data
-from ebl_measurements.EBL_measurs_plot import plot_ebl_measurement_collection
-from ebl_measurements.read_ebl_biteau import dictionary_datatype
+from ebl_measurements.import_cb_measurs import import_cb_data
 from sfr_data.sfr_read import *
 
 from astropy import units as u
@@ -42,19 +42,20 @@ plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
 plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
 plt.rc('xtick.minor', size=7, width=1.5)
 plt.rc('ytick.minor', size=7, width=1.5)
-
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
+direct_name = str('test_likelihoods'
+                  # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
+                  )
+print(direct_name)
 
-direct_name = str('chi2_with_emissivities' +
-                  time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime()))
+# If the directory for outputs is not present, create it.
 if not os.path.exists("outputs/"):
-    # if the directory for outputs is not present, create it.
     os.makedirs("outputs/")
 if not os.path.exists('outputs/' + direct_name):
-    # if the directory for outputs is not present, create it.
     os.makedirs('outputs/' + direct_name)
+
 
 
 # Configuration file reading and data input/output ---------#
@@ -65,28 +66,6 @@ def read_config_file(ConfigFile):
         except yaml.YAMLError as exc:
             print(exc)
     return parsed_yaml
-
-
-def input_yaml_data_into_class(yaml_data, log_prints=False):
-    z_array = np.linspace(float(yaml_data['redshift_array']['zmin']),
-                          float(yaml_data['redshift_array']['zmax']),
-                          yaml_data['redshift_array']['zsteps'])
-
-    lamb_array = np.logspace(np.log10(float(
-        yaml_data['wavelenght_array']['lmin'])),
-        np.log10(float(
-            yaml_data['wavelenght_array']['lmax'])),
-        yaml_data['wavelenght_array']['lfsteps'])
-
-    return EBL_model(z_array, lamb_array,
-                     h=float(yaml_data['cosmology_params']['cosmo'][0]),
-                     omegaM=float(
-                         yaml_data['cosmology_params']['cosmo'][1]),
-                     omegaBar=float(
-                         yaml_data['cosmology_params']['omegaBar']),
-                     t_intsteps=yaml_data['t_intsteps'],
-                     z_max=yaml_data['z_intmax'],
-                     log_prints=log_prints)
 
 
 def chi2_upperlims(x_model, x_obs, err_obs):
@@ -102,21 +81,22 @@ def gamma_from_rest(mass, gay):
              / 32. / h_plank.to(u.eV * u.s)).to(u.s ** -1).value)
 
 
-config_data = read_config_file('scripts/input_data_iminuit_test.yml')
-ebl_class = input_yaml_data_into_class(config_data)
+config_data = read_config_file(
+    'scripts/input_files/input_data_iminuit_test.yml')
+ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 axion_mac2 = np.logspace(-1, 4, num=100)
 axion_gay = np.logspace(-12, -8, num=70)
 
-igl_ebldata = dictionary_datatype(
-    'ebl_measurements/optical_data_2023', 'IGL', lambda_max=5.)
 
-upper_lims_ebldata = dictionary_datatype(
-    'ebl_measurements/optical_data_2023', 'UL', lambda_max=5.)
-
-upper_lims_ebldata_woNH = dictionary_datatype(
-    'ebl_measurements/optical_data_2023', 'UL', lambda_max=5.,
-    obs_not_taken=['lauer2022.ecsv'])
+# COB measurements that we are going to use
+plt.figure(figsize=(16, 10))
+ax1 = plt.gca()
+upper_lims_ebldata, igl_ebldata = import_cb_data(
+    lambda_min_total=0.1, lambda_max_total=5., plot_measurs=True, ax1=ax1)
+plt.show()
+upper_lims_ebldata_woNH = upper_lims_ebldata[
+    upper_lims_ebldata['ref'] != r'NH/LORRI (Lauer+ \'22)']
 
 emiss_data = emissivity_data(directory='emissivity_data/')
 freq_emiss = 3e8 / (emiss_data['lambda'] * 1e-6)
@@ -167,10 +147,10 @@ plt.ylim(0.1, 120)
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ sr)')
 
-dictionary_datatype('ebl_measurements/optical_data_2023', 'UL',
-                    plot_measurs=True, lambda_max=20.)
-dictionary_datatype('ebl_measurements/optical_data_2023', 'IGL',
-                    plot_measurs=True, lambda_max=20.)
+# dictionary_datatype('ebl_measurements/optical_data_2023', 'UL',
+#                     plot_measurs=True, lambda_max=20.)
+# dictionary_datatype('ebl_measurements/optical_data_2023', 'IGL',
+#                     plot_measurs=True, lambda_max=20.)
 
 values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
 values_gay_array_NH = np.zeros((len(axion_mac2), len(axion_gay)))
@@ -417,10 +397,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
     plt.xlabel(r'Wavelength ($\mu$m)')
     plt.ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ sr)')
 
-    dictionary_datatype('ebl_measurements/optical_data_2023', 'UL',
-                        plot_measurs=True, lambda_max=20.)
-    dictionary_datatype('ebl_measurements/optical_data_2023', 'IGL',
-                        plot_measurs=True, lambda_max=20.)
+    # dictionary_datatype('ebl_measurements/optical_data_2023', 'UL',
+    #                     plot_measurs=True, lambda_max=20.)
+    # dictionary_datatype('ebl_measurements/optical_data_2023', 'IGL',
+    #                     plot_measurs=True, lambda_max=20.)
 
     plt.savefig('outputs/' + direct_name + '/' + key + '_ebl' + '.png')
     plt.savefig('outputs/' + direct_name + '/' + key + '_ebl' + '.pdf')

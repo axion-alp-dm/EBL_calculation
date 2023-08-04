@@ -29,8 +29,8 @@ if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
 # If the directory for outputs is not present, create it.
-if not os.path.exists("../outputs/"):
-    os.makedirs("../outputs/")
+if not os.path.exists("outputs/"):
+    os.makedirs("outputs/")
 
 
 # Configuration file reading and data input/output ---------#
@@ -41,26 +41,6 @@ def read_config_file(ConfigFile):
         except yaml.YAMLError as exc:
             print(exc)
     return parsed_yaml
-
-
-def input_yaml_data_into_class(yaml_data, log_prints=False):
-    z_array = np.linspace(float(yaml_data['redshift_array']['zmin']),
-                          float(yaml_data['redshift_array']['zmax']),
-                          yaml_data['redshift_array']['zsteps'])
-
-    lamb_array = np.logspace(np.log10(float(
-                                 yaml_data['wavelenght_array']['lmin'])),
-                             np.log10(float(
-                                 yaml_data['wavelenght_array']['lmax'])),
-                             yaml_data['wavelenght_array']['lfsteps'])
-
-    return EBL_model(z_array, lamb_array,
-                     h=float(yaml_data['cosmology_params']['cosmo'][0]),
-                     omegaM=float(yaml_data['cosmology_params']['cosmo'][1]),
-                     omegaBar=float(yaml_data['cosmology_params']['omegaBar']),
-                     t_intsteps=yaml_data['t_intsteps'],
-                     z_max=yaml_data['z_intmax'],
-                     log_prints=log_prints)
 
 
 # FIGURE: EBL FOR DIFFERENT MODELS -----------------------------------
@@ -77,7 +57,7 @@ j = 0
 
 # We initialize the class with the input file
 config_data = read_config_file('scripts/input_data_change_metallicities.yml')
-ebl_class = input_yaml_data_into_class(config_data, log_prints=True)
+ebl_class = EBL_model.input_yaml_data_into_class(config_data, log_prints=True)
 
 # Axion component calculation
 ebl_class.ebl_axion_calculation(

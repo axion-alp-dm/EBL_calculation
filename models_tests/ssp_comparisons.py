@@ -125,9 +125,11 @@ for n_met, met in enumerate(pegase_metall):
     dd_pegase[:, :, n_met] = data_pegase[:, 2].reshape(t_pegase.shape[0],
                                                        l_pegase.shape[0]).T
 
-pegase_log_time = np.log10(t_pegase)  # log(time/yrs)
-pegase_wave = l  # amstrongs
+
+pegase_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
+pegase_wave = l_pegase  # amstrongs
 pegase_log_emis = np.log10(dd_pegase)  # - np.log10(3.828e33)
+
 
 if work_with_Lnu is True:
     pegase_log_emis += (np.log10(1E10 * c)
@@ -249,11 +251,17 @@ def fig_plot(age, color):
     plt.plot(pop09_wave, pop09_lumin_cube[:, aaa],
              linestyle='solid',
              label='%.1f Myr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
-             color=color)
+             color=color, alpha=0.4)
+
     aaa = np.abs(st99_log_time - age).argmin()
     plt.plot(st99_wave, st99_log_emis[:, aaa],
              linestyle='dotted',
              # label='SB99, log(t) = %.2f' % st99_log_time[aaa],
+             color=color)
+
+    aaa = np.abs(pegase_log_time - age).argmin()
+    plt.plot(pegase_wave, pegase_log_emis[:, aaa, 2],
+             linestyle='--',
              color=color)
 
 
@@ -286,39 +294,39 @@ pop09_log_time, pop09_wave, pop09_lumin_cube = popstar09(
 # # pop_age(path21, pop21_log_time, pop21_wave, pop21_lumin_cube)
 #
 #
-# fig = plt.figure()
-# axes = fig.gca()
-# color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen', 'purple',
-#          'brown', 'gray']
-# plt.title('ssp comparisons at Z=0.02')
-#
-# for ni, age in enumerate(np.log10([1., 2., 3., 4, 5., 10, 20, 100, 500,
-#                                    900]) + 6):
-#     # for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-#     fig_plot(age=age, color=color[ni])
-#
-# plt.xscale('log')
-#
-# plt.xlim(1e2, 1e6)
-# # plt.ylim(-15, 1)
-# models = ['solid', 'dotted']
-# legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
-#                                   color='k') for i in range(2)],
-#                       ['Popstar09', 'Starburst99'], loc=8,
-#                       title=r'Components')
-#
-# axes.add_artist(legend22)
-#
-# plt.legend()
-#
-# plt.xlabel('wavelenght [A]')
-# plt.ylabel(r'log$_{10}$(L$_{\lambda}$/Lsun '
-#            r'[erg s$^{-1}$ A$^{-1}$ Msun$^{-1}$])')
-#
-# if work_with_Lnu is True:
-#     plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun [erg s$^{-1}$ Hz$^{-1}$ Msun$^{'
-#                r'-1}$])')
-#     plt.ylim(10, 22)
+fig = plt.figure()
+axes = fig.gca()
+color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen', 'purple',
+         'brown', 'gray']
+plt.title('ssp comparisons at Z=0.02')
+
+for ni, age in enumerate(np.log10([1., 2., 3., 4, 5., 10, 20, 100, 500,
+                                   900]) + 6):
+    # for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+    fig_plot(age=age, color=color[ni % len(color)])
+
+plt.xscale('log')
+
+plt.xlim(1e2, 1e6)
+# plt.ylim(-15, 1)
+models = ['solid', 'dotted']
+legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
+                                  color='k') for i in range(2)],
+                      ['Popstar09', 'Starburst99'], loc=8,
+                      title=r'Components')
+
+axes.add_artist(legend22)
+
+plt.legend()
+
+plt.xlabel('wavelenght [A]')
+plt.ylabel(r'log$_{10}$(L$_{\lambda}$/Lsun '
+           r'[erg s$^{-1}$ A$^{-1}$ Msun$^{-1}$])')
+
+if work_with_Lnu is True:
+    plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun [erg s$^{-1}$ Hz$^{-1}$ Msun$^{'
+               r'-1}$])')
+    plt.ylim(10, 22)
 #
 # # ---------------------------------------------
 # fig = plt.figure()
@@ -421,89 +429,88 @@ plt.rc('ytick.minor', size=7, width=1.5)
 #
 # print(pegase_metall[2])
 
-ages = [1, 5, 10, 50, 100, 500, 1000]
-cosmo = FlatLambdaCDM(H0=70., Om0=0.3)
+# ages = [1, 5, 10, 50, 100, 500, 1000]
+# cosmo = FlatLambdaCDM(H0=70., Om0=0.3)
+#
+# for ploti in range(len(ages) + 1):
+#
+#     plt.figure(figsize=(10, 10))
+#     for n_age, age in enumerate(ages[:ploti]):
+#         aaa = np.abs(t_pegase - age).argmin()
+#         plt.plot(l_pegase, pegase_log_emis[:, aaa, 2],
+#                  linestyle='-',
+#                  label='%s Myrs' % age)
+#
+#     plt.xscale('log')
+#     plt.xlim(1e2, 1e5)
+#     plt.ylim(26, 33.5)
+#     legend11 = plt.legend(ncol=1, loc=1)
+#
+#     plt.xlabel(r'Wavelength [$Å$]')
+#     plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '
+#                r'[erg s$^{-1}$ $Å^{-1}$ M$_{\odot}^{-1}$])')
+#     plt.savefig('outputs/ssp_all_' + str(ploti) + '.png')
+#
+#     fig, ax = plt.subplots(12, figsize=(25, 10))
+#
+#     ax0 = plt.subplot(121)
+#
+#     for n_age, age in enumerate(ages[:ploti]):
+#         aaa = np.abs(t_pegase - age).argmin()
+#         ax0.plot(l_pegase, pegase_log_emis[:, aaa, 2],
+#                  linestyle='-',
+#                  label='%s Myrs' % age)
+#
+#     ax0.set_xscale('log')
+#     ax0.set_xlim(1e2, 1e5)
+#     ax0.set_ylim(26, 33.5)
+#     legend11 = plt.legend(ncol=1, loc=1)
+#
+#     ax0.set_xlabel(r'Wavelength [$Å$]')
+#     ax0.set_ylabel(r'log$_{10}$(L$_{\lambda}$ '
+#                    r'[erg s$^{-1}$ $Å^{-1}$ M$_{\odot}^{-1}$])')
+#     if work_with_Lnu is True:
+#         ax0.ylabel(r'log$_{10}$(L$_{\nu}$/L_{\odot}'
+#                    r' [erg s$^{-1}$ Hz$^{-1}$ M_{\odot}$^{-1}$])')
+#         ax0.set_ylim(10, 22)
+#
+#     # plt.subplots_adjust(wspace=5)
+#
+#     ax1 = plt.subplot(122)
+#     # ax1 = ax[0]
+#     x_sfr = np.linspace(0, 10)
+#     m1 = [0.015, 2.7, 2.9, 5.6]
+#     sfr = (lambda mi, x: eval(
+#         'lambda ci, x : ci[0] * (1 + x)**ci[1]'
+#         ' / (1 + ((1+x)/ci[2])**ci[3])')(mi, x))
+#     plt.plot(x_sfr, sfr(m1, x_sfr), color='green',
+#              label='Madau&Dickinson 14')
+#
+#     plt.yscale('log')
+#     plt.xlabel('redshift z')
+#     plt.ylabel(r'SFR [M$_{\odot}$ yr$^{-1}$Mpc$^{-3}$]')
+#
+#     z_ticks = []
+#     ax_ll = ax1.twiny()
+#
+#     # lookback time z_ticks = []
+#     lookback_labels = np.arange(1, 13.2, 1)[::-1]
+#     for ll in lookback_labels * u.Gyr:
+#         z_ticks.append(
+#             z_at_value(cosmo.lookback_time, ll, zmin=1e-8, zmax=40.))
+#
+#     ax_ll.set_xticks(z_ticks)
+#     # ax_ll.set_xlim(v)
+#     ax_ll.set_xticklabels(
+#         ["{0:.0f}".format(f) if (i % 2 or f >= 10) else "" for i, f in
+#          enumerate(lookback_labels)])
+#     ax_ll.set_xlabel("Lookback time [Gyr]")
+#
+#     v = ax1.set_xlim(0, 10)
+#     ax_ll.set_xlim(v)
+#
+#     ax1.legend()
+#
+#     plt.savefig('outputs/ssp_timeline_' + str(ploti) + '.png')
 
-for ploti in range(len(ages)+1):
-
-    plt.figure(figsize=(10, 10))
-    for n_age, age in enumerate(ages[:ploti]):
-        aaa = np.abs(t_pegase - age).argmin()
-        plt.plot(l_pegase, pegase_log_emis[:, aaa, 2],
-                 linestyle='-',
-                 label='%s Myrs' % age)
-
-    plt.xscale('log')
-    plt.xlim(1e2, 1e5)
-    plt.ylim(26, 33.5)
-    legend11 = plt.legend(ncol=1, loc=1)
-
-    plt.xlabel(r'Wavelength [$Å$]')
-    plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '
-               r'[erg s$^{-1}$ $Å^{-1}$ M$_{\odot}^{-1}$])')
-    plt.savefig('outputs/ssp_all_' + str(ploti) + '.png')
-
-
-    fig, ax = plt.subplots(12, figsize=(25, 10))
-
-    ax0 = plt.subplot(121)
-
-    for n_age, age in enumerate(ages[:ploti]):
-        aaa = np.abs(t_pegase - age).argmin()
-        ax0.plot(l_pegase, pegase_log_emis[:, aaa, 2],
-                 linestyle='-',
-                 label='%s Myrs' % age)
-
-    ax0.set_xscale('log')
-    ax0.set_xlim(1e2, 1e5)
-    ax0.set_ylim(26, 33.5)
-    legend11 = plt.legend(ncol=1, loc=1)
-
-    ax0.set_xlabel(r'Wavelength [$Å$]')
-    ax0.set_ylabel(r'log$_{10}$(L$_{\lambda}$ '
-               r'[erg s$^{-1}$ $Å^{-1}$ M$_{\odot}^{-1}$])')
-    if work_with_Lnu is True:
-        ax0.ylabel(r'log$_{10}$(L$_{\nu}$/L_{\odot}'
-                   r' [erg s$^{-1}$ Hz$^{-1}$ M_{\odot}$^{-1}$])')
-        ax0.set_ylim(10, 22)
-
-    # plt.subplots_adjust(wspace=5)
-
-    ax1 = plt.subplot(122)
-    # ax1 = ax[0]
-    x_sfr = np.linspace(0, 10)
-    m1 = [0.015, 2.7, 2.9, 5.6]
-    sfr = (lambda mi, x: eval(
-        'lambda ci, x : ci[0] * (1 + x)**ci[1]'
-        ' / (1 + ((1+x)/ci[2])**ci[3])')(mi, x))
-    plt.plot(x_sfr, sfr(m1, x_sfr), color='green',
-             label='Madau&Dickinson 14')
-
-    plt.yscale('log')
-    plt.xlabel('redshift z')
-    plt.ylabel(r'SFR [M$_{\odot}$ yr$^{-1}$Mpc$^{-3}$]')
-
-    z_ticks = []
-    ax_ll = ax1.twiny()
-
-    # lookback time z_ticks = []
-    lookback_labels = np.arange(1, 13.2, 1)[::-1]
-    for ll in lookback_labels * u.Gyr:
-        z_ticks.append(
-            z_at_value(cosmo.lookback_time, ll, zmin=1e-8, zmax=40.))
-
-    ax_ll.set_xticks(z_ticks)
-    # ax_ll.set_xlim(v)
-    ax_ll.set_xticklabels(
-        ["{0:.0f}".format(f) if (i % 2 or f >= 10) else "" for i, f in
-         enumerate(lookback_labels)])
-    ax_ll.set_xlabel("Lookback time [Gyr]")
-
-    v = ax1.set_xlim(0, 10)
-    ax_ll.set_xlim(v)
-
-    ax1.legend()
-
-    plt.savefig('outputs/ssp_timeline_' + str(ploti) + '.png')
-
-# plt.show()
+plt.show()

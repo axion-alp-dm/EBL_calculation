@@ -1,7 +1,7 @@
 # IMPORTS -----------------------------------#
-import logging
 import os
 import time
+import logging
 import numpy as np
 
 from scipy.integrate import simpson
@@ -125,13 +125,8 @@ class EBL_model(object):
 
         self._emiss_ssp_cube = 0.
         self._emiss_ihl_cube = 0.
-        self._emiss_axion_cube = 0.
-        self._emiss_total_cube = 0.
 
         self._emiss_ssp_spline = None
-        self._emiss_ihl_spline = None
-        self._emiss_axion_spline = None
-        self._emiss_total_spline = None
 
         self._ebl_ssp_cube = 0.
         self._ebl_ihl_cube = 0.
@@ -168,18 +163,6 @@ class EBL_model(object):
         return self._emiss_ssp_spline
 
     @property
-    def emiss_ihl_spline(self):
-        return self._emiss_ihl_spline
-
-    @property
-    def emiss_axion_spline(self):
-        return self._emiss_axion_spline
-
-    @property
-    def emiss_total_spline(self):
-        return self._emiss_total_spline
-
-    @property
     def ebl_total_spline(self):
         return self._ebl_total_spline
 
@@ -204,7 +187,7 @@ class EBL_model(object):
         self._log_prints = new_print
         return
 
-    def change_axion_contribution(self, mass, gamma):
+    def change_axion_contribution(self, mass, gayy):
         """
         Recalculate EBL contribution from axion decay.
         Based on the formula and expressions given by:
@@ -219,10 +202,10 @@ class EBL_model(object):
         ----------
         mass: float [eV]
             Value of (m_a * c**2) of the decaying axion.
-        gamma: float [s**-1]
-            Decay rate of the axion.
+        gayy: float [GeV**-1]
+            Coupling constant of the axion with two photons (decay).
         """
-        self.ebl_axion_calculation(axion_mass=mass, axion_gamma=gamma)
+        self.ebl_axion_calculation(axion_mass=mass, axion_gayy=gayy)
         self.ebl_sum_contributions()
         return
 
@@ -537,8 +520,8 @@ class EBL_model(object):
 
         Emissivity units:
         ----------
-            -> Cubes: erg / s / Mpc**3 == 1e-7 W / Mpc**3
-            -> Splines: log10(erg / s / Mpc**3 == 1e-7 W / Mpc**3)
+            -> Cubes: erg / s / Hz / Mpc**3 == 1e-7 W / Hz / Mpc**3
+            -> Splines: log10(erg / s / Hz / Mpc**3 == 1e-7 W / Hz / Mpc**3)
 
         Parameters
         ----------
@@ -852,8 +835,8 @@ class EBL_model(object):
 
         Emissivity units:
         ----------
-            -> Cubes: erg / s / Mpc**3 == 1e-7 W / Mpc**3
-            -> Splines: log10(erg / s / Mpc**3 == 1e-7 W / Mpc**3)
+            -> Cubes: erg / s / Hz / Mpc**3 == 1e-7 W / Hz / Mpc**3
+            -> Splines: log10(erg / s / Hz / Mpc**3 == 1e-7 W / Hz / Mpc**3)
 
         Parameters
         ----------
@@ -1002,59 +985,8 @@ class EBL_model(object):
         self.logging_info('Calculation time for ebl ihl')
         return
 
-    def emiss_axion_calculation(self, axion_mass, axion_gamma):
-        """
-        Emissivity contribution from axion decay.
-        Based on the formula and expressions given by:
-        http://arxiv.org/abs/2208.13794
 
-        Emissivity units:
-        ----------
-            -> Cubes: erg / s / Mpc**3 == 1e-7 W / Mpc**3
-            -> Splines: log10(erg / s / Mpc**3 == 1e-7 W / Mpc**3)
-
-        Parameters
-        ----------
-        axion_mass: float [eV]
-            Value of (m_a * c**2) of the decaying axion.
-        axion_gamma: float [s**-1]
-            Decay rate of the axion.
-        """
-        axion_mass = axion_mass * u.eV
-        axion_gamma = axion_gamma * u.s ** -1
-
-        z_star = (axion_mass
-                  / (2. * h_plank.to(u.eV * u.s)
-                     * 10 ** self._log_freq_cube[:, :, 0] * u.s ** -1)
-                  - 1.)
-
-        self._emiss_axion_cube = (((c / (4. * np.pi * u.sr)
-                                    * self._cosmo.Odm(0.)
-                                    * self._cosmo.critical_density0
-                                    * c ** 2. * axion_gamma / axion_mass
-                                    * 10 ** self._log_freq_cube[:, :,
-                                            0] * u.s ** -1
-                                    * h_plank * (1 + self._z_cube[:, :, 0])
-                                    / self._cosmo.H(z_star)
-                                    ).to(u.nW * u.m ** -2 * u.sr ** -1)
-                                   ).value
-                                  * (z_star > self._z_cube[:, :, 0]))
-
-        # Spline of the axion EBL intensity
-        log10_ebl = np.log10(self._emiss_axion_cube)
-        log10_ebl[np.isnan(log10_ebl)] = -43.
-        log10_ebl[np.invert(np.isfinite(log10_ebl))] = -43.
-        self._emiss_axion_spline = RectBivariateSpline(
-            x=self._freq_array,
-            y=self._z_array,
-            z=log10_ebl, kx=1, ky=1)
-
-        # Free memory and log the time
-        del z_star, log10_ebl
-        self.logging_info('Calculation time for ebl axions')
-        return
-
-    def ebl_axion_calculation(self, axion_mass, axion_gamma):
+    def ebl_axion_calculation(self, axion_mass, axion_gayy):
         """
         EBL contribution from axion decay.
         Based on the formula and expressions given by:
@@ -1069,28 +1001,26 @@ class EBL_model(object):
         ----------
         axion_mass: float [eV]
             Value of (m_a * c**2) of the decaying axion.
-        axion_gamma: float [s**-1]
-            Decay rate of the axion.
+        axion_gayy: float [GeV**-1]
+            Coupling constant of the axion with two photons (decay).
         """
         axion_mass = axion_mass * u.eV
-        axion_gamma = axion_gamma * u.s ** -1
+        axion_gayy = axion_gayy * u.GeV ** -1
 
         z_star = (axion_mass
                   / (2. * h_plank.to(u.eV * u.s)
                      * 10 ** self._log_freq_cube[:, :, 0] * u.s ** -1)
                   - 1.)
 
-        self._ebl_axion_cube = (((c / (4. * np.pi * u.sr)
-                                  * self._cosmo.Odm(0.)
-                                  * self._cosmo.critical_density0
-                                  * c ** 2. * axion_gamma / axion_mass
-                                  * 10 ** self._log_freq_cube[:, :,
-                                          0] * u.s ** -1
-                                  * h_plank * (1 + self._z_cube[:, :, 0])
-                                  / self._cosmo.H(z_star)
-                                  ).to(u.nW * u.m ** -2 * u.sr ** -1)
-                                 ).value
-                                * (z_star > self._z_cube[:, :, 0]))
+        self._ebl_axion_cube = (
+                ((self._cosmo.Odm(0.) * self._cosmo.critical_density0
+                  * c ** 3. / (64. * np.pi * u.sr)
+                  * axion_gayy ** 2. * axion_mass ** 2.
+                  * 10 ** self._log_freq_cube[:, :, 0] * u.s ** -1
+                  / self._cosmo.H(z_star)
+                  ).to(u.nW * u.m ** -2 * u.sr ** -1)
+                 ).value
+                * (z_star > self._z_cube[:, :, 0]))
 
         # Spline of the axion EBL intensity
         log10_ebl = np.log10(self._ebl_axion_cube)
@@ -1106,34 +1036,6 @@ class EBL_model(object):
         self.logging_info('Calculation time for ebl axions')
         return
 
-    def emiss_sum_contributions(self):
-        """
-        Sum of the contributions to the emissivity which have been
-        previously calculated.
-        If any of the components has not been calculated,
-        its contribution will be 0.
-        Components are Single Stellar Populations (SSP),
-        Intra-Halo Light (IHL) and axion decay.
-
-        Emissivity units:
-        ----------
-            -> Cubes: erg / s / Mpc**3 == 1e-7 W / Mpc**3
-            -> Splines: log10(erg / s / Mpc**3 == 1e-7 W / Mpc**3)
-        """
-        # Spline of the total emissivity
-        log10_ebl = np.log10(
-            self._emiss_ssp_cube + self._ebl_axion_cube + self._emiss_ihl_cube)
-        log10_ebl[np.isnan(log10_ebl)] = -43.
-        log10_ebl[np.invert(np.isfinite(log10_ebl))] = -43.
-        self._emiss_total_spline = RectBivariateSpline(
-            x=self._freq_array,
-            y=self._z_array,
-            z=log10_ebl, kx=1, ky=1)
-
-        # Free memory and log the time
-        del log10_ebl
-        self.logging_info('Calculation time for emissivity total')
-        return
 
     def ebl_sum_contributions(self):
         """
@@ -1166,7 +1068,7 @@ class EBL_model(object):
 
     def ebl_all_calculations(self, ssp_yaml=None,
                              log10_Aihl=-3.23, alpha=1.,
-                             axion_mass=1., axion_gamma=5e-23):
+                             axion_mass=1., axion_gayy=5e-12):
         """
         Calculate the EBL total contribution from our three components:
         Single Stellar Populations (SSP), Intra-Halo Light (IHL)
@@ -1188,7 +1090,7 @@ class EBL_model(object):
             Index of the redshift dependency of the IHL. Default: 1.
         axion_mass: float [eV]
             Value of (m_a * c**2) of the decaying axion. Default: 1 eV.
-        axion_gamma: float [s**-1]
+        axion_gayy: float [s**-1]
             Decay rate of the axion. Default: 5e-23 s**-1.
         """
         if ssp_yaml is None:
@@ -1202,51 +1104,7 @@ class EBL_model(object):
 
         self.ebl_ssp_calculation(ssp_yaml)
         self.ebl_intrahalo_calculation(log10_Aihl, alpha)
-        self.ebl_axion_calculation(axion_mass, axion_gamma)
-
-        self.ebl_sum_contributions()
-
-        return
-
-    def emiss_all_calculations(self, ssp_yaml=None,
-                               log10_Aihl=-3.23, alpha=1.,
-                               axion_mass=1., axion_gamma=5e-23):
-        """
-        Calculate the emissivity contribution from our three components:
-        Single Stellar Populations (SSP), Intra-Halo Light (IHL)
-        and axion decay.
-
-        Emissivity units:
-        ----------
-            -> Cubes: erg / s / Mpc**3 == 1e-7 W / Mpc**3
-            -> Splines: log10(erg / s / Mpc**3 == 1e-7 W / Mpc**3)
-
-        Parameters
-        ----------
-        ssp_yaml: dictionary
-            Data necessary to reconstruct the EBL component from a SSP.
-            Default: model from Kneiske02.
-        log10_Aihl: float
-            Exponential of the IHL intensity. Default: -3.23.
-        alpha: float
-            Index of the redshift dependency of the IHL. Default: 1.
-        axion_mass: float [eV]
-            Value of (m_a * c**2) of the decaying axion. Default: 1 eV.
-        axion_gamma: float [s**-1]
-            Decay rate of the axion. Default: 5e-23 s**-1.
-        """
-        if ssp_yaml is None:
-            ssp_yaml = {'name': 'Kneiske02',
-                        'sfr': 'lambda ci, x : ci[0]*((x+1)/(ci[1]+1))'
-                               '**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))',
-                        'sfr_params': [0.15, 1.1, 3.4, 0.0],
-                        'ssp_type': 'SB99',
-                        'path_SSP': 'ssp/final_run_spectrum',
-                        'dust_abs_models': ['kneiske2002', 'aaaa']}
-
-        self.emiss_ssp_calculation(ssp_yaml)
-        self.emiss_intrahalo_calculation(log10_Aihl, alpha)
-        self.emiss_axion_calculation(axion_mass, axion_gamma)
+        self.ebl_axion_calculation(axion_mass, axion_gayy)
 
         self.ebl_sum_contributions()
 

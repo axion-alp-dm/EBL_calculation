@@ -6,14 +6,14 @@ cosmology_params:
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelenght_array:
   lmin: 1e-6
-  lmax: 1e2
-  lfsteps: 801
+  lmax: 1e1
+  lfsteps: 401
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
   zmin: 1e-6  # This cannot be 0 at least working with SB99 or everything crushes :)
   zmax: 10.
-  zsteps: 181
+  zsteps: 281
 
 # INTEGRATION TIME STEP
 t_intsteps: 201

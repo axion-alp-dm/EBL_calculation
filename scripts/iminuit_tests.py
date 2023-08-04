@@ -124,8 +124,8 @@ m = Minuit(least_squares, ([0.0092, 2.79, 3.10, 6.97]))  # starting
 m.limits = [[0.005, 0.019], [2., 3.5], [1., 3.], [6., 7.]]
 print(m.params)
 
-m.migrad()  # finds minimum of least_squares function
-m.hesse()  # accurately computes uncertainties
+# m.migrad()  # finds minimum of least_squares function
+# m.hesse()  # accurately computes uncertainties
 
 # draw data and fitted line
 xx_plot = np.logspace(-1, 1, num=100)
@@ -149,23 +149,23 @@ plt.plot(xx_plot, 10 ** ebl_class.ebl_ssp_spline(xx_plot_freq, 0., grid=False),
          'r',
          label="fit")
 
-y, y_cov = propagate(lambda pars:
-                     spline_attempt(xx_plot, pars),
-                     m.values, m.covariance)
-yerr_prop = np.diag(y_cov) ** 0.5
-plt.fill_between(xx_plot, y - yerr_prop, y + yerr_prop,
-                 facecolor="C1", alpha=0.5)
+# y, y_cov = propagate(lambda pars:
+#                      spline_attempt(xx_plot, pars),
+#                      m.values, m.covariance)
+# yerr_prop = np.diag(y_cov) ** 0.5
+# plt.fill_between(xx_plot, y - yerr_prop, y + yerr_prop,
+#                  facecolor="C1", alpha=0.5)
 
 # display legend with some fit info
-fit_info = [
-    f"$\\chi^2$ / $n_\\mathrm{{dof}}$ = {m.fval:.1f} / {len(data_x) - m.nfit}",
-]
-for p, v, e in zip(m.parameters, m.values, m.errors):
-    fit_info.append(f"{p} = ${v:.3f} \\pm {e:.3f}$")
+# fit_info = [
+#     f"$\\chi^2$ / $n_\\mathrm{{dof}}$ = {m.fval:.1f} / {len(data_x) - m.nfit}",
+# ]
+# for p, v, e in zip(m.parameters, m.values, m.errors):
+#     fit_info.append(f"{p} = ${v:.3f} \\pm {e:.3f}$")
 
 print(m.params)
 print(m.values)
-plt.legend(title="\n".join(fit_info))
+# plt.legend(title="\n".join(fit_info))
 plt.yscale('log')
 plt.xscale('log')
 plt.ylim(1, 20)
@@ -178,21 +178,30 @@ print('%.2fs' % (time.process_time() - init_time))
 plt.subplot(122)
 # plt.title(config_data['ssp_models'][key]['name'])
 x_sfr = np.linspace(0, 10)
-m1 = [0.015, 2.7, 2.9, 5.6]
-sfr = (lambda mi, x: eval(config_data['ssp_models'][key]['sfr'])(mi, x))
-plt.plot(x_sfr, sfr(m1, x_sfr), color='b', label='MD14')
-m11 = [0.0092, 2.79, 3.10, 6.97]
-plt.plot(x_sfr, sfr(m11, x_sfr), color='g', label='MF17')
-m2 = [m.params[0].value, m.params[1].value,
-      m.params[2].value, m.params[3].value]
-plt.plot(x_sfr, sfr(m2, x_sfr), '-r', label='fit')
 
-y, y_cov = propagate(lambda pars:
-                     sfr(pars, x_sfr),
-                     m.values, m.covariance)
-yerr_prop = np.diag(y_cov) ** 0.5
-plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
-                 facecolor="C1", alpha=0.5)
+sfr_md14 = ebl_class.sfr_function(
+    function_input=config_data['ssp_models'][key]['sfr'],
+    xx_array=x_sfr, params=[0.015, 2.7, 2.9, 5.6])
+plt.plot(x_sfr, sfr_md14, color='b', label='MD14')
+
+sfr_mdf17 = ebl_class.sfr_function(
+    function_input=config_data['ssp_models'][key]['sfr'],
+    xx_array=x_sfr, params=[0.0092, 2.79, 3.10, 6.97])
+plt.plot(x_sfr, sfr_mdf17, color='g', label='MF17')
+
+sfr_fit = ebl_class.sfr_function(
+    function_input=config_data['ssp_models'][key]['sfr'],
+    xx_array=x_sfr,
+    params=[m.params[0].value, m.params[1].value,
+            m.params[2].value, m.params[3].value])
+plt.plot(x_sfr, sfr_fit, '-r', label='fit')
+
+# y, y_cov = propagate(lambda pars:
+#                      sfr(pars, x_sfr),
+#                      m.values, m.covariance)
+# yerr_prop = np.diag(y_cov) ** 0.5
+# plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+#                  facecolor="C1", alpha=0.5)
 
 plt.yscale('log')
 plt.xlabel('redshift z')
