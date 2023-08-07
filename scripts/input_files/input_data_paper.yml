@@ -4,8 +4,8 @@ cosmology_params:
   omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
 
 # WAVELENGTH ARRAY FOR EBL [microns]
-wavelenght_array:
-  lmin: 1e-6
+wavelength_array:
+  lmin: 7e-2
   lmax: 1e1
   lfsteps: 401
 
@@ -34,9 +34,9 @@ ihl_params:
 # SSP INFORMATION
 # Maximum redshift at which we form SSPs
 z_intmax: 40.
+
 # List of SSP models we want to try
 ssp_models:
-
 
   SB99_kneiske:
     name: 'Starburst99 Z=0.02 dust Kneiske'

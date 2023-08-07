@@ -51,10 +51,10 @@ class EBL_model(object):
             float(yaml_data['redshift_array']['zmax']),
             yaml_data['redshift_array']['zsteps'])
         lamb_array = np.logspace(np.log10(float(
-            yaml_data['wavelenght_array']['lmin'])),
+            yaml_data['wavelength_array']['lmin'])),
             np.log10(float(
-                yaml_data['wavelenght_array']['lmax'])),
-            yaml_data['wavelenght_array']['lfsteps'])
+                yaml_data['wavelength_array']['lmax'])),
+            yaml_data['wavelength_array']['lfsteps'])
         return EBL_model(
             z_array, lamb_array,
             h=float(yaml_data['cosmology_params']['cosmo'][0]),
