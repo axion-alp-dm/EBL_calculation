@@ -3,9 +3,12 @@ import os
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
-from ebl_measurements.EBL_measurs_plot import plot_ebl_measurement_collection
+from ebl_measurements.import_cb_measurs import import_cb_data
+
+from ebltable.ebl_from_model import EBL
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -56,13 +59,13 @@ colors = ['b', 'r', 'g', 'orange', 'grey', 'purple']
 j = 0
 
 # We initialize the class with the input file
-config_data = read_config_file('scripts/input_data_change_metallicities.yml')
+config_data = read_config_file('scripts/input_files/input_data_paper.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data, log_prints=True)
 
 # Axion component calculation
 ebl_class.ebl_axion_calculation(
     axion_mass=float(config_data['axion_params']['axion_mass']),
-    axion_gamma=float(config_data['axion_params']['axion_gamma'])
+    axion_gayy=float(config_data['axion_params']['axion_gayy'])
     )
 plt.plot(waves_ebl,
          10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False),
@@ -94,11 +97,23 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ebl_class.logging_prints = False
 plt.figure(fig)
-plot_ebl_measurement_collection('ebl_measurements/EBL_measurements.yml')
+ax = plt.gca()
 
-model_finke = np.loadtxt('ebl_codes/EBL_intensity_total_z0.00.dat')
-print(np.shape(model_finke))
-plt.plot(model_finke[:, 0]/1e4, model_finke[:, 1], '-k', label='Finke Model A')
+import_cb_data(plot_measurs=True, ax1=ax)
+
+# We introduce the Finke22 and CUBA splines
+ebl = {}
+for m in EBL.get_models():
+    ebl[m] = EBL.readmodel(m)
+nuInu = {}
+for m, e in ebl.items():
+    nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
+spline_finke = UnivariateSpline(waves_ebl, nuInu['finke2022'], s=0, k=1)
+spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
+plt.loglog(waves_ebl, spline_finke(waves_ebl), c='orange', label='Finke22 '
+                                                                 'model A')
+plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='fuchsia', label='CUBA')
+
 
 plt.yscale('log')
 plt.xscale('log')
@@ -135,13 +150,11 @@ z_data = np.linspace(float(config_data['redshift_array']['zmin']),
                      num=500)
 
 
-def sfr(zz, str_sfr, params):
-    return eval(str_sfr)(params, zz)
-
-
 for nkey, key in enumerate(config_data['ssp_models']):
-    plt.plot(z_data, sfr(z_data, config_data['ssp_models'][key]['sfr'],
-                         config_data['ssp_models'][key]['sfr_params']),
+    plt.plot(z_data, ebl_class.sfr_function(
+        function_input=config_data['ssp_models'][key]['sfr'],
+        xx_array=z_data,
+        params=config_data['ssp_models'][key]['sfr_params']),
              label=config_data['ssp_models'][key]['name'])
 
 

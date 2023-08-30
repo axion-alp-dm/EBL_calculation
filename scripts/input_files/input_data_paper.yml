@@ -5,7 +5,7 @@ cosmology_params:
 
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelength_array:
-  lmin: 7e-2
+  lmin: 5e-6
   lmax: 1e1
   lfsteps: 401
 
@@ -43,7 +43,8 @@ ssp_models:
 
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-    sfr_params: [0.0017, 2.65, 2.9, 5.5]
+#    sfr_params: [0.0017, 2.65, 2.9, 5.5]
+    sfr_params: [0.015, 2.7, 2.9, 5.6]  # MD14 params
 
     # SSP DATA
     ssp_type: 'SB99'
@@ -59,7 +60,8 @@ ssp_models:
 
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-    sfr_params: [0.0078, 2.7, 3.4, 6.4]
+#    sfr_params: [0.0078, 2.7, 3.4, 6.4]
+    sfr_params: [0.0092, 2.79, 3.10, 6.97]  # Finke22 model A params
 
     # SSP DATA
     ssp_type: 'pegase3'
