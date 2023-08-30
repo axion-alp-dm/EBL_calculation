@@ -1,5 +1,6 @@
 # ignore all outputs that are created during the process
 /*.png
+*.txt
 outputs/
 ebl_measurements/optical_data_2023/
 envs/
