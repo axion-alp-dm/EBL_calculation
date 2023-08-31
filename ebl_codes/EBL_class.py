@@ -16,7 +16,7 @@ from astropy.cosmology import FlatLambdaCDM
 from ebl_codes import dust_absorption_models as dust_abs
 
 
-# from hmf import MassFunction
+from hmf import MassFunction
 
 
 class EBL_model(object):
@@ -127,6 +127,7 @@ class EBL_model(object):
         self._emiss_ihl_cube = 0.
 
         self._emiss_ssp_spline = None
+        self._emiss_ihl_spline = None
 
         self._ebl_ssp_cube = 0.
         self._ebl_ihl_cube = 0.
@@ -663,6 +664,7 @@ class EBL_model(object):
             [self._freq_array[-1], self._z_array[-1]],
             [self._freq_array[1] - self._freq_array[0],
              self._z_array[1] - self._z_array[0]],
+#            self._freq_array, self._z_array,
             log10_emiss,
             k=1, p=[False, False], e=[0, 0])
 

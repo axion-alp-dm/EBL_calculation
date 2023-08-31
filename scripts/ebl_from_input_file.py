@@ -72,13 +72,13 @@ plt.plot(waves_ebl,
          linestyle=models[3], color='k')
 
 # Intrahalo component calculation
-# ebl_class.ebl_intrahalo_calculation(float(
-#                                       config_data['ihl_params']['A_ihl']),
-#                                     float(
-#                                     config_data['ihl_params']['alpha']))
-# plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(
-# freq_array_ebl, 0., grid=False),
-# linestyle=models[2], color='k')
+ebl_class.ebl_intrahalo_calculation(float(
+                                      config_data['ihl_params']['A_ihl']),
+                                    float(
+                                    config_data['ihl_params']['alpha']))
+plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(
+freq_array_ebl, 0., grid=False),
+linestyle=models[2], color='k')
 
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
@@ -124,7 +124,12 @@ legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left",
                       title=r'Measurements')
 legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
                                   color='k') for i in range(4)],
-                      ['Total', 'SSP', 'IHL', 'Axion decay'], loc=3,
+                      ['Total', 'SSP', 'IHL', 'Axion decay'
+                               '\n(example)'
+                               '\n'
+                               r'    m$_a = 1$ eV'
+                               '\n'
+                               r'    g$_{a\gamma} = 5 \cdot 10^{-10}$ GeV$^{-1}$'], loc=3,
                       title=r'Components')
 legend33 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
                                   color=colors[i])

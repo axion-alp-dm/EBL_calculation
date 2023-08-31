@@ -259,7 +259,12 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
 
     upper_lims_all['type'][upper_lims_all['type'] == 2] = 3
     upper_lims_all['type'][upper_lims_all['ref']
-                           == r'NH/LORRI (Lauer+ \'22)'] = 2
+                           == r'NH/LORRI (Lauer+ ’22)'] = 2
+
+    upper_lims_all['ref'][upper_lims_all['ref']
+                           == r'COBE/DIRBE (Arendt \& Dwek ‘03)'] = \
+    r'COBE/DIRBE (Arendt & Dwek ‘03)'
+
 
     order = np.argsort(upper_lims_all['type'])
     upper_lims_all = upper_lims_all[order][:]

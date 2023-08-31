@@ -7,7 +7,7 @@ cosmology_params:
 wavelength_array:
   lmin: 5e-6
   lmax: 1e1
-  lfsteps: 401
+  lfsteps: 601
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
@@ -23,8 +23,8 @@ log_prints: True
 
 # AXION DECAY BEING CONSIDERED
 axion_params:
-  axion_mass:  4.08      # [eV]
-  axion_gayy: 5e-12  # [GeV**-1]
+  axion_mass:  1.      # [eV]
+  axion_gayy: 5e-10  # [GeV**-1]
 
 # INTRA HALO LIGHT PARAMETERS
 ihl_params:
