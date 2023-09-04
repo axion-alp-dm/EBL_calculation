@@ -16,7 +16,7 @@ from astropy.cosmology import FlatLambdaCDM
 from ebl_codes import dust_absorption_models as dust_abs
 
 
-from hmf import MassFunction
+# from hmf import MassFunction
 
 
 class EBL_model(object):
@@ -427,37 +427,68 @@ class EBL_model(object):
                                    - 2. * self._ssp_log_freq
                                    [:, np.newaxis, np.newaxis])
 
-        # import matplotlib.pyplot as plt
-        # plt.figure(20, figsize=(10, 8))
-        # plt.title('ssp: %s , %s' % (ssp_type, pop_filename))
-        #
-        # if ssp_type == 'Popstar09':
-        #     label = 'dotted'
-        # elif ssp_type == 'pegase3':
-        #     label = '--'
-        # else:
-        #     label = 'solid'
-        #
-        # color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
-        #          'purple', 'brown']
-        #
-        # for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-        #     aaa = np.abs(self._ssp_log_time - age).argmin()
-        #     plt.plot(c.value * 1e10 / 10 ** self._ssp_log_freq,
-        #              self._ssp_log_emis[:, aaa],
-        #              color=color[i], linestyle=label,
-        #              label='log(t) = %.2f'
-        #                    % self._ssp_log_time[aaa])
-        #
-        # plt.xscale('log')
-        #
-        # if ssp_type == 'SB99':
-        #     plt.legend()
-        #
-        # plt.xlim(1e2, 1e6)
-        # # plt.ylim(10, 22)
-        #
-        # plt.xlabel('wavelenght [A]')
+        elif ssp_type == 'generic':
+            """
+            Generic datafile for inputing luminosity data.
+            - First column: time/age of the SSP [years]
+            - Second column: wavelength of luminosity [Angstroms]
+            - Third column: luminosity [erg/sec/A/Msun]
+            """
+            data_generic = np.loadtxt(data_file)
+
+            t_generic = np.unique(data_generic[:, 0])
+            l_generic = np.unique(data_generic[:, 1])
+            dd_generic = data_generic[:, 2].reshape(
+                t_generic.shape[0], l_generic.shape[0]).T[::-1]
+
+            self._ssp_log_time = np.log10(t_generic * 1e6)  # log(time/yrs)
+            self._ssp_log_time[np.isnan(self._ssp_log_time)] = -43.
+            self._ssp_log_time[
+                np.invert(np.isfinite(self._ssp_log_time))] = -43.
+
+            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
+                c.value / l_generic[::-1] / 1E-10)
+
+            self._ssp_log_emis = np.log10(dd_generic)
+            self._ssp_log_emis[np.isnan(self._ssp_log_emis)] = -43.
+            self._ssp_log_emis[
+                np.invert(np.isfinite(self._ssp_log_emis))] = -43.
+
+            self._ssp_log_emis += (np.log10(1E10 * c.value)
+                                   - 2. * self._ssp_log_freq
+                                   [:, np.newaxis])
+
+        import matplotlib.pyplot as plt
+        plt.figure(20, figsize=(10, 8))
+        plt.title('ssp: %s , %s' % (ssp_type, pop_filename))
+
+        if ssp_type == 'Popstar09':
+            label = 'dotted'
+        elif ssp_type == 'pegase3':
+            label = '--'
+        else:
+            label = 'solid'
+
+        color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
+                 'purple', 'brown']
+
+        for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+            aaa = np.abs(self._ssp_log_time - age).argmin()
+            plt.plot(c.value * 1e10 / 10 ** self._ssp_log_freq,
+                     self._ssp_log_emis[:, aaa],
+                     color=color[i], linestyle=label,
+                     label='log(t) = %.2f'
+                           % self._ssp_log_time[aaa])
+
+        plt.xscale('log')
+
+        if ssp_type == 'SB99':
+            plt.legend()
+
+        plt.xlim(1e2, 1e6)
+        # plt.ylim(10, 22)
+
+        plt.xlabel('wavelenght [A]')
 
         # Sanity check and log info
         self._ssp_log_emis[np.isnan(self._ssp_log_emis)] = -43.
