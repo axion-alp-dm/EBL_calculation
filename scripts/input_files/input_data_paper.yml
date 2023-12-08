@@ -7,13 +7,13 @@ cosmology_params:
 wavelength_array:
   lmin: 5e-6
   lmax: 1e1
-  lfsteps: 601
+  lfsteps: 250
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
   zmin: 1e-6  # This cannot be 0 at least working with SB99 or everything crushes :)
   zmax: 10.
-  zsteps: 281
+  zsteps: 300
 
 # INTEGRATION TIME STEP
 t_intsteps: 201
@@ -37,6 +37,40 @@ z_intmax: 40.
 
 # List of SSP models we want to try
 ssp_models:
+#
+#  generic:
+#    name: 'generic'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+##    sfr_params: [0.0017, 2.65, 2.9, 5.5]
+#    sfr_params: [0.015, 2.7, 2.9, 5.6]  # MD14 params
+#
+#    # SSP DATA
+#    ssp_type: 'generic'
+#    path_SSP: 'ssp/synth.Stellar.txt'
+#    file_name: ''
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: []
+#
+#  generic2:
+#    name: 'generic2'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+##    sfr_params: [0.0017, 2.65, 2.9, 5.5]
+#    sfr_params: [0.015, 2.7, 2.9, 5.6]  # MD14 params
+#
+#    # SSP DATA
+#    ssp_type: 'generic'
+#    path_SSP: 'ssp/synth.2g.txt'
+#    file_name: ''
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: []
 
   SB99_kneiske:
     name: 'Starburst99 Z=0.02 dust Kneiske'
@@ -71,5 +105,3 @@ ssp_models:
 
     # DUST ABSORPTION MODELS
     dust_abs_models: [ 'finke2022_2' ]
-
-

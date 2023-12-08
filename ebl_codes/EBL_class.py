@@ -626,7 +626,7 @@ class EBL_model(object):
             self.logging_info('SSP emissivity: set splines')
 
             # Interior of emissivity integral:
-            # L{t(z)-t(z')} * dens(z') * |dt'/dz'|
+            # L{t(z)-t(z')} * dens(z') * |d(log10(t'))/dt'|
 
             self._kernel_emiss = self._cube * 1E-43
             self._kernel_emiss = (10. ** self._log_t_ssp_intcube  # Variable

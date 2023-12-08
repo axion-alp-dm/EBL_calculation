@@ -63,28 +63,35 @@ config_data = read_config_file('scripts/input_files/input_data_paper.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data, log_prints=True)
 
 # Axion component calculation
-ebl_class.ebl_axion_calculation(
-    axion_mass=float(config_data['axion_params']['axion_mass']),
-    axion_gayy=float(config_data['axion_params']['axion_gayy'])
-    )
-plt.plot(waves_ebl,
-         10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False),
-         linestyle=models[3], color='k')
+# ebl_class.ebl_axion_calculation(
+#     axion_mass=float(config_data['axion_params']['axion_mass']),
+#     axion_gayy=float(config_data['axion_params']['axion_gayy'])
+#     )
+# plt.plot(waves_ebl,
+#          10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False),
+#          linestyle=models[3], color='k')
 
 # Intrahalo component calculation
-ebl_class.ebl_intrahalo_calculation(float(
-                                      config_data['ihl_params']['A_ihl']),
-                                    float(
-                                    config_data['ihl_params']['alpha']))
-plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(
-freq_array_ebl, 0., grid=False),
-linestyle=models[2], color='k')
+# ebl_class.ebl_intrahalo_calculation(float(
+#                                       config_data['ihl_params']['A_ihl']),
+#                                     float(
+#                                     config_data['ihl_params']['alpha']))
+# plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(
+# freq_array_ebl, 0., grid=False),
+# linestyle=models[2], color='k')
+def coshh(z):
+    return np.exp(-1.82 - np.cosh(0.145 * (z - 20)))
 
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
-    ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+
+    if config_data['ssp_models'][key]['ssp_type'] == 'generic':
+        ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key],
+                                      sfr=coshh)
+    else:
+        ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.ebl_sum_contributions()
 
     plt.figure(fig)
@@ -142,8 +149,11 @@ axes.add_artist(legend11)
 axes.add_artist(legend22)
 axes.add_artist(legend33)
 
-plt.xlim([.1, 1E3])
-plt.ylim(1e-1, 100)
+plt.xlim([.1, 200])
+plt.ylim(1e-2, 100)
+# plt.grid("major")
+# plt.grid("minor")
+plt.grid(True, which="both", ls="-")
 plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 
 

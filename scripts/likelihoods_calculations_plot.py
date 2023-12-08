@@ -46,7 +46,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('test_likelihoods_withemiss'
+direct_name = str('final_outputs_NOlims 2023-10-05 08:05:19'
                   # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -74,7 +74,7 @@ for m, e in ebl.items():
     nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
 
 # FIGURE: COB fit ------------------------------------------------
-fig_ebl = plt.figure(figsize=(11, 11))
+fig_ebl = plt.figure(figsize=(10, 7.5))
 axes_ebl = fig_ebl.gca()
 
 plt.yscale('log')
@@ -112,12 +112,12 @@ sfr_data = sfr_data_dict('sfr_data/')
 plot_sfr_data(sfr_data)
 
 legend1 = plt.legend(title='Measurements', loc=1, fontsize=18,
-                     title_fontsize=20)
+                     title_fontsize=20, framealpha=1)
 
 legend2 = plt.legend([plt.Line2D([], [], linewidth=2,
                                  linestyle=models[i], color=colors[i])
-                      for i in range(4)],
-                     ['Model A', 'Model B', 'MD14', 'MF17'],
+                      for i in range(3)],
+                     ['Model A', 'Model B', 'MD14'],
                      loc=3, bbox_to_anchor=(0.1, 0.),
                      fontsize=18,
                      title=r'Models', title_fontsize=20
@@ -131,17 +131,17 @@ axes_sfr.plot(x_sfr, ebl_class.sfr_function(
     'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])',
     x_sfr, [0.015, 2.7, 2.9, 5.6]),
               color='k', linestyle='--', lw=2)
-axes_sfr.plot(x_sfr, ebl_class.sfr_function(
-    'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])',
-    x_sfr, [0.0092, 2.79, 3.10, 6.97]),
-              color='k', linestyle='dotted', lw=2)
+# axes_sfr.plot(x_sfr, ebl_class.sfr_function(
+#     'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])',
+#     x_sfr, [0.0092, 2.79, 3.10, 6.97]),
+#               color='k', linestyle='dotted', lw=2)
 
 plt.yscale('log')
 
 plt.xlim(0, 10)
 
 plt.xlabel('redshift z')
-plt.ylabel(r'SFR (M$_{\odot}$ / yr / Mpc$^{3}$)')
+plt.ylabel(r'sfr (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
 fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(15, 15))
@@ -267,22 +267,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                                  grid=False),
                   color=colors[nkey], lw=2)
 
-    y, y_cov = propagate(lambda pars:
-                         fit_igl(waves_ebl, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
-                          facecolor=f_color[nkey], alpha=0.5)
-    print(yerr_prop)
+    # y, y_cov = propagate(lambda pars:
+    #                      fit_igl(waves_ebl, pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
+    #                       facecolor=f_color[nkey], alpha=0.5)
+    # print(yerr_prop)
 
-    # # display legend with some fit info
-    # fit_info = [
-    #     f"$\\chi^2$ / $n_\\mathrm{{dof}}$ = {m.fval:.1f} /"f" {m.ndof}",
-    # ]
-    # for p, v, e in zip(m.parameters, values_sfr, m.errors):
-    #     fit_info.append(f"{p} = ${v:.3f} \\pm {e:.3f}$")
-    #
-    # plt.legend(title="\n".join(fit_info))
 
     # FIGURE: SFR
     plt.figure(fig_sfr)
@@ -320,24 +312,25 @@ for nkey, key in enumerate(config_data['ssp_models']):
         yerr_prop = np.diag(y_cov) ** 0.5
         plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
                          facecolor=f_color[nkey], alpha=0.5)
-        print(yerr_prop)
+
+        # print(yerr_prop)
 
     # FIGURE: emissivities at z=0
-    axes_emiss.plot(waves_ebl,
-                    10 ** (freq_array_ebl
-                           + ebl_class.emiss_ssp_spline(
-                                freq_array_ebl, np.zeros(len(waves_ebl)))
-                           - 7),
-                    linestyle='-', color=colors[nkey], lw=2)
+    # axes_emiss.plot(waves_ebl,
+    #                 10 ** (freq_array_ebl
+    #                        + ebl_class.emiss_ssp_spline(
+    #                             freq_array_ebl, np.zeros(len(waves_ebl)))
+    #                        - 7),
+    #                 linestyle='-', color=colors[nkey], lw=2)
 
-    y, y_cov = propagate(
-        lambda pars:
-        fit_emiss((waves_ebl, np.zeros(len(waves_ebl))), pars),
-        values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    plt.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
-                     facecolor=f_color[nkey], alpha=0.5)
-    print(yerr_prop)
+    # y, y_cov = propagate(
+    #     lambda pars:
+    #     fit_emiss((waves_ebl, np.zeros(len(waves_ebl))), pars),
+    #     values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # plt.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
+    #                  facecolor=f_color[nkey], alpha=0.5)
+    # print(yerr_prop)
 
 # -------------------------------------------------------------
 fig_ebl.savefig('outputs/' + direct_name + '/ebl' + '.png',

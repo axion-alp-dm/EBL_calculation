@@ -72,7 +72,7 @@ def import_spectrum_data(parent_dir='',
 
 
 def dictionary_datatype(parent_dir, obs_type,
-                        lambda_min=0., lambda_max=5.,
+                        lambda_min=0., lambda_max=1e15,
                         plot_measurs=False,
                         obs_not_taken=None):
     if obs_not_taken is None:
@@ -336,7 +336,8 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                                  linestyle='', color=color_i,
                                  label=name,
                                  marker='*',
-                                 mfc='white'
+                                 mfc='white',
+                                 markersize=16
                                  )
 
                 elif datatype == 0:

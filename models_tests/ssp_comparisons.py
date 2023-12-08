@@ -68,7 +68,7 @@ def get_cycle(cmap, N=None, use_index="auto"):
         return cycler("color", colors)
 
 
-N = 7
+N = 10
 plt.rcParams["axes.prop_cycle"] = get_cycle(bi_r, N)
 
 # Check that the working directory is correct for the paths
@@ -247,11 +247,11 @@ def fig_plot(age, color):
     #          label='Popstar21 Z = 0.02, log(t) = %.2f' %
     #                pop21_log_time[aaa],
     #          color=color)
-    aaa = np.abs(pop09_log_time - age).argmin()
-    plt.plot(pop09_wave, pop09_lumin_cube[:, aaa],
-             linestyle='solid',
-             label='%.1f Myr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
-             color=color, alpha=0.4)
+    # aaa = np.abs(pop09_log_time - age).argmin()
+    # plt.plot(pop09_wave, pop09_lumin_cube[:, aaa],
+    #          linestyle='solid',
+    #          label='%.1f Myr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
+    #          color=color, alpha=0.4)
 
     aaa = np.abs(st99_log_time - age).argmin()
     plt.plot(st99_wave, st99_log_emis[:, aaa],
@@ -260,8 +260,9 @@ def fig_plot(age, color):
              color=color)
 
     aaa = np.abs(pegase_log_time - age).argmin()
-    plt.plot(pegase_wave, pegase_log_emis[:, aaa, 2],
-             linestyle='--',
+    plt.plot(pegase_wave, pegase_log_emis[:, aaa, -1],
+             linestyle='-',
+             label='%.1f Myr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
              color=color)
 
 
@@ -294,25 +295,27 @@ pop09_log_time, pop09_wave, pop09_lumin_cube = popstar09(
 # # pop_age(path21, pop21_log_time, pop21_wave, pop21_lumin_cube)
 #
 #
-fig = plt.figure()
+fig = plt.figure(figsize=(12, 12))
 axes = fig.gca()
-color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen', 'purple',
-         'brown', 'gray']
-plt.title('ssp comparisons at Z=0.02')
+# color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen', 'purple',
+#          'brown', 'gray']
+# plt.title('ssp comparisons at Z=0.02')
 
 for ni, age in enumerate(np.log10([1., 2., 3., 4, 5., 10, 20, 100, 500,
                                    900]) + 6):
     # for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-    fig_plot(age=age, color=color[ni % len(color)])
+    color = next(axes._get_lines.prop_cycler)['color']
+    print(ni, color)
+    fig_plot(age=age, color=color)
 
 plt.xscale('log')
 
 plt.xlim(1e2, 1e6)
-# plt.ylim(-15, 1)
-models = ['solid', 'dotted']
+plt.ylim(24, 34)
+models = ['dotted', '-']
 legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
                                   color='k') for i in range(2)],
-                      ['Popstar09', 'Starburst99'], loc=8,
+                      ['Starburst99 Z=0.2', 'Pegase 3.0 Z=0.0001'], loc=8,
                       title=r'Components')
 
 axes.add_artist(legend22)
@@ -320,8 +323,11 @@ axes.add_artist(legend22)
 plt.legend()
 
 plt.xlabel('wavelenght [A]')
-plt.ylabel(r'log$_{10}$(L$_{\lambda}$/Lsun '
+plt.ylabel(r'log$_{10}$(L$_{\lambda}$ ' #/Lsun '
            r'[erg s$^{-1}$ A$^{-1}$ Msun$^{-1}$])')
+
+plt.savefig('outputs/aaa.pdf', bbox_inches='tight')
+plt.savefig('outputs/aaa.jpg', bbox_inches='tight')
 
 if work_with_Lnu is True:
     plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun [erg s$^{-1}$ Hz$^{-1}$ Msun$^{'
@@ -404,23 +410,23 @@ if work_with_Lnu is True:
 #                r'-1}$])')
 #     plt.ylim(10, 22)
 
-plt.rcParams['mathtext.fontset'] = 'stix'
-plt.rcParams['font.family'] = 'STIXGeneral'
-plt.rcParams['axes.labelsize'] = 24
-plt.rcParams['lines.markersize'] = 10
-plt.rc('font', size=24)
-plt.rc('axes', titlesize=30)
-plt.rc('axes', labelsize=30)
-plt.rc('xtick', labelsize=30)
-plt.rc('ytick', labelsize=30)
-plt.rc('legend', fontsize=22)
-plt.rc('figure', titlesize=20)
-plt.rc('xtick', top=True, direction='in')
-plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
-plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
-plt.rc('xtick.minor', size=7, width=1.5)
-plt.rc('ytick.minor', size=7, width=1.5)
+# plt.rcParams['mathtext.fontset'] = 'stix'
+# plt.rcParams['font.family'] = 'STIXGeneral'
+# plt.rcParams['axes.labelsize'] = 24
+# plt.rcParams['lines.markersize'] = 10
+# plt.rc('font', size=24)
+# plt.rc('axes', titlesize=30)
+# plt.rc('axes', labelsize=30)
+# plt.rc('xtick', labelsize=30)
+# plt.rc('ytick', labelsize=30)
+# plt.rc('legend', fontsize=22)
+# plt.rc('figure', titlesize=20)
+# plt.rc('xtick', top=True, direction='in')
+# plt.rc('ytick', right=True, direction='in')
+# plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
+# plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
+# plt.rc('xtick.minor', size=7, width=1.5)
+# plt.rc('ytick.minor', size=7, width=1.5)
 
 # ---------------------------------------------
 # fig = plt.figure()
