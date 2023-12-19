@@ -4,6 +4,7 @@ import yaml
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerTuple
 
 from scipy.interpolate import UnivariateSpline
 
@@ -157,55 +158,52 @@ def host_function_std(x_array, mass_eV, gay_GeV, v_dispersion=220.):
                  / mass_eV * u.eV ** -1
                  * D_factor
                  * h_plank * c).to(u.nW * u.m ** -1 * u.sr ** -1)
-    sigma = 2. * lambda_decay * (v_dispersion * u.km * u.s**-1 / c).to(1)
-
+    sigma = 2. * lambda_decay * (v_dispersion * u.km * u.s ** -1 / c).to(1)
 
     gaussian = (1 / np.sqrt(2. * np.pi) / sigma
-                * np.exp(-0.5 * ((x_array*u.um - lambda_decay) / sigma) ** 2.)
-                ).to(u.m**-1)
-
+                * np.exp(
+                -0.5 * ((x_array * u.um - lambda_decay) / sigma) ** 2.)
+                ).to(u.m ** -1)
 
     print(lambda_decay, luminosiy, sigma, gaussian)
 
-    return (luminosiy * gaussian).to(u.nW * u.m ** -2 * u.sr ** -1)#.value
+    return (luminosiy * gaussian).to(u.nW * u.m ** -2 * u.sr ** -1)  # .value
 
 
-x_array = np.linspace(-5,5, num=int(1e7))
+x_array = np.linspace(-5, 5, num=int(1e7))
 aaa = host_function_std(x_array, 1., 1e-10)
 
+# print(host_function_std(2.48, 1., 1e-10))
 
-print(host_function_std(2.48, 1., 1e-10))
-
-plt.figure()
-plt.plot(x_array, aaa)
-plt.show()
-ma_ex = 4.079
-gay_ex = 9.9e-13
-
-plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='k')
-plt.loglog(waves_ebl, spline_cuba(waves_ebl)
-           + host_function_std(waves_ebl, mass_eV=ma_ex,
-                               gay_GeV=gay_ex), c='r')
-
-ebl_class.change_axion_contribution(ma_ex, gay_ex)
-plt.loglog(waves_ebl, spline_cuba(waves_ebl)
-           + host_function_std(waves_ebl, mass_eV=ma_ex,
-                               gay_GeV=gay_ex)
-           + 10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
-                                              grid=False),
-           c='g')
+# plt.figure()
+# plt.plot(x_array, aaa)
+# plt.show()
+# ma_ex = 4.079
+# gay_ex = 9.9e-13
+#
+# plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='k')
+# plt.loglog(waves_ebl, spline_cuba(waves_ebl)
+#            + host_function_std(waves_ebl, mass_eV=ma_ex,
+#                                gay_GeV=gay_ex), c='r')
+#
+# ebl_class.change_axion_contribution(ma_ex, gay_ex)
+# plt.loglog(waves_ebl, spline_cuba(waves_ebl)
+#            + host_function_std(waves_ebl, mass_eV=ma_ex,
+#                                gay_GeV=gay_ex)
+#            + 10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
+#                                               grid=False),
+#            c='g')
 
 plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='fuchsia')
 plt.loglog(waves_ebl, spline_finke(waves_ebl), c='orange')
-plt.loglog(waves_ebl, 10**spline_pegase0001(waves_ebl), c='r', lw=3)
-plt.loglog(waves_ebl, 10**spline_starburst(waves_ebl), c='b', lw=3)
+plt.loglog(waves_ebl, 10 ** spline_pegase0001(waves_ebl), c='r', lw=3)
+plt.loglog(waves_ebl, 10 ** spline_starburst(waves_ebl), c='b', lw=3)
 
 ebl_class.change_axion_contribution(1e2, 1e-13)
 plt.loglog(waves_ebl,
            (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
                                              grid=False)
             + spline_cuba(waves_ebl)), c='green')
-
 
 # We introduce all the EBL measurements
 # We might want to take out 'matsuoka2011.ecsv' ???
@@ -229,20 +227,36 @@ legend22 = plt.legend([plt.Line2D([], [],
                        for i in range(5)],
                       ['Model A', 'Model B',
                        'Finke22', 'CUBA', r'CUBA + axion decay'
-                               '\n(example)'
-                               '\n'
-                               r'    m$_a = 10^2$ eV'
-                               '\n'
-                               r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$'],
+                                          '\n(example)'
+                                          '\n'
+                                          r'    m$_a = 10^2$ eV'
+                                          '\n'
+                                          r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$'],
                       loc=7, bbox_to_anchor=(1., 0.3),
                       title=r'Models', fontsize=16)
 
+
+handles, labels = ax1.get_legend_handles_labels()
+aaa = 0
+for i in range(len(labels)):
+    if labels[i].__contains__('LORRI'):
+        aaa = i
+
+handles[aaa] = (plt.Line2D([], [], linestyle='',
+                          color='g', markerfacecolor='w',
+                          marker='*', markersize=16),
+                plt.Line2D([], [], linestyle='',
+                           color='k', markerfacecolor='k',
+                           marker='.', markersize=8)
+                )
+legend11 = plt.legend(handles, labels,
+                      handler_map={tuple: HandlerTuple(ndivide=1)},
+                      title='Measurements', ncol=2, loc=2,
+                      fontsize=11.5,
+                      title_fontsize=20)  # , bbox_to_anchor=(1.001, 0.99))
+
+ax1.add_artist(legend11)
 ax1.add_artist(legend22)
-legend11 = plt.legend(title='Measurements', ncol=2, loc=2, fontsize=11.5,
-                      title_fontsize=20)#, bbox_to_anchor=(1.001, 0.99))
-
-# ax1.add_artist(legend11)
-
 
 plt.annotate(text='', xy=(3e-3, 7e-3), xytext=(5e-6, 7e-3),
              arrowprops=dict(arrowstyle='<->', color='grey'),
@@ -260,8 +274,6 @@ plt.annotate(text='COB', xy=(1, 7.5e-3), alpha=0.7, color='grey')
 plt.savefig('outputs/cb.pdf', bbox_inches='tight')
 plt.savefig('outputs/cb.png', bbox_inches='tight')
 plt.show()
-
-
 
 aaa = []
 for working_model_name in list_working_models.keys():

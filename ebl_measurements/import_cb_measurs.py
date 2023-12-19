@@ -337,7 +337,15 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                                  label=name,
                                  marker='*',
                                  mfc='white',
-                                 markersize=16
+                                 markersize=24, markeredgewidth=2
+                                 )
+                    ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+                                 yerr=[data['nuInu_errn'],
+                                       data['nuInu_errp']],
+                                 linestyle='', color='k',
+                                 marker='.',
+                                 mfc='k',
+                                 markersize=8, zorder=100
                                  )
 
                 elif datatype == 0:
