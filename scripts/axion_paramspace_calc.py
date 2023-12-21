@@ -39,21 +39,20 @@ plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('final_outputs_clumpy_vdispersion_NHonly'
+direct_name = str('test'
                   # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
 
 # Choose the max and minimum wavelengthS of the data that we import
-lambda_min_total = 0.  # [microns]
+lambda_min_total = 0.1  # [microns]
 lambda_max_total = 5.  # [microns]
 
-
 # If the directory for outputs is not present, create it.
-# if not os.path.exists("outputs/"):
-#     os.makedirs("outputs/")
-# if not os.path.exists('outputs/' + direct_name):
-#     os.makedirs('outputs/' + direct_name)
+if not os.path.exists("outputs/"):
+    os.makedirs("outputs/")
+if not os.path.exists('outputs/' + direct_name):
+    os.makedirs('outputs/' + direct_name)
 
 
 def chi2_upperlims(x_model, x_obs, err_obs):
@@ -84,10 +83,10 @@ ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 # Parameter space for axion characteristics and rest of necessary arrays
 # axion_mac2 = np.logspace(-1, 7, num=500)
 # axion_gay = np.logspace(-20, -7, num=500)
-axion_mac2 = np.logspace(0, 7, num=250)
-axion_gay = np.logspace(-12, -9, num=250)
+axion_mac2 = np.logspace(np.log10(0.5), 2, num=50)
+axion_gay = np.logspace(-12, -7, num=50)
 
-waves_ebl = np.logspace(np.log10(5e-6), 1, 3000)
+waves_ebl = np.logspace(np.log10(0.1), 1, 300)
 # waves_ebl = np.linspace(0.1, 10, num=5000)
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 
@@ -106,30 +105,53 @@ def spline_pegase0001(lambda_array):
     method_y = np.load('outputs/final_outputs 2023-10-04 16:15:16/'
                        'pegase0.0001_Finkespline.npy',
                        allow_pickle=True).item()
-    return method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
-                    grid=False)
+    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
+                          grid=False)
 
 
 def spline_starburst(lambda_array):
     method_y = np.load('outputs/final_outputs 2023-10-04 16:15:16/'
                        'SB99_kneiskespline.npy',
                        allow_pickle=True).item()
-    return method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
-                    grid=False)
+    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
+                          grid=False)
 
+def test_1(xx):
+    return np.ones(np.shape(xx))
+def test_10(xx):
+    return np.ones(np.shape(xx))*10.
+def test_nh(xx):
+    return np.ones(np.shape(xx))*16.8
 
 list_working_models = {
-    'ModelA': {'label': 'Model A', 'callable_func': spline_pegase0001},
-    'ModelB': {'label': 'Model B', 'callable_func': spline_starburst},
-    'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba},
-    'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke}
+    'ModelA': {'label': 'Model A', 'callable_func': spline_pegase0001,
+               'color': 'b', 'linewidth': 3},
+    'ModelB': {'label': 'Model B', 'callable_func': spline_starburst,
+               'color': 'r', 'linewidth': 3},
+    'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
+               'color': 'orange', 'linewidth': 2},
+    'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
+               'color': 'fuchsia', 'linewidth': 2}
 }
-
-# Beginning of figure specifications
-plt.figure(figsize=(16, 10))  # figsize=(16, 10))
-ax1 = plt.gca()
-
-
+np.save('outputs/' + direct_name + '/dict_params.npy', list_working_models)
+list_working_models = {
+    # 'ModelA': {'label': 'Model A', 'callable_func': spline_pegase0001,
+    #            'color': 'b', 'linewidth': 3},
+    # 'ModelB': {'label': 'Model B', 'callable_func': spline_starburst,
+    #            'color': 'r', 'linewidth': 3},
+    # 'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
+    #            'color': 'orange', 'linewidth': 2},
+    # 'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
+    #            'color': 'fuchsia', 'linewidth': 2},
+    # 'test1': {'label': 'test1', 'callable_func': test_1,
+    #            'color': 'k', 'linewidth': 2},
+    # 'test10': {'label': 'test10', 'callable_func': test_10,
+    #            'color': 'green', 'linewidth': 2},
+    'testnh': {'label': 'testnh', 'callable_func': test_nh,
+               'color': 'violet', 'linewidth': 2}
+}
+# np.save('outputs/' + direct_name + '/dict_params.npy', list_working_models)
+print(direct_name)
 def gamma_def(mass_eV, gay_GeV):
     return ((mass_eV * u.eV) ** 3. * (gay_GeV * u.GeV ** -1) ** 2.
             / (32. * h_plank)).to(u.s ** -1)
@@ -144,8 +166,6 @@ def host_function(x_array, mass_eV, gay_GeV, sigma):
     luminosiy = (D_factor
                  * gamma_def(mass_eV=mass_eV, gay_GeV=gay_GeV)).to(
         u.nW * u.m ** -2 * u.sr ** -1).value
-
-    # print(lambda_decay, luminosiy)
 
     return (luminosiy / np.sqrt(2. * np.pi) / sigma
             * np.exp(-0.5 * ((x_array - lambda_decay) / sigma) ** 2.))
@@ -165,39 +185,25 @@ def host_function_std(x_array, mass_eV, gay_GeV, v_dispersion=220.):
                 -0.5 * ((x_array * u.um - lambda_decay) / sigma) ** 2.)
                 ).to(u.m ** -1)
 
-    print(lambda_decay, luminosiy, sigma, gaussian)
-
     return (luminosiy * gaussian).to(u.nW * u.m ** -2 * u.sr ** -1)  # .value
 
 
-x_array = np.linspace(-5, 5, num=int(1e7))
-aaa = host_function_std(x_array, 1., 1e-10)
+# Beginning of figure specifications
+plt.figure(figsize=(16, 10))  # figsize=(16, 10))
+ax1 = plt.gca()
 
-# print(host_function_std(2.48, 1., 1e-10))
+colors = ['b', 'r', 'orange', 'fuchsia', 'green']
+linewidths = [3, 3, 2, 2, 2]
 
-# plt.figure()
-# plt.plot(x_array, aaa)
-# plt.show()
-# ma_ex = 4.079
-# gay_ex = 9.9e-13
-#
-# plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='k')
-# plt.loglog(waves_ebl, spline_cuba(waves_ebl)
-#            + host_function_std(waves_ebl, mass_eV=ma_ex,
-#                                gay_GeV=gay_ex), c='r')
-#
-# ebl_class.change_axion_contribution(ma_ex, gay_ex)
-# plt.loglog(waves_ebl, spline_cuba(waves_ebl)
-#            + host_function_std(waves_ebl, mass_eV=ma_ex,
-#                                gay_GeV=gay_ex)
-#            + 10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
-#                                               grid=False),
-#            c='g')
+for ni, working_model_name in enumerate(list_working_models.keys()):
+    model = list_working_models[working_model_name]
+    plt.loglog(waves_ebl, model['callable_func'](waves_ebl),
+               c=model['color'], lw=model['linewidth'],
+               label=model['label'])
 
-plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='fuchsia')
-plt.loglog(waves_ebl, spline_finke(waves_ebl), c='orange')
-plt.loglog(waves_ebl, 10 ** spline_pegase0001(waves_ebl), c='r', lw=3)
-plt.loglog(waves_ebl, 10 ** spline_starburst(waves_ebl), c='b', lw=3)
+#     plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='fuchsia')
+# plt.loglog(waves_ebl, spline_finke(waves_ebl), c='orange')
+# plt.loglog(waves_ebl, spline_pegase0001(waves_ebl), c='r', lw=3)
 
 ebl_class.change_axion_contribution(1e2, 1e-13)
 plt.loglog(waves_ebl,
@@ -206,49 +212,41 @@ plt.loglog(waves_ebl,
             + spline_cuba(waves_ebl)), c='green')
 
 # We introduce all the EBL measurements
-# We might want to take out 'matsuoka2011.ecsv' ???
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=lambda_min_total,
     lambda_max_total=lambda_max_total,
     ax1=ax1, plot_measurs=True)
 
-upper_lims_all_woNH = upper_lims_all[
-    upper_lims_all['ref'] != r'NH/LORRI (Lauer+ \'22)']
-
 plt.xlim(5e-6, 1e1)
 plt.ylim(5e-3, 120)
 
-colors = ['b', 'r', 'orange', 'fuchsia', 'green']
-linewidths = [3, 3, 2, 2, 2]
 legend22 = plt.legend([plt.Line2D([], [],
                                   linewidth=linewidths[i],
                                   linestyle='-',
                                   color=colors[i])
                        for i in range(5)],
                       ['Model A', 'Model B',
-                       'Finke22', 'CUBA', r'CUBA + axion decay'
-                                          '\n(example)'
-                                          '\n'
-                                          r'    m$_a = 10^2$ eV'
-                                          '\n'
-                                          r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$'],
+                       'Finke22', 'CUBA',
+                       r'CUBA + axion decay'
+                       '\n(example)'
+                       '\n'
+                       r'    m$_a = 10^2$ eV'
+                       '\n'
+                       r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$'],
                       loc=7, bbox_to_anchor=(1., 0.3),
                       title=r'Models', fontsize=16)
 
-
 handles, labels = ax1.get_legend_handles_labels()
-aaa = 0
+
 for i in range(len(labels)):
     if labels[i].__contains__('LORRI'):
-        aaa = i
-
-handles[aaa] = (plt.Line2D([], [], linestyle='',
-                          color='g', markerfacecolor='w',
-                          marker='*', markersize=16),
-                plt.Line2D([], [], linestyle='',
-                           color='k', markerfacecolor='k',
-                           marker='.', markersize=8)
-                )
+        handles[i] = (plt.Line2D([], [], linestyle='',
+                                 color='g', markerfacecolor='w',
+                                 marker='*', markersize=16),
+                      plt.Line2D([], [], linestyle='',
+                                 color='k', markerfacecolor='k',
+                                 marker='.', markersize=8)
+                      )
 legend11 = plt.legend(handles, labels,
                       handler_map={tuple: HandlerTuple(ndivide=1)},
                       title='Measurements', ncol=2, loc=2,
@@ -271,16 +269,16 @@ plt.annotate(text='CXB', xy=(1e-4, 7.5e-3), alpha=0.7, color='grey')
 plt.annotate(text='CUB', xy=(0.035, 7.5e-3), alpha=0.7, color='grey')
 plt.annotate(text='COB', xy=(1, 7.5e-3), alpha=0.7, color='grey')
 
-plt.savefig('outputs/cb.pdf', bbox_inches='tight')
-plt.savefig('outputs/cb.png', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb.pdf', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
 plt.show()
 
 aaa = []
 for working_model_name in list_working_models.keys():
     print(working_model_name)
 
-    # working_model = list_working_models[
-    #     working_model_name]['callable_func']
+    working_model = list_working_models[
+        working_model_name]['callable_func']
 
     values_gay_array = np.zeros((len(axion_mac2), len(axion_gay)))
     values_gay_array_NH = np.zeros((len(axion_mac2), len(axion_gay)))
@@ -292,24 +290,14 @@ for working_model_name in list_working_models.keys():
 
         for nb, bb in enumerate(axion_gay):
             ebl_class.change_axion_contribution(aa, bb)
-            working_model = UnivariateSpline(
-                waves_ebl,
-                list_working_models[
-                    working_model_name]['callable_func'](waves_ebl)
-                + host_function_std(
-                    waves_ebl, mass_eV=aa, gay_GeV=bb),
-                s=0, k=1)
-            # if na % 25 == 0 and nb % 25 == 0:
-            #     plt.figure()
-            #     plt.title(str(aa) + '  ' + str(bb))
-            #     plt.loglog(waves_ebl, working_model(waves_ebl))
-            #     plt.show()
-            # host_function(waves_ebl, mass_eV=aa, gay_GeV=bb, sigma=4e-3)
-            # host_decay = (D_factor * gamma_def(mass_eV=aa, gay_GeV=bb)).to(
-            #     u.nW * u.m ** -2 * u.sr ** -1).value
-            # print(host_decay, working_model(upper_lims_all['lambda']),
-            #       working_model(upper_lims_all['lambda'])
-            #              + host_decay)
+            # working_model = UnivariateSpline(
+            #     waves_ebl,
+            #     list_working_models[
+            #         working_model_name]['callable_func'](waves_ebl)
+            #     # + host_function_std(
+            #     #     waves_ebl, mass_eV=aa, gay_GeV=bb)
+            #     ,
+            #     s=0, k=1)
 
             values_gay_array[na, nb] += 2. * chi2_upperlims(
                 x_model=(10 ** ebl_class.ebl_axion_spline(

@@ -311,6 +311,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
             for datatype in type_i:
                 data = data_total[data_total['type'] == datatype]
                 if datatype == 1:
+                    # continue
                     ax1.errorbar(x=data['lambda'], y=data['nuInu'],
                                  yerr=[data['nuInu_errn'],
                                        data['nuInu_errp']],
@@ -349,6 +350,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                                  )
 
                 elif datatype == 0:
+                    # continue
                     if type_i.__contains__(1):
                         label_i = ''
                     else:
@@ -376,7 +378,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                          )
             i += 1
 
-        ax1.set_xlabel(r'Wavelength ($\mu$m)')
+        # ax1.set_xlabel(r'Wavelength ($\mu$m)')
         ax1.set_ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ / sr)')
 
         ax1.set_xscale('log')
