@@ -318,7 +318,8 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                                  linestyle='', color=color_i,
                                  label=name,
                                  marker=markers[i % len(markers)],
-                                 mfc='white'
+                                 mfc='white',
+                                 zorder=1e5
                                  )
 
                 elif datatype == 3:

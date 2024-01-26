@@ -13,22 +13,24 @@ import matplotlib.cm
 # import matplotlib.pylab as pl
 # import matplotlib as mpl
 
+all_size = 30
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
-plt.rcParams['axes.labelsize'] = 20
-plt.rc('font', size=20)
-plt.rc('axes', titlesize=20)
-plt.rc('axes', labelsize=20)
-plt.rc('xtick', labelsize=18)
-plt.rc('ytick', labelsize=18)
-plt.rc('legend', fontsize=18)
-plt.rc('figure', titlesize=17)
+plt.rcParams['axes.labelsize'] = all_size
+plt.rcParams['lines.markersize'] = 10
+plt.rc('font', size=all_size)
+plt.rc('axes', titlesize=all_size)
+plt.rc('axes', labelsize=all_size)
+plt.rc('xtick', labelsize=all_size)
+plt.rc('ytick', labelsize=all_size)
+plt.rc('legend', fontsize=12)
+plt.rc('figure', titlesize=all_size)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=7, width=1.5, top=True)
-plt.rc('ytick.major', size=7, width=1.5, right=True)
-plt.rc('xtick.minor', size=4, width=1)
-plt.rc('ytick.minor', size=4, width=1)
+plt.rc('xtick.major', size=10, width=2, top=False, pad=10)
+plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
+plt.rc('xtick.minor', size=7, width=1.5, top=False)
+plt.rc('ytick.minor', size=7, width=1.5)
 
 bi = LinearSegmentedColormap.from_list("",
                                        ["#ff0080", "#ff0080",
@@ -39,6 +41,9 @@ bi_r = LinearSegmentedColormap.from_list("",
                                           "#a349a4", "#990099",
                                           "#ff0080",
                                           "#ff0080"])  # reversed
+
+import matplotlib as mpl
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 
 def get_cycle(cmap, N=None, use_index="auto"):
@@ -67,9 +72,13 @@ def get_cycle(cmap, N=None, use_index="auto"):
         colors = cmap(np.linspace(0, 1, N))
         return cycler("color", colors)
 
-
+cividis_mine = mpl.colormaps['cividis']._resample(10)
+cividis_mine.colors[-1, 1] = 0.7
+cividis_mine.colors[-1, 2] = 0.
+cividis_mine.colors = cividis_mine.colors[::-1]
+print(cividis_mine.colors)
 N = 10
-plt.rcParams["axes.prop_cycle"] = get_cycle(bi_r, N)
+plt.rcParams["axes.prop_cycle"] = get_cycle(cividis_mine, N)
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'models_tests':
@@ -124,6 +133,7 @@ for n_met, met in enumerate(pegase_metall):
         'ssp/pegase3/spectral_resultsZ' + str(met) + '.txt')
     dd_pegase[:, :, n_met] = data_pegase[:, 2].reshape(t_pegase.shape[0],
                                                        l_pegase.shape[0]).T
+    print(n_met, met)
 
 
 pegase_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
@@ -255,14 +265,13 @@ def fig_plot(age, color):
 
     aaa = np.abs(st99_log_time - age).argmin()
     plt.plot(st99_wave, st99_log_emis[:, aaa],
-             linestyle='dotted',
-             # label='SB99, log(t) = %.2f' % st99_log_time[aaa],
+             linestyle='dotted', lw=2,
              color=color)
 
     aaa = np.abs(pegase_log_time - age).argmin()
     plt.plot(pegase_wave, pegase_log_emis[:, aaa, -1],
-             linestyle='-',
-             label='%.1f Myr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
+             linestyle='-', lw=2,
+             label='%.1f Gyr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
              color=color)
 
 
@@ -295,43 +304,52 @@ pop09_log_time, pop09_wave, pop09_lumin_cube = popstar09(
 # # pop_age(path21, pop21_log_time, pop21_wave, pop21_lumin_cube)
 #
 #
-fig = plt.figure(figsize=(12, 12))
+fig = plt.figure(figsize=(10, 10))
 axes = fig.gca()
-# color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen', 'purple',
-#          'brown', 'gray']
-# plt.title('ssp comparisons at Z=0.02')
 
 for ni, age in enumerate(np.log10([1., 2., 3., 4, 5., 10, 20, 100, 500,
                                    900]) + 6):
     # for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
     color = next(axes._get_lines.prop_cycler)['color']
     print(ni, color)
-    fig_plot(age=age, color=color)
+
+    aaa = np.abs(st99_log_time - age).argmin()
+    plt.plot(st99_wave*1e-4, st99_log_emis[:, aaa],
+             linestyle='dotted', lw=2,
+             color=color)
+
+    aaa = np.abs(pegase_log_time - age).argmin()
+    plt.plot(pegase_wave*1e-4, pegase_log_emis[:, aaa, -1],
+             linestyle='-', lw=2,
+             label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
+             color=color)
 
 plt.xscale('log')
 
-plt.xlim(1e2, 1e6)
+plt.xlim(1e-2, 1e2)
 plt.ylim(24, 34)
 models = ['dotted', '-']
 legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
                                   color='k') for i in range(2)],
-                      ['Starburst99 Z=0.2', 'Pegase 3.0 Z=0.0001'], loc=8,
-                      title=r'Components')
+                      ['Starburst99 Z=0.2', 'Pégase 3.0  Z=0.0001'],
+                      loc=8,
+                      fontsize=22)
 
 axes.add_artist(legend22)
 
-plt.legend()
+plt.legend(fontsize=18, title='Ages', title_fontsize=22)
 
-plt.xlabel('wavelenght [A]')
+plt.xlabel(r'Wavelenght ($\mu$m)')
 plt.ylabel(r'log$_{10}$(L$_{\lambda}$ ' #/Lsun '
-           r'[erg s$^{-1}$ A$^{-1}$ Msun$^{-1}$])')
+           r'[erg s$^{-1}$ $\mathrm{\AA}^{-1}$ M$_{\odot}^{-1}$])')
 
-plt.savefig('outputs/aaa.pdf', bbox_inches='tight')
-plt.savefig('outputs/aaa.jpg', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/ssp_compar.pdf', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/ssp_compar_viridis_r.jpg',
+            bbox_inches='tight')
 
 if work_with_Lnu is True:
-    plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun [erg s$^{-1}$ Hz$^{-1}$ Msun$^{'
-               r'-1}$])')
+    plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun '
+               r'[erg s$^{-1}$ Hz$^{-1}$ Msun$^{-1}$])')
     plt.ylim(10, 22)
 #
 # # ---------------------------------------------

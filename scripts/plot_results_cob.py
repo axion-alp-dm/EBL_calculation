@@ -143,7 +143,7 @@ list_working_models = {
     'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
                'color': 'orange', 'linewidth': 2},
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-               'color': 'fuchsia', 'linewidth': 2},
+               'color': 'lime', 'linewidth': 2},
     # 'test1': {'label': 'test1', 'callable_func': test_1,
     #            'color': 'k', 'linewidth': 2},
     # 'test10': {'label': 'test10', 'callable_func': test_10,
@@ -154,7 +154,7 @@ list_working_models = {
 
 # Beginning of figure specifications
 
-ebl_class.change_axion_contribution(mass=2.48/1.45, gayy=5.76e-10)
+ebl_class.change_axion_contribution(mass=2.48/0.17, gayy=1.7e-11)
 # ax2.plot(1.45, 5.76e-10, marker='+', color='r')
 
 for ni, working_model_name in enumerate(list_working_models.keys()):
@@ -178,9 +178,25 @@ params = np.load(direct_name + '/axion_params.npy')
 axion_mac2 = params[:, 0]
 axion_gay = params[:, 1]
 list_models = np.load(direct_name + '/list_models.npy')
-
-zorders = [1, 1, 4, 3, 2, 1, 1]
+list_working_models = {
+    'ModelA': {'label': 'Model A', 'callable_func': spline_pegase0001,
+               'color': 'b', 'linewidth': 3},
+    'ModelB': {'label': 'Model B', 'callable_func': spline_starburst,
+               'color': 'r', 'linewidth': 3},
+    'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
+               'color': 'gold', 'linewidth': 2},
+    'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
+               'color': 'lime', 'linewidth': 2},
+    # 'test1': {'label': 'test1', 'callable_func': test_1,
+    #            'color': 'k', 'linewidth': 2},
+    # 'test10': {'label': 'test10', 'callable_func': test_10,
+    #            'color': 'green', 'linewidth': 2},
+    # 'testnh': {'label': 'testnh', 'callable_func': test_nh,
+    #            'color': 'violet', 'linewidth': 2}
+}
+zorders = [1, 1, 3, 4, 2, 1, 1]
 linewidths = [8, 8, 4, 4, 2, 1]
+linestyles = ['-', '-', '-.', 'dotted']
 
 for ni, model in enumerate(list_working_models.keys()):
     print(model)
@@ -191,7 +207,8 @@ for ni, model in enumerate(list_working_models.keys()):
     cob_contours = ax2.contour(
         axion_mac2, axion_gay,
         (values_gay_array.T - np.min(values_gay_array)),
-        levels=[4.61], origin='lower', linestyles='-',
+        levels=[4.61], origin='lower',
+        linestyles=linestyles[ni],
         colors=model_full['color'], alpha=0.8,
         linewidths=linewidths[ni],
         zorder=1,

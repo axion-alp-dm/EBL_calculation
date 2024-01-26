@@ -39,13 +39,13 @@ plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('test'
-                  # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
+direct_name = str('cuba_great_resolution'
+                  + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
 
 # Choose the max and minimum wavelengthS of the data that we import
-lambda_min_total = 0.1  # [microns]
+lambda_min_total = 0.  # [microns]
 lambda_max_total = 5.  # [microns]
 
 # If the directory for outputs is not present, create it.
@@ -81,13 +81,13 @@ config_data = read_config_file(
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # Parameter space for axion characteristics and rest of necessary arrays
-# axion_mac2 = np.logspace(-1, 7, num=500)
-# axion_gay = np.logspace(-20, -7, num=500)
-axion_mac2 = np.logspace(np.log10(0.5), 2, num=50)
-axion_gay = np.logspace(-12, -7, num=50)
+axion_mac2 = np.logspace(-1, 7, num=int(1e4))
+axion_gay = np.logspace(-20, -7, num=int(1e4))
+# axion_mac2 = np.logspace(np.log10(0.5), 2, num=50)
+# axion_gay = np.logspace(-12, -7, num=50)
 
-waves_ebl = np.logspace(np.log10(0.1), 1, 300)
-# waves_ebl = np.linspace(0.1, 10, num=5000)
+# waves_ebl = np.geomspace(5e-6, 10, 300)
+waves_ebl = np.geomspace(5e-6, 10, num=int(1e6))
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 
 # We introduce the Finke22 and CUBA splines
@@ -141,14 +141,14 @@ list_working_models = {
     #            'color': 'r', 'linewidth': 3},
     # 'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
     #            'color': 'orange', 'linewidth': 2},
-    # 'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-    #            'color': 'fuchsia', 'linewidth': 2},
+    'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
+               'color': 'k', 'linewidth': 2},
     # 'test1': {'label': 'test1', 'callable_func': test_1,
     #            'color': 'k', 'linewidth': 2},
     # 'test10': {'label': 'test10', 'callable_func': test_10,
     #            'color': 'green', 'linewidth': 2},
-    'testnh': {'label': 'testnh', 'callable_func': test_nh,
-               'color': 'violet', 'linewidth': 2}
+    # 'testnh': {'label': 'testnh', 'callable_func': test_nh,
+    #            'color': 'violet', 'linewidth': 2}
 }
 # np.save('outputs/' + direct_name + '/dict_params.npy', list_working_models)
 print(direct_name)
@@ -192,14 +192,15 @@ def host_function_std(x_array, mass_eV, gay_GeV, v_dispersion=220.):
 plt.figure(figsize=(16, 10))  # figsize=(16, 10))
 ax1 = plt.gca()
 
-colors = ['b', 'r', 'orange', 'fuchsia', 'green']
+colors = ['k', 'b', 'fuchsia']
 linewidths = [3, 3, 2, 2, 2]
 
 for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
     plt.loglog(waves_ebl, model['callable_func'](waves_ebl),
-               c=model['color'], lw=model['linewidth'],
-               label=model['label'])
+               c=model['color'], lw=model['linewidth'], zorder=2
+               # label=model['label']
+               )
 
 #     plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='fuchsia')
 # plt.loglog(waves_ebl, spline_finke(waves_ebl), c='orange')
@@ -209,7 +210,16 @@ ebl_class.change_axion_contribution(1e2, 1e-13)
 plt.loglog(waves_ebl,
            (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
                                              grid=False)
-            + spline_cuba(waves_ebl)), c='green')
+            + spline_cuba(waves_ebl)), c='b', zorder=1)
+
+plt.loglog(waves_ebl,
+           (spline_cuba(waves_ebl)
+             + host_function_std(
+                    waves_ebl,
+                       mass_eV=2.48/4e-3,
+                       gay_GeV=5e-16).value), c='fuchsia', zorder=1)
+
+print(2.48/4e-3)
 
 # We introduce all the EBL measurements
 upper_lims_all, _ = import_cb_data(
@@ -220,19 +230,39 @@ upper_lims_all, _ = import_cb_data(
 plt.xlim(5e-6, 1e1)
 plt.ylim(5e-3, 120)
 
+# legend22 = plt.legend([plt.Line2D([], [],
+#                                   linewidth=linewidths[i],
+#                                   linestyle='-',
+#                                   color=colors[i])
+#                        for i in range(5)],
+#                       ['Model A', 'Model B',
+#                        'Finke22', 'CUBA',
+#                        r'CUBA + cosmic axion'
+#                        '\n decay (example)'
+#                        '\n'
+#                        r'    m$_a = 10^2$ eV'
+#                        '\n'
+#                        r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$',
+#                       loc=7, bbox_to_anchor=(1., 0.3),
+#                       title=r'Models', fontsize=16)
 legend22 = plt.legend([plt.Line2D([], [],
-                                  linewidth=linewidths[i],
+                                  linewidth=2,
                                   linestyle='-',
                                   color=colors[i])
-                       for i in range(5)],
-                      ['Model A', 'Model B',
-                       'Finke22', 'CUBA',
-                       r'CUBA + axion decay'
-                       '\n(example)'
+                       for i in range(3)],
+                      ['CUBA',
+                       r'CUBA + cosmic axion'
+                       '\n decay (example)'
                        '\n'
                        r'    m$_a = 10^2$ eV'
                        '\n'
-                       r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$'],
+                       r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$',
+                       r'CUBA + host axion'
+                       '\n decay (example)'
+                       '\n'
+                       r'    m$_a = 620$ eV'
+                       '\n'
+                       r'    g$_{a\gamma} = 5 \cdot 10^{-16}$ GeV$^{-1}$'],
                       loc=7, bbox_to_anchor=(1., 0.3),
                       title=r'Models', fontsize=16)
 
@@ -269,6 +299,8 @@ plt.annotate(text='CXB', xy=(1e-4, 7.5e-3), alpha=0.7, color='grey')
 plt.annotate(text='CUB', xy=(0.035, 7.5e-3), alpha=0.7, color='grey')
 plt.annotate(text='COB', xy=(1, 7.5e-3), alpha=0.7, color='grey')
 
+plt.xlabel(r'Wavelenght ($\mu$m)')
+
 plt.savefig('outputs/figures_paper/cb.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
 plt.show()
@@ -290,14 +322,14 @@ for working_model_name in list_working_models.keys():
 
         for nb, bb in enumerate(axion_gay):
             ebl_class.change_axion_contribution(aa, bb)
-            # working_model = UnivariateSpline(
-            #     waves_ebl,
-            #     list_working_models[
-            #         working_model_name]['callable_func'](waves_ebl)
-            #     # + host_function_std(
-            #     #     waves_ebl, mass_eV=aa, gay_GeV=bb)
-            #     ,
-            #     s=0, k=1)
+            working_model = UnivariateSpline(
+                waves_ebl,
+                list_working_models[
+                    working_model_name]['callable_func'](waves_ebl)
+                + host_function_std(
+                    waves_ebl, mass_eV=aa, gay_GeV=bb).value
+                ,
+                s=0, k=1)
 
             values_gay_array[na, nb] += 2. * chi2_upperlims(
                 x_model=(10 ** ebl_class.ebl_axion_spline(
