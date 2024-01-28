@@ -1,5 +1,6 @@
 # IMPORTS --------------------------------------------#
 import os
+import sys
 import yaml
 import time
 import numpy as np
@@ -39,8 +40,9 @@ plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('cuba_great_resolution'
-                  + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
+direct_name = str('cuba_great_resolution/small_bits'
+                  # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
+                  + sys.argv[1]
                   )
 print(direct_name)
 
@@ -54,6 +56,15 @@ if not os.path.exists("outputs/"):
 if not os.path.exists('outputs/' + direct_name):
     os.makedirs('outputs/' + direct_name)
 
+
+# Parameter space for axion characteristics and rest of necessary arrays
+axion_mac2 = np.logspace(float(sys.argv[1]), float(sys.argv[2]),
+                         num=100)
+axion_gay = np.logspace(float(sys.argv[3]), float(sys.argv[4]),
+                        num=500)
+
+np.save('outputs/' + direct_name + '/axion_mass', axion_mac2)
+np.save('outputs/' + direct_name + '/axion_gayy', axion_gay)
 
 def chi2_upperlims(x_model, x_obs, err_obs):
     """
@@ -80,9 +91,6 @@ config_data = read_config_file(
     'scripts/input_files/input_data_paper.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
-# Parameter space for axion characteristics and rest of necessary arrays
-axion_mac2 = np.logspace(-1, 7, num=int(1e4))
-axion_gay = np.logspace(-20, -7, num=int(1e4))
 # axion_mac2 = np.logspace(np.log10(0.5), 2, num=50)
 # axion_gay = np.logspace(-12, -7, num=50)
 
@@ -216,11 +224,22 @@ plt.loglog(waves_ebl,
            (spline_cuba(waves_ebl)
              + host_function_std(
                     waves_ebl,
-                       mass_eV=2.48/4e-3,
+                       mass_eV=2.48/4e-5,
                        gay_GeV=5e-16).value), c='fuchsia', zorder=1)
 
 print(2.48/4e-3)
-
+# plt.figure()
+# for ii in [1e4, 1e5, 1e6, 1e7, 1e8]:
+#     waves_ebl = np.geomspace(5e-6, 10, num=int(ii))
+#     aaa = max((spline_cuba(waves_ebl)
+#              + host_function_std(
+#                     waves_ebl,
+#                        mass_eV=2.48/4e-1,
+#                        gay_GeV=5e-14).value))
+#     print(np.log10(ii), aaa)
+#     plt.scatter(ii, aaa)
+# plt.xscale('log')
+# plt.show()
 # We introduce all the EBL measurements
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=lambda_min_total,
@@ -371,9 +390,6 @@ for working_model_name in list_working_models.keys():
     aaa.append([working_model_name, list_working_models[
         working_model_name]['label']])
     print()
-
-np.save('outputs/' + direct_name + '/axion_params',
-        np.column_stack((axion_mac2, axion_gay)))
 
 np.save('outputs/' + direct_name + '/list_models', aaa)
 print(direct_name)
