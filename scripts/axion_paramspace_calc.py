@@ -41,7 +41,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 direct_name = str('cuba_great_resolution/small_bits'
-                  # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
+                  + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   + sys.argv[1]
                   )
 print(direct_name)
@@ -58,10 +58,10 @@ if not os.path.exists('outputs/' + direct_name):
 
 
 # Parameter space for axion characteristics and rest of necessary arrays
-axion_mac2 = np.logspace(float(sys.argv[1]), float(sys.argv[2]),
-                         num=100)
-axion_gay = np.logspace(float(sys.argv[3]), float(sys.argv[4]),
-                        num=500)
+axion_mac2 = np.geomspace(float(sys.argv[1]), float(sys.argv[2]),
+                         num=250)
+axion_gay = np.geomspace(float(sys.argv[3]), float(sys.argv[4]),
+                        num=250)
 
 np.save('outputs/' + direct_name + '/axion_mass', axion_mac2)
 np.save('outputs/' + direct_name + '/axion_gayy', axion_gay)
@@ -186,7 +186,10 @@ def host_function_std(x_array, mass_eV, gay_GeV, v_dispersion=220.):
                  / mass_eV * u.eV ** -1
                  * D_factor
                  * h_plank * c).to(u.nW * u.m ** -1 * u.sr ** -1)
-    sigma = 2. * lambda_decay * (v_dispersion * u.km * u.s ** -1 / c).to(1)
+    print(luminosiy/lambda_decay.to(u.m))
+    sigma = 2. * lambda_decay * (v_dispersion * u.km * u.s ** -1 / c).to(
+        1)*1e-2
+    print(sigma)
 
     gaussian = (1 / np.sqrt(2. * np.pi) / sigma
                 * np.exp(
@@ -224,9 +227,12 @@ plt.loglog(waves_ebl,
            (spline_cuba(waves_ebl)
              + host_function_std(
                     waves_ebl,
-                       mass_eV=2.48/4e-5,
-                       gay_GeV=5e-16).value), c='fuchsia', zorder=1)
-
+                       mass_eV=1.,
+                       gay_GeV=1e-10).value), c='fuchsia', zorder=1)
+print(max(host_function_std(
+                    waves_ebl,
+                       mass_eV=1.,
+                       gay_GeV=1e-10)))
 print(2.48/4e-3)
 # plt.figure()
 # for ii in [1e4, 1e5, 1e6, 1e7, 1e8]:
@@ -296,14 +302,14 @@ for i in range(len(labels)):
                                  color='k', markerfacecolor='k',
                                  marker='.', markersize=8)
                       )
-legend11 = plt.legend(handles, labels,
-                      handler_map={tuple: HandlerTuple(ndivide=1)},
-                      title='Measurements', ncol=2, loc=2,
-                      fontsize=11.5,
-                      title_fontsize=20)  # , bbox_to_anchor=(1.001, 0.99))
+# legend11 = plt.legend(handles, labels,
+#                       handler_map={tuple: HandlerTuple(ndivide=1)},
+#                       title='Measurements', ncol=2, loc=2,
+#                       fontsize=11.5,
+#                       title_fontsize=20)  # , bbox_to_anchor=(1.001, 0.99))
 
-ax1.add_artist(legend11)
-ax1.add_artist(legend22)
+# ax1.add_artist(legend11)
+# ax1.add_artist(legend22)
 
 plt.annotate(text='', xy=(3e-3, 7e-3), xytext=(5e-6, 7e-3),
              arrowprops=dict(arrowstyle='<->', color='grey'),
