@@ -21,6 +21,8 @@ def import_spectrum_data(parent_dir='',
     lim = []
     ref = []
     length = []
+    # parent_dir = '/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation' \
+    #              '/ebl_measurements/'
 
     with open(parent_dir + 'all_freq/CB_complete.txt', 'r') as filein:
         d = filein.readlines()
@@ -75,6 +77,8 @@ def dictionary_datatype(parent_dir, obs_type,
                         lambda_min=0., lambda_max=1e15,
                         plot_measurs=False,
                         obs_not_taken=None):
+    # parent_dir = '/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation' \
+    #              '/ebl_measurements/optical_data_2023'
     if obs_not_taken is None:
         obs_not_taken = []
     list_dirs = os.listdir(parent_dir)
@@ -165,7 +169,7 @@ def dictionary_datatype(parent_dir, obs_type,
                      u.nW / u.m ** 2 / u.sr, u.nW / u.m ** 2 / u.sr,
                      None, None),
               dtype=(np.float64, np.float64, np.float64, np.float64,
-                     np.int, str))
+                     int, str))
     return t
 
 
@@ -173,7 +177,8 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                    plot_measurs=False, ax1=None):
     # Datapoints we use in the study
     upper_lims_cob = dictionary_datatype(
-        'ebl_measurements/optical_data_2023', obs_type='UL',
+        '/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation'
+        '/ebl_measurements/optical_data_2023', obs_type='UL',
         lambda_max=5.,
         plot_measurs=False)
 
@@ -262,9 +267,16 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                            == r'NH/LORRI (Lauer+ ’22)'] = 2
 
     upper_lims_all['ref'][upper_lims_all['ref']
-                           == r'COBE/DIRBE (Arendt \& Dwek ‘03)'] = \
-    r'COBE/DIRBE (Arendt & Dwek ‘03)'
+                          == r'COBE/DIRBE (Arendt \& Dwek ‘03)'] = \
+        r'COBE/DIRBE (Arendt & Dwek ‘03)'
 
+    upper_lims_all['ref'][upper_lims_all['ref']
+                          ==
+                          r'$\mathrm{RTXE \ (Revnivtsev \ et \ al. \ 2003)}$']\
+        = r'$\mathrm{RXTE \ (Revnivtsev \ et \ al. \ 2003)}$'
+
+    upper_lims_all['lambda'][upper_lims_all['nuInu'] == 38.70000076293945] \
+        = 1.2500206233
 
     order = np.argsort(upper_lims_all['type'])
     upper_lims_all = upper_lims_all[order][:]
