@@ -12,8 +12,13 @@ xx_int = np.geomspace(1e-10, 300, num=50000)
 r_sun = 8.
 rr_from_ss = np.sqrt(xx_int**2. + r_sun**2. - 2.* r_sun * xx_int
                      * np.cos(0*np.pi/180)*np.cos(180*np.pi/180))
-aaa = simpson(nfw_density(rr_from_ss), x=xx_int * u.kpc.to(u.cm))
-print(aaa)
+aaa_042 = simpson(nfw_density(rr_from_ss), x=xx_int * u.kpc.to(u.cm))
+print(aaa_042)
+
+for i in [0.40, 0.42, 0.45]:
+    aaa = simpson(nfw_density(rr_from_ss, rho_sun=i),
+                  x=xx_int * u.kpc.to(u.cm))
+    print(i, aaa, aaa/aaa_042, 14.5318*aaa/aaa_042)
 
 
 aaa = (c/128./np.pi/u.sr / u.micron
