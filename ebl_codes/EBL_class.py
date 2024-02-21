@@ -15,8 +15,10 @@ from astropy.cosmology import FlatLambdaCDM
 
 from ebl_codes import dust_absorption_models as dust_abs
 
-
-# from hmf import MassFunction
+try:
+    from hmf import MassFunction
+except ModuleNotFoundError:
+    print('Module hmf not loaded')
 
 
 class EBL_model(object):
