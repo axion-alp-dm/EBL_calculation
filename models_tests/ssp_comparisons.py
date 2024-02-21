@@ -339,7 +339,7 @@ axes.add_artist(legend22)
 
 plt.legend(fontsize=18, title='Ages', title_fontsize=22)
 
-plt.xlabel(r'Wavelenght ($\mu$m)')
+plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'log$_{10}$(L$_{\lambda}$ ' #/Lsun '
            r'[erg s$^{-1}$ $\mathrm{\AA}^{-1}$ M$_{\odot}^{-1}$])')
 
