@@ -5,9 +5,9 @@ cosmology_params:
 
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelength_array:
-  lmin: 5e-6
+  lmin: 0.01
   lmax: 1e1
-  lfsteps: 250
+  lfsteps: 400
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
@@ -37,48 +37,14 @@ z_intmax: 40.
 
 # List of SSP models we want to try
 ssp_models:
-#
-#  generic:
-#    name: 'generic'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-##    sfr_params: [0.0017, 2.65, 2.9, 5.5]
-#    sfr_params: [0.015, 2.7, 2.9, 5.6]  # MD14 params
-#
-#    # SSP DATA
-#    ssp_type: 'generic'
-#    path_SSP: 'ssp/synth.Stellar.txt'
-#    file_name: ''
-#    cut_popstar: False
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: []
-#
-#  generic2:
-#    name: 'generic2'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-##    sfr_params: [0.0017, 2.65, 2.9, 5.5]
-#    sfr_params: [0.015, 2.7, 2.9, 5.6]  # MD14 params
-#
-#    # SSP DATA
-#    ssp_type: 'generic'
-#    path_SSP: 'ssp/synth.2g.txt'
-#    file_name: ''
-#    cut_popstar: False
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: []
 
   SB99_kneiske:
-    name: 'Starburst99 Z=0.02 dust Kneiske'
+    name: 'Model A'
 
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
 #    sfr_params: [0.0017, 2.65, 2.9, 5.5]
-    sfr_params: [0.015, 2.7, 2.9, 5.6]  # MD14 params
+    sfr_params: [0.19, 2., 4., 5.08]  # MD14 params
 
     # SSP DATA
     ssp_type: 'SB99'
@@ -90,12 +56,12 @@ ssp_models:
     dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 
   pegase0.0001_Finke:
-    name: 'Pegase Z=0.0001 dust Finke model A'
+    name: 'Model B'
 
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
 #    sfr_params: [0.0078, 2.7, 3.4, 6.4]
-    sfr_params: [0.0092, 2.79, 3.10, 6.97]  # Finke22 model A params
+    sfr_params: [0.0086, 2.49, 3.76, 6.68]  # Finke22 model A params
 
     # SSP DATA
     ssp_type: 'pegase3'

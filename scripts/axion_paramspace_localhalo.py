@@ -15,6 +15,7 @@ from ebl_measurements.import_cb_measurs import import_cb_data
 from astropy import units as u
 from astropy.constants import c
 from astropy.constants import h as h_plank
+from astropy.cosmology import FlatLambdaCDM
 
 from ebltable.ebl_from_model import EBL
 
@@ -49,12 +50,15 @@ print(direct_name)
 lambda_min_total = 0.  # [microns]
 lambda_max_total = 5.  # [microns]
 
+fig, ax = plt.subplots()
+
 # If the directory for outputs is not present, create it.
 if not os.path.exists("outputs/"):
     os.makedirs("outputs/")
 if not os.path.exists('outputs/' + direct_name):
     os.makedirs('outputs/' + direct_name)
 
+D_factor = 1.11e22 * u.GeV * u.cm ** -2
 def chi2_upperlims(x_model, x_obs, err_obs):
     """
 
@@ -64,6 +68,28 @@ def chi2_upperlims(x_model, x_obs, err_obs):
     :return:
     """
     return sum(((x_obs - x_model) / err_obs) ** 2. * (x_obs < x_model))
+
+def gamma_def(mass_eV, gay_GeV):
+    return ((mass_eV * u.eV) ** 3. * (gay_GeV * u.GeV ** -1) ** 2.
+            / (32. * h_plank)).to(u.s ** -1)
+def host_function_std(x_array, mass_eV, gay_GeV, v_dispersion=220.):
+    lambda_decay = 2.48 / mass_eV * u.um
+    luminosiy = (1 / (4 * np.pi * u.sr)
+                 * gamma_def(mass_eV=mass_eV, gay_GeV=gay_GeV)
+                 / mass_eV * u.eV ** -1
+                 * D_factor
+                 * h_plank * c).to(u.nW * u.m ** -1 * u.sr ** -1)
+    # print(luminosiy)
+
+    sigma = (2. * lambda_decay
+             * (v_dispersion * u.km * u.s ** -1 / c).to(1))
+
+    gaussian = (1 / np.sqrt(2. * np.pi) / sigma
+                # * np.exp(
+                # -0.5 * ((x_array * u.um - lambda_decay) / sigma) ** 2.)
+                ).to(u.m ** -1)
+
+    return (luminosiy * gaussian).to(u.nW * u.m ** -2 * u.sr ** -1)#.value
 
 
 waves_ebl = np.geomspace(5e-6, 10, num=int(1e6))
@@ -76,46 +102,73 @@ for m, e in ebl.items():
     nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
 spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
-
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=lambda_min_total,
     lambda_max_total=lambda_max_total,
-    ax1=None, plot_measurs=False)
+    ax1=ax, plot_measurs=True)
 
-chi2_min =  2. * chi2_upperlims(
-                x_model=spline_cuba(upper_lims_all['lambda']),
-                x_obs=upper_lims_all['nuInu'],
-                err_obs=upper_lims_all['1 sigma'])
-print(chi2_min)
+chi2_min = 2. * chi2_upperlims(
+    x_model=spline_cuba(upper_lims_all['lambda']),
+    x_obs=upper_lims_all['nuInu'],
+    err_obs=upper_lims_all['1 sigma'])
 
 chi2_delta = chi2_min + 4.61  # for upper limits
 
 nuInu_extra = (upper_lims_all['nuInu']
                - spline_cuba(upper_lims_all['lambda'])
-               + upper_lims_all['1 sigma'] * (chi2_delta/2.)**0.5)
+               + upper_lims_all['1 sigma'] * (chi2_delta / 2.) ** 0.5)
 
-print(upper_lims_all['nuInu'][:15])
-print((upper_lims_all['1 sigma'] * (chi2_delta/2.)**0.5)[:11])
-print(spline_cuba(upper_lims_all['lambda'])[:11])
-print(nuInu_extra[:11])
-
+sigma = (2. * upper_lims_all['lambda']
+         * (220. * u.km * u.s ** -1 / c).to(1))
 g_ay_array = (1e-10 *
               (nuInu_extra
-               / (5.35e-2 * (2.48/upper_lims_all['lambda'])**3.)
+               / (15.56979 * (2.48 / upper_lims_all['lambda']) ** 3.)
                ) ** 0.5
               )
-print(g_ay_array[:11])
-print(upper_lims_all['lambda'])
-aaa = (np.column_stack((
-    2.48/upper_lims_all['lambda'].value,
-    upper_lims_all['nuInu'].value,
-    (upper_lims_all['1 sigma'] * (chi2_delta/2.)**0.5).value,
-    spline_cuba(upper_lims_all['lambda']),
-nuInu_extra.value, g_ay_array.value
-)))
-for i in range(len(aaa)):
-    print(aaa[i, :])
-np.save('outputs/' + direct_name + '/dips', g_ay_array.value)
+
+plt.plot(waves_ebl, spline_cuba(waves_ebl), 'k')
+plt.scatter(upper_lims_all['lambda'],
+            spline_cuba(upper_lims_all['lambda'])+host_function_std(
+    upper_lims_all['lambda'].value,
+    2.48/upper_lims_all['lambda'].value, g_ay_array.value).value,
+            color='r')
+plt.yscale('log')
+plt.xscale('log')
+def nuInu_maybe(mass, gayy):
+    return (c/(512.*np.pi*h_plank*220*u.km/u.s* np.sqrt(2. * np.pi))
+       * (mass*u.eV)**3.*(gayy*u.GeV**-1)**2.*D_factor).to(
+        u.nW * u.m **-2)
+
+
+print(host_function_std(2.48, 1., 1e-10))
+aaa = nuInu_maybe(1., 1e-10)
+print('aaa', aaa)
+
 np.savetxt('outputs/' + direct_name + '/dips.txt',
-           np.column_stack((2.48/upper_lims_all['lambda'],
+           np.column_stack((2.48 / upper_lims_all['lambda'],
                             g_ay_array.value)))
+
+
+h=0.7
+omegaM=0.3
+omegaBar=0.0222 / 0.7 ** 2.
+cosmo = FlatLambdaCDM(H0=h * 100., Om0=omegaM,
+                                    Ob0=omegaBar, Tcmb0=2.7255)
+axion_mass = 1. * u.eV
+axion_gayy = 1e-10 * u.GeV ** -1
+llhh = (cosmo.Odm(0.) * cosmo.critical_density0
+        * c**2 * gamma_def(axion_mass.value, axion_gayy.value))
+llhh = llhh.to(u.erg/u.m**3./u.s)
+print(cosmo.Odm(0.))
+print(cosmo.critical_density0)
+print(gamma_def(axion_mass.value, axion_gayy.value))
+print(llhh)
+
+
+cosmic_decay = (cosmo.Odm(0.) * cosmo.critical_density0*c**3.
+                / (128. * np.pi * h_plank * cosmo.H(0.))
+                * axion_mass**3. * axion_gayy**2.)
+cosmic_decay = cosmic_decay.to(u.nW * u.m **-2)
+print(cosmo.H(0.))
+print(cosmic_decay)
+plt.show()

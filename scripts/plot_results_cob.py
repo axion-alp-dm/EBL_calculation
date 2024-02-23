@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from matplotlib.legend_handler import HandlerTuple
+
 from ebl_codes.EBL_class import EBL_model
 from ebl_measurements.import_cb_measurs import import_cb_data
 
@@ -75,7 +77,6 @@ plt.rc('font', family='serif', size=tfs)
 
 # ---------------------------------------------------------------------
 fig_params, (ax, ax2) = plt.subplots(2, 1, figsize=(10, 12))
-# ax2 = ax.twinx()  # .twiny()
 plt.subplots_adjust(wspace=0, hspace=0)
 
 
@@ -88,10 +89,9 @@ def read_config_file(ConfigFile):
     return parsed_yaml
 
 
-config_data = read_config_file('outputs/final_outputs 2023-10-04 16:15:16/'
+config_data = read_config_file('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
                                'input_data.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
-
 
 waves_ebl = np.logspace(np.log10(5e-6), 1, 3000)
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
@@ -108,56 +108,56 @@ spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
 
 def spline_pegase0001(lambda_array):
-    method_y = np.load('outputs/final_outputs 2023-10-04 16:15:16/'
+    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
                        'pegase0.0001_Finkespline.npy',
                        allow_pickle=True).item()
-    return 10**method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
-                    grid=False)
+    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
+                          grid=False)
 
 
 def spline_starburst(lambda_array):
-    method_y = np.load('outputs/final_outputs 2023-10-04 16:15:16/'
+    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
                        'SB99_kneiskespline.npy',
                        allow_pickle=True).item()
-    return 10**method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
-                    grid=False)
+    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
+                          grid=False)
 
 
 list_working_models = {
-    'ModelA': {'label': 'Model A', 'callable_func': spline_pegase0001,
+    'ModelA': {'label': 'Model A', 'callable_func': spline_starburst,
                'color': 'b', 'linewidth': 3},
-    'ModelB': {'label': 'Model B', 'callable_func': spline_starburst,
+    'ModelB': {'label': 'Model B', 'callable_func': spline_pegase0001,
                'color': 'tab:orange', 'linewidth': 3},
-    'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
-               'color': 'magenta', 'linewidth': 2},
-    'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-               'color': 'k', 'linewidth': 2}
+    'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
+                'color': 'magenta', 'linewidth': 2},
+    # 'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
+    #          'color': 'k', 'linewidth': 2}
 }
 
 # Beginning of figure specifications
 
-ebl_class.change_axion_contribution(mass=2.48/0.17, gayy=1.7e-11)
+ebl_class.change_axion_contribution(mass=2.48 / 0.17, gayy=1.7e-11)
 
 for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
     ax.loglog(waves_ebl, model['callable_func'](waves_ebl),
-               c=model['color'], lw=model['linewidth'],
-               label=model['label'])
+              c=model['color'], lw=model['linewidth'],
+              label=model['label'])
     ax.loglog(waves_ebl, (model['callable_func'](waves_ebl)
-                          + 10**ebl_class.ebl_axion_spline(
+                          + 10 ** ebl_class.ebl_axion_spline(
                 freq_array_ebl, 0., grid=False)),
-               c=model['color'], lw=model['linewidth'],
-               label=model['label'])
+              c=model['color'], lw=model['linewidth'],
+              label=model['label'])
 
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=lambda_min_total,
     lambda_max_total=lambda_max_total,
     ax1=ax, plot_measurs=True)
 
-direct_name_axionparams = 'outputs/test'
-params = np.load(direct_name_axionparams + '/axion_params.npy')
-axion_mac2 = params[:, 0]
-axion_gay = params[:, 1]
+direct_name_axionparams = 'outputs/new_axionparams 2024-02-23 10:46:37'
+# params = np.load(direct_name_axionparams + '/axion_params.npy')
+axion_mac2 = np.load(direct_name_axionparams + '/axion_mass.npy')
+axion_gay = np.load(direct_name_axionparams + '/axion_gayy.npy')
 list_models = np.load(direct_name_axionparams + '/list_models.npy')
 
 zorders = [1, 1, 3, 4, 2, 1, 1]
@@ -176,11 +176,10 @@ for ni, model in enumerate(list_working_models.keys()):
         levels=[4.61], origin='lower',
         linestyles=linestyles[ni],
         colors=model_full['color'], alpha=0.8,
-        linewidths=5,#linewidths[ni],
+        linewidths=5,  # linewidths[ni],
         zorder=1,
         label=model_full['label'],
         extent=(axion_mac2[0], axion_mac2[-1], None, None))
-
 
 colors = ['b', 'r', 'orange', 'fuchsia', 'green']
 linewidths = [3, 3, 2, 2, 2]
@@ -191,9 +190,8 @@ legend22 = plt.legend([plt.Line2D([], [],
                        for i in range(4)],
                       ['Model A', 'Model B',
                        'Finke22', 'CUBA'],
-                      loc=4, #bbox_to_anchor=(0.85, 0.01),
+                      loc=4,  # bbox_to_anchor=(0.85, 0.01),
                       title=r'Models', fontsize=16)
-
 
 ax.set_xlim(0.1, 6)
 ax.set_ylim(0.6, 120)
@@ -210,14 +208,13 @@ ax2.set_facecolor("none")
 ax2.set_ylabel(ylab, fontsize=32, labelpad=y_labelpad)
 ax2.set_xlabel(xlab, fontsize=26)
 
-
 ax2.set_xscale('log')
 ax2.set_yscale('log')
 
 ax2.add_artist(legend22)
 
 ax2.set_ylim(6e-12, 2e-8)
-ax2.set_xlim(2.48/0.1, 2.48/6)
+ax2.set_xlim(2.48 / 0.1, 2.48 / 6)
 
 
 def tick_function(X):
@@ -231,10 +228,9 @@ ax3.tick_params(axis='x', direction='in', pad=0)
 ax3.set_xlabel(r'Wavelength ($\mu$m)', labelpad=10)
 
 ax4 = ax2.secondary_xaxis('top',
-                         functions=(tick_function, tick_function))
+                          functions=(tick_function, tick_function))
 
 ax4.tick_params(axis='x', direction='in', pad=-40)
-
 
 plt.savefig('outputs/figures_paper/cb_zoom2.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb_zoom2.png', bbox_inches='tight')
@@ -245,8 +241,9 @@ plt.subplots_adjust(hspace=0.27)
 
 plt.subplot(212)
 
+
 def tick_function_2(X):
-    return 2.48/X
+    return 2.48 / X
 
 
 ax.set_ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ / sr)', labelpad=25)
@@ -270,7 +267,7 @@ ax2.set_yscale('log')
 ax2.set_xscale('log')
 
 ax2.set_ylim(6e-12, 2e-8)
-ax2.set_xlim(2.48/0.1, 2.48/6)
+ax2.set_xlim(2.48 / 0.1, 2.48 / 6)
 
 ax.set_xlabel(r'Wavelength ($\mu$m)', labelpad=5)
 
@@ -280,12 +277,10 @@ ax3 = ax.secondary_xaxis('top',
 ax3.tick_params(axis='x', direction='in', pad=0)
 ax3.set_xlabel(xlab, labelpad=10)
 
-
 ax4 = ax2.secondary_xaxis('top',
-                         functions=(tick_function_2, tick_function_2))
+                          functions=(tick_function_2, tick_function_2))
 
 ax4.tick_params(axis='x', direction='in', pad=0)
-
 
 locmaj = mpl.ticker.LogLocator(base=10.0, subs=(1.0,), numticks=50)
 locmin = mpl.ticker.LogLocator(base=10.0, subs=np.arange(2, 10) * .1,
@@ -328,25 +323,46 @@ for ni, model in enumerate(list_working_models.keys()):
 for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
     ax.loglog(waves_ebl, model['callable_func'](waves_ebl),
-               c=model['color'], lw=model['linewidth'],
-               label=model['label'])
-
+              c=model['color'], lw=model['linewidth'],
+              label=model['label'])
 
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=lambda_min_total,
     lambda_max_total=lambda_max_total,
     ax1=ax, plot_measurs=True)
 
-
 ax2.legend([plt.Line2D([], [],
                        linestyle='-',
                        linewidth=list_working_models[model]['linewidth'],
                        color=list_working_models[model]['color'])
             for i, model in enumerate(list_working_models.keys())],
-           list_working_models.keys(),
-           loc=4, title=r'Models', fontsize=20)
+           list_working_models.keys())
+
+handles, labels = ax2.get_legend_handles_labels()
+linewidths = [3, 3, 2, 2]
+for ni, model in enumerate(list_working_models.keys()):
+    labels.append(list_working_models[model]['label'])
+    handles.append(plt.Line2D([], [],
+                              linestyle='-',
+                              color=list_working_models[model]['color'],
+                              linewidth=linewidths[ni]))
+    if labels[ni].__contains__('Finke'):
+        handles[ni] = (plt.Line2D([], [], linestyle='-',
+                                  color='magenta', linewidth=linewidths[ni]),
+                       plt.Line2D([], [], linestyle='--',
+                                  color='magenta', linewidth=linewidths[ni])
+                       )
+    if labels[ni].__contains__('CUBA'):
+        handles[ni] = (plt.Line2D([], [], linestyle='-',
+                                  color='k', linewidth=linewidths[ni]),
+                       plt.Line2D([], [], linestyle='dotted',
+                                  color='k', linewidth=linewidths[ni])
+                       )
+print(handles, labels)
+legend11 = ax2.legend(handles, labels,
+                      handler_map={tuple: HandlerTuple(ndivide=2)},
+                      loc=4, title=r'Models', fontsize=20)
+ax2.add_artist(legend11)
 
 plt.savefig('outputs/figures_paper/cb_zoom.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb_zoom.png', bbox_inches='tight')
-
-

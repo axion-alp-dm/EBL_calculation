@@ -24,7 +24,7 @@ from jacobi import propagate
 
 from ebltable.ebl_from_model import EBL
 
-all_size = 22
+all_size = 34
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 plt.rcParams['axes.labelsize'] = all_size
@@ -34,25 +34,23 @@ plt.rc('axes', titlesize=all_size)
 plt.rc('axes', labelsize=all_size)
 plt.rc('xtick', labelsize=all_size)
 plt.rc('ytick', labelsize=all_size)
-plt.rc('legend', fontsize=all_size)
+plt.rc('legend', fontsize=12)
 plt.rc('figure', titlesize=all_size)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
+plt.rc('xtick.major', size=10, width=2, top=False, pad=10)
 plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
-plt.rc('xtick.minor', size=7, width=1.5)
+plt.rc('xtick.minor', size=7, width=1.5, top=False)
 plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('final_outputs_NOlims 2023-10-05 08:05:19'
-                  # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
-                  )
+direct_name = str('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04')
 print(direct_name)
 
 # Configuration file reading and data input/output ---------#
-with open('outputs/' + direct_name + '/input_data.yml', 'r') as file:
+with open(direct_name + '/input_data.yml', 'r') as file:
     config_data = yaml.safe_load(file)
 
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
@@ -61,9 +59,8 @@ ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 waves_ebl = np.logspace(-1, 1)
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 
-colors = ['b', 'r', 'k', 'k']
+colors = ['b', 'tab:orange']
 f_color = ['dodgerblue', 'C1']
-models = ['solid', 'solid', 'dashed', 'dotted']
 
 ebl = {}
 for m in EBL.get_models():
@@ -83,58 +80,34 @@ plt.xscale('log')
 plt.ylim(0.1, 120)
 plt.xlim(0.1, 10.)
 
+handles_cob, labels_cob = [], []
+
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ / sr)')
 
-plt.plot(waves_ebl, nuInu['finke2022'], ls='--', color='k', lw=2.)
-plt.plot(waves_ebl, nuInu['cuba'], ls='dotted', color='k', lw=2.)
-
 # COB measurements that we are going to use
-upper_lims_ebldata, igl_ebldata = import_cb_data(
+import_cb_data(
     lambda_min_total=0.1, lambda_max_total=5.,
     plot_measurs=True, ax1=axes_ebl)
 
-upper_lims_ebldata_woNH = upper_lims_ebldata[
-    upper_lims_ebldata['ref'] != r'NH/LORRI (Lauer+ \'22)']
-
-plt.legend([plt.Line2D([], [], linewidth=2,
-                       linestyle=models[i], color=colors[i])
-            for i in range(4)],
-           ['Model A', 'Model B', 'Finke22', 'CUBA'],
-           loc=8,
-           title=r'EBL models')
-
 # FIGURE: sfr fit ------------------------------------------------
-fig_sfr = plt.figure(figsize=(12, 8))
+fig_sfr = plt.figure(figsize=(12, 9))
 axes_sfr = fig_sfr.gca()
+
+x_sfr = np.linspace(0, 10)
 
 sfr_data = sfr_data_dict('sfr_data/')
 plot_sfr_data(sfr_data)
 
-legend1 = plt.legend(title='Measurements', loc=1, fontsize=18,
-                     title_fontsize=20, framealpha=1)
+handles, labels = axes_sfr.get_legend_handles_labels()
+handles = [h[0] for h in handles]
 
-legend2 = plt.legend([plt.Line2D([], [], linewidth=2,
-                                 linestyle=models[i], color=colors[i])
-                      for i in range(3)],
-                     ['Model A', 'Model B', 'MD14'],
-                     loc=3, bbox_to_anchor=(0.1, 0.),
-                     fontsize=18,
-                     title=r'Models', title_fontsize=20
-                     )
-
+legend1 = plt.legend(handles, labels,
+                     title='Measurements', loc=1, fontsize=20,
+                     title_fontsize=24, framealpha=0.8)
 axes_sfr.add_artist(legend1)
 
-x_sfr = np.linspace(0, 10)
-
-axes_sfr.plot(x_sfr, ebl_class.sfr_function(
-    'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])',
-    x_sfr, [0.015, 2.7, 2.9, 5.6]),
-              color='k', linestyle='--', lw=2)
-# axes_sfr.plot(x_sfr, ebl_class.sfr_function(
-#     'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])',
-#     x_sfr, [0.0092, 2.79, 3.10, 6.97]),
-#               color='k', linestyle='dotted', lw=2)
+handles_sfr, labels_sfr = [], []
 
 plt.yscale('log')
 
@@ -144,7 +117,7 @@ plt.xlabel('redshift z')
 plt.ylabel(r'sfr (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
-fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(15, 15))
+fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
 
 z_array = np.linspace(0, 10)
 
@@ -157,26 +130,25 @@ for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                     lambda_min=ll - 0.05, lambda_max=ll + 0.05,
                     take1ref=None, plot_fig=True)
 
-    plt.annotate(r'%r$\,\mu m$' % ll, xy=(7, 3e34))
+    if n_lambda != 8:
+        plt.annotate(r'%r$\,\mu m$' % ll, xy=(5, 1e35), fontsize=28)
 
     plt.xlim(min(z_array), max(z_array))
     plt.ylim(1e33, 3e35)
 
     plt.yscale('log')
 
+handles_emiss, labels_emiss = [], []
+
 plt.subplot(3, 3, 8)
-plt.xlabel(r'redshift z', fontsize=22)
+plt.xlabel(r'redshift z', fontsize=34)
 
 plt.subplot(3, 3, 4)
 plt.ylabel(r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
-           fontsize=30)
+           fontsize=40)
 
-plt.subplot(3, 3, 3)
-plt.legend([plt.Line2D([], [], linewidth=2,
-                       linestyle=models[i], color=colors[i])
-            for i in range(2)],
-           ['Model A', 'Model B'],
-           loc=1, fontsize=16)
+plt.subplot(3, 3, 9)
+plt.annotate(r'3.6$\,\mu m$', xy=(6, 1e34), fontsize=28)
 
 ax = [plt.subplot(3, 3, i) for i in [2, 3, 5, 6, 8, 9]]
 for a in ax:
@@ -200,37 +172,13 @@ a.set_xticks([0, 2, 4, 6, 8, 10])
 emiss_data = emissivity_data(directory='emissivity_data/')
 freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
 
-# EMISSIVIY AT Z=0 FIGURE ----------------------------------------
-fig_emiss = plt.figure(figsize=(12, 8))
-axes_emiss = fig_emiss.gca()
-
-data_emiss = emissivity_data(directory='emissivity_data/', z_max=0.1)
-
-axes_emiss.errorbar(x=data_emiss['lambda'], y=data_emiss['eje'],
-                    yerr=(data_emiss['eje_n'], data_emiss['eje_p']),
-                    linestyle='', marker='o')
-
-plt.legend([plt.Line2D([], [], linewidth=2,
-                       linestyle=models[i], color=colors[i])
-            for i in range(2)],
-           ['Model A', 'Model B'],
-           loc=8, fontsize=22, title='Models')
-
-plt.yscale('log')
-plt.xscale('log')
-
-plt.xlabel(r'Wavelength ($\mu$m)')
-plt.ylabel(r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
-           fontsize=30)
-
-plt.xlim(0.09, 10)
-plt.ylim(1e33, 1e35)
 
 for nkey, key in enumerate(config_data['ssp_models']):
 
     values_sfr = config_data['ssp_models'][key]['sfr_params']
     values_cov = config_data['ssp_models'][key]['cov_matrix']
-    values_cov = np.array(values_cov).reshape(len(values_sfr), len(values_sfr))
+    values_cov = np.array(values_cov).reshape(
+        len(values_sfr), len(values_sfr))
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 
@@ -262,10 +210,15 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
 
     # FIGURE: cob fit
-    axes_ebl.plot(waves_ebl,
-                  10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0.,
-                                                 grid=False),
-                  color=colors[nkey], lw=2)
+    # axes_ebl.plot(waves_ebl,
+    #               10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0.,
+    #                                              grid=False),
+    #               color=colors[nkey], lw=2)
+    #
+    # labels_cob.append(config_data['ssp_models'][key]['name'])
+    # handles_cob.append(plt.Line2D([], [], linewidth=2,
+    #                               linestyle='-',
+    #                               color=colors[nkey]))
 
     # y, y_cov = propagate(lambda pars:
     #                      fit_igl(waves_ebl, pars),
@@ -273,13 +226,19 @@ for nkey, key in enumerate(config_data['ssp_models']):
     # yerr_prop = np.diag(y_cov) ** 0.5
     # axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
     #                       facecolor=f_color[nkey], alpha=0.5)
+    # print(y)
     # print(yerr_prop)
-
+    # print()
 
     # FIGURE: SFR
     plt.figure(fig_sfr)
     axes_sfr.plot(x_sfr, sfr(x_sfr, values_sfr), '-',
                   color=colors[nkey], lw=2)
+
+    labels_sfr.append(config_data['ssp_models'][key]['name'])
+    handles_sfr.append(plt.Line2D([], [], linewidth=3,
+                                  linestyle='-',
+                                  color=colors[nkey]))
 
     y, y_cov = propagate(lambda pars:
                          sfr(x_sfr, pars),
@@ -287,7 +246,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
     yerr_prop = np.diag(y_cov) ** 0.5
     plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
                      facecolor=f_color[nkey], alpha=0.5)
-    print(yerr_prop)
+    # print(y)
+    # print(yerr_prop)
 
     # FIGURE: emissivities fit
     plt.figure(fig_emiss_z)
@@ -305,53 +265,82 @@ for nkey, key in enumerate(config_data['ssp_models']):
                  * 1e-7,
                  linestyle='-', color=colors[nkey], lw=2)
 
-        y, y_cov = propagate(lambda pars:
-                             fit_emiss((ll * np.ones(len(z_array)), z_array),
-                                       pars),
-                             values_sfr, values_cov)
-        yerr_prop = np.diag(y_cov) ** 0.5
-        plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
-                         facecolor=f_color[nkey], alpha=0.5)
+    labels_emiss.append(config_data['ssp_models'][key]['name'])
+    handles_emiss.append(plt.Line2D([], [], linewidth=2,
+                                    linestyle='-',
+                                    color=colors[nkey]))
 
-        # print(yerr_prop)
+    y, y_cov = propagate(lambda pars:
+                         fit_emiss((ll * np.ones(len(z_array)), z_array),
+                                   pars),
+                         values_sfr, values_cov)
+    yerr_prop = np.diag(y_cov) ** 0.5
+    plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
+                     facecolor=f_color[nkey], alpha=0.5)
 
-    # FIGURE: emissivities at z=0
-    # axes_emiss.plot(waves_ebl,
-    #                 10 ** (freq_array_ebl
-    #                        + ebl_class.emiss_ssp_spline(
-    #                             freq_array_ebl, np.zeros(len(waves_ebl)))
-    #                        - 7),
-    #                 linestyle='-', color=colors[nkey], lw=2)
-
-    # y, y_cov = propagate(
-    #     lambda pars:
-    #     fit_emiss((waves_ebl, np.zeros(len(waves_ebl))), pars),
-    #     values_sfr, values_cov)
-    # yerr_prop = np.diag(y_cov) ** 0.5
-    # plt.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
-    #                  facecolor=f_color[nkey], alpha=0.5)
     # print(yerr_prop)
 
 # -------------------------------------------------------------
-fig_ebl.savefig('outputs/' + direct_name + '/ebl' + '.png',
+plt.figure(fig_ebl)
+
+plt.plot(waves_ebl, nuInu['finke2022'], ls='--', color='magenta', lw=2.)
+labels_cob.append('Finke22')
+handles_cob.append(plt.Line2D([], [], linewidth=2,
+                              linestyle='-',
+                              color='magenta'))
+
+plt.plot(waves_ebl, nuInu['cuba'], ls='dotted', color='k', lw=2.)
+labels_cob.append('CUBA')
+handles_cob.append(plt.Line2D([], [], linewidth=2,
+                              linestyle='-',
+                              color='k'))
+
+plt.legend(handles_cob, labels_cob,
+           loc=8,
+           title=r'Models')
+
+
+plt.figure(fig_sfr)
+
+axes_sfr.plot(x_sfr, ebl_class.sfr_function(
+    'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])',
+    x_sfr, [0.015, 2.7, 2.9, 5.6]),
+              color='k', linestyle='--', lw=2)
+
+labels_sfr.append('MD14')
+handles_sfr.append(plt.Line2D([], [], linewidth=2,
+                              linestyle='--',
+                              color='k'))
+
+legend2 = plt.legend(handles_sfr, labels_sfr,
+                     loc=3, bbox_to_anchor=(0.01, 0.),
+                     fontsize=26
+                     )
+axes_sfr.add_artist(legend2)
+
+
+plt.figure(fig_emiss_z)
+plt.subplot(3, 3, 9)
+plt.legend(handles_emiss, labels_emiss,
+           loc=1, fontsize=24)
+
+# Save the figures
+fig_ebl.savefig(direct_name + '/ebl' + '.png',
                 bbox_inches='tight')
-fig_ebl.savefig('outputs/' + direct_name + '/ebl' + '.pdf',
+fig_ebl.savefig(direct_name + '/ebl' + '.pdf',
                 bbox_inches='tight')
 
-fig_sfr.savefig('outputs/' + direct_name + '/sfr' + '.png',
+fig_sfr.savefig(direct_name + '/sfr' + '.png',
                 bbox_inches='tight')
-fig_sfr.savefig('outputs/' + direct_name + '/sfr' + '.pdf',
+fig_sfr.savefig(direct_name + '/sfr' + '.pdf',
                 bbox_inches='tight')
 
 fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
 fig_emiss_z.savefig(
-    'outputs/' + direct_name + '/emiss_redshift' + '.png',
+    direct_name + '/emiss_redshift' + '.png',
     bbox_inches='tight')
 fig_emiss_z.savefig(
-    'outputs/' + direct_name + '/emiss_redshift' + '.pdf',
+    direct_name + '/emiss_redshift' + '.pdf',
     bbox_inches='tight')
+# plt.show()
 
-fig_emiss.savefig('outputs/' + direct_name + '/luminosities' + '.png',
-                  bbox_inches='tight')
-fig_emiss.savefig('outputs/' + direct_name + '/luminosities' + '.pdf',
-                  bbox_inches='tight')

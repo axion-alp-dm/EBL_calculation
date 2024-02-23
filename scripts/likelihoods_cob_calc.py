@@ -3,9 +3,6 @@ import os
 import yaml
 import time
 import numpy as np
-import matplotlib.pyplot as plt
-
-from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
 
@@ -20,29 +17,10 @@ from astropy.constants import c
 from iminuit import Minuit
 from iminuit.cost import LeastSquares
 
-
-all_size = 22
-plt.rcParams['mathtext.fontset'] = 'stix'
-plt.rcParams['font.family'] = 'STIXGeneral'
-plt.rcParams['axes.labelsize'] = all_size
-plt.rcParams['lines.markersize'] = 10
-plt.rc('font', size=all_size)
-plt.rc('axes', titlesize=all_size)
-plt.rc('axes', labelsize=all_size)
-plt.rc('xtick', labelsize=all_size)
-plt.rc('ytick', labelsize=all_size)
-plt.rc('legend', fontsize=all_size)
-plt.rc('figure', titlesize=all_size)
-plt.rc('xtick', top=True, direction='in')
-plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
-plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
-plt.rc('xtick.minor', size=7, width=1.5)
-plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('final_outputs_NOlims'
+direct_name = str('final_outputs_check_SHARPlims'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -72,33 +50,25 @@ def chi2_measurs(x_model, x_obs, err_obs):
     return sum(((x_obs - x_model) / err_obs) ** 2.)
 
 
-waves_ebl = np.logspace(-1, 3, num=700)
-freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
-
-
 config_data = read_config_file(
     'scripts/input_files/input_data_paper.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
-
 
 # COB measurements that we are going to use
 upper_lims_ebldata, igl_ebldata = import_cb_data(
     lambda_min_total=0.1, lambda_max_total=5.,
     plot_measurs=False)
 
-upper_lims_ebldata_woNH = upper_lims_ebldata[
-    upper_lims_ebldata['ref'] != r'NH/LORRI (Lauer+ \'22)']
-
+print(np.shape(igl_ebldata))
 
 # FIGURE: sfr fit ------------------------------------------------
 sfr_data = sfr_data_dict('sfr_data/')
-
+print(np.shape(sfr_data))
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
 
 emiss_data = emissivity_data(directory='emissivity_data/')
 freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
-
-
+print(np.shape(emiss_data))
 # MINIMIZATION OF CHI2 OF SSPs
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
@@ -151,7 +121,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     m = Minuit(combined_likelihood,
                config_data['ssp_models'][key]['sfr_params'])
-    # m.limits = [[0.001, 0.02], [2., 3.5], [1., 5.5], [4., 8.]]
+    m.limits = [[0.001, 0.02], [2., 3.5], [1., 3.5], [4., 8.]]
     print(m.params)
 
     m.migrad()  # finds minimum of least_squares function
@@ -165,12 +135,34 @@ for nkey, key in enumerate(config_data['ssp_models']):
     outputs_file.write(str(m.params) + '\n')
     outputs_file.write(str(m.values) + '\n')
     outputs_file.write(str(m.covariance) + '\n')
+    outputs_file.write(f"$\\chi^2$/$n_\\mathrm{{dof}}$ "
+                       f"= {m.fval:.1f} / {m.ndof:.0f} = {m.fmin.reduced_chi2:.1f}" + '\n')
+
+    outputs_file.write('Individual chi2 values:\n')
+    aaa = np.array(np.array(m.params.to_table()[0])[:, 2], dtype=float)
+    outputs_file.write(
+        'cob data: ' + str(chi2_measurs(
+            fit_igl(igl_ebldata['lambda'], aaa),
+            igl_ebldata['nuInu'], igl_ebldata['1 sigma'])) + '\n')
+    outputs_file.write(
+        'emissivities data: ' + str(chi2_measurs(
+            fit_emiss((emiss_data['lambda'], emiss_data['z']), aaa),
+            emiss_data['eje'],
+            (emiss_data['eje_n'] + emiss_data['eje_p']) / 2.))
+        + '\n')
+    outputs_file.write(
+        'sfr data: ' + str(chi2_measurs(
+            sfr(sfr_data[:, 0], aaa),
+            sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.))
+        + '\n')
     outputs_file.write('\n\n\n')
     outputs_file.close()
 
     print(m.params)
     print(m.values)
     print(m.covariance)
+    print(f"$\\chi^2$/$n_\\mathrm{{dof}}$ "
+          f"= {m.fval:.1f} / {m.ndof:.0f} = {m.fmin.reduced_chi2:.1f}")
 
     print('Fit: %.2fs' % (time.process_time() - init_time))
     init_time = time.process_time()
@@ -190,7 +182,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     for i in range(len(config_data['ssp_models'][key]['sfr_params']) ** 2):
         ccc.append(float(m.covariance.flatten()[i]))
     config_data['ssp_models'][key]['cov_matrix'] = ccc
-
+    print('\n\n')
 
 outputs_file = open('outputs/' + direct_name + '/input_data.yml', 'w')
 yaml.dump(config_data, outputs_file,
