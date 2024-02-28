@@ -1,0 +1,104 @@
+# COSMOLOGY CONSTANTS (flat LCDM assumed)
+cosmology_params:
+  cosmo: [ .7, .3, .7 ]   # [h_0, omega_matter, omega_L]
+  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
+
+# WAVELENGTH ARRAY FOR EBL [microns]
+wavelength_array:
+  lmin: 0.01
+  lmax: 1e1
+  lfsteps: 400
+
+# REDSHIFT ARRAY FOR MRF (ebl at any redshift)
+redshift_array:
+  zmin: 1e-6  # This cannot be 0 at least working with SB99 or everything crushes :)
+  zmax: 10.
+  zsteps: 300
+
+# INTEGRATION TIME STEP
+t_intsteps: 201
+
+# PRINT LOGGING OF OUR PROCESSES
+log_prints: True
+
+# AXION DECAY BEING CONSIDERED
+axion_params:
+  axion_mass:  1.      # [eV]
+  axion_gayy: 5e-10  # [GeV**-1]
+
+# INTRA HALO LIGHT PARAMETERS
+ihl_params:
+  A_ihl: -3.23
+  alpha: 1
+
+# SSP INFORMATION
+# Maximum redshift at which we form SSPs
+z_intmax: 40.
+
+# List of SSP models we want to try
+ssp_models:
+  SB99_kneiske:
+    cov_matrix:
+    - 1.0670266562119528e-07
+    - -6.062064111786381e-06
+    - 1.0588078670912291e-05
+    - 3.420334529918575e-05
+    - -6.062064111786381e-06
+    - 0.0004903991532589194
+    - -0.0010552715592018816
+    - -0.0037121640404897487
+    - 1.0588078670912291e-05
+    - -0.0010552715592018816
+    - 0.0028482746373269777
+    - 0.011043838851786406
+    - 3.420334529918575e-05
+    - -0.0037121640404897487
+    - 0.011043838851786406
+    - 0.0697615341106728
+    cut_popstar: false
+    dust_abs_models:
+    - kneiske2002
+    - aaaa
+    file_name: ''
+    name: Model A
+    path_SSP: ssp/final_run_spectrum
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params:
+    - 0.02631491848542187
+    - 1.2925178509332589
+    - 5.549777150522631
+    - 7.898382157569356
+    ssp_type: SB99
+
+
+  pegase0.0001_Finke:
+    cov_matrix:
+      - 3.730354795187183e-08
+      - -7.138001236950845e-06
+      - 4.678195962470544e-06
+      - -6.91172430120402e-07
+      - -7.138001236950845e-06
+      - 0.0015311425580064168
+      - -0.0011539176074009555
+      - -0.0002178579187161543
+      - 4.678195962470544e-06
+      - -0.0011539176074009555
+      - 0.0012493841662360675
+      - 0.0014759735809447912
+      - -6.91172430120402e-07
+      - -0.0002178579187161543
+      - 0.0014759735809447912
+      - 0.005382604029470481
+    cut_popstar: true
+    dust_abs_models:
+      - finke2022_2
+    file_name: '0.0001'
+    name: Model B
+    path_SSP: ssp/final_run_spectrum
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params:
+      - 0.008524590471119163
+      - 2.5442964895830977
+      - 3.7135340713650833
+      - 6.713583374323977
+    ssp_type: pegase3
