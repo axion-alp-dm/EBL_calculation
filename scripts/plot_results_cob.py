@@ -15,8 +15,6 @@ from astropy.constants import c
 
 from ebltable.ebl_from_model import EBL
 
-# from axion_paramspace_calc import test_aa
-
 all_size = 24
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -75,10 +73,6 @@ plt.rcParams['axes.linewidth'] = lw
 plt.rc('text', usetex=False)
 plt.rc('font', family='serif', size=tfs)
 
-# ---------------------------------------------------------------------
-fig_params, (ax, ax2) = plt.subplots(2, 1, figsize=(10, 12))
-plt.subplots_adjust(wspace=0, hspace=0)
-
 
 def read_config_file(ConfigFile):
     with open(ConfigFile, 'r') as stream:
@@ -89,8 +83,8 @@ def read_config_file(ConfigFile):
     return parsed_yaml
 
 
-config_data = read_config_file('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
-                               'input_data.yml')
+config_data = read_config_file(
+    'scripts/input_files/input_data_paper2.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 waves_ebl = np.logspace(np.log10(5e-6), 1, 3000)
@@ -108,17 +102,17 @@ spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
 
 def spline_pegase0001(lambda_array):
-    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
-                       'pegase0.0001_Finkespline.npy',
-                       allow_pickle=True).item()
+    method_y = np.load(
+        'outputs/pegase0.0001_Finkespline.npy',
+        allow_pickle=True).item()
     return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
                           grid=False)
 
 
 def spline_starburst(lambda_array):
-    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
-                       'SB99_kneiskespline.npy',
-                       allow_pickle=True).item()
+    method_y = np.load(
+        'outputs/SB99_kneiskespline.npy',
+        allow_pickle=True).item()
     return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
                           grid=False)
 
@@ -134,8 +128,64 @@ list_working_models = {
     #          'color': 'k', 'linewidth': 2}
 }
 
-# Beginning of figure specifications
+ihl_spline = np.loadtxt('outputs/all_paramspace/ihl_spline.txt')
 
+fig, ax = plt.subplots(figsize=(9, 7))
+
+upper_lims_all, _ = import_cb_data(
+    lambda_min_total=0.,
+    lambda_max_total=5.,
+    ax1=ax, plot_measurs=True)
+
+plt.plot(ihl_spline[:, 0], ihl_spline[:, 1], 'k', linestyle='dotted', lw=2)
+plt.plot(waves_ebl, spline_pegase0001(waves_ebl), 'k', linestyle='--', lw=2)
+plt.plot(waves_ebl, spline_starburst(waves_ebl), 'r', ls='-', c='r')
+
+print(6.383888174498693058e-01/(6.383888174498693058e-01+spline_pegase0001(
+    5.))*100)
+
+plt.plot(ihl_spline[:, 0], ihl_spline[:, 1]
+         + spline_pegase0001(ihl_spline[:, 0]),
+         'k', ls='-', lw=2)
+
+
+linestyles = ['-','-', '--', 'dotted']
+colors = ['r', 'k', 'k', 'k']
+plt.legend([plt.Line2D([], [],
+                       linewidth=2,
+                       linestyle=linestyles[i],
+                       color=colors[i])
+            for i in range(4)],
+           ['Model A', 'Model B + IHL', 'Model B',
+            'IHL'],
+           loc=4,  # bbox_to_anchor=(0.85, 0.01),
+           fontsize=20)
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.set_xlim(0.1, 10)
+ax.set_ylim(0.01, 120)
+
+ax.set_ylabel(r'$\nu \mathrm{I}_{\nu}$ (nW / m$^2$ / sr)')  # , labelpad=25)
+ax.set_xlabel(r'Wavelength ($\mu$m)')  # , labelpad=10)
+
+plt.savefig('outputs/figures_paper/ihl.png', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/ihl.pdf', bbox_inches='tight')
+
+plt.show()
+
+'''
+direct_name_axionparams = 'outputs/new_axionparams 2024-02-23 10:46:37'
+# params = np.load(direct_name_axionparams + '/axion_params.npy')
+axion_mac2 = np.load(direct_name_axionparams + '/axion_mass.npy')
+axion_gay = np.load(direct_name_axionparams + '/axion_gayy.npy')
+list_models = np.load(direct_name_axionparams + '/list_models.npy')
+'''
+# Beginning of figure specifications
+'''
+# ---------------------------------------------------------------------
+fig_params, (ax, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+plt.subplots_adjust(wspace=0, hspace=0)
 ebl_class.change_axion_contribution(mass=2.48 / 0.17, gayy=1.7e-11)
 
 for ni, working_model_name in enumerate(list_working_models.keys()):
@@ -154,11 +204,6 @@ upper_lims_all, _ = import_cb_data(
     lambda_max_total=lambda_max_total,
     ax1=ax, plot_measurs=True)
 
-direct_name_axionparams = 'outputs/new_axionparams 2024-02-23 10:46:37'
-# params = np.load(direct_name_axionparams + '/axion_params.npy')
-axion_mac2 = np.load(direct_name_axionparams + '/axion_mass.npy')
-axion_gay = np.load(direct_name_axionparams + '/axion_gayy.npy')
-list_models = np.load(direct_name_axionparams + '/list_models.npy')
 
 zorders = [1, 1, 3, 4, 2, 1, 1]
 linewidths = [8, 8, 4, 4, 2, 1]
@@ -234,7 +279,7 @@ ax4.tick_params(axis='x', direction='in', pad=-40)
 
 plt.savefig('outputs/figures_paper/cb_zoom2.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb_zoom2.png', bbox_inches='tight')
-
+'''
 # ---------------------------------------------------------------------
 fig_params, (ax, ax2) = plt.subplots(2, 1, figsize=(10, 15))
 plt.subplots_adjust(hspace=0.27)
@@ -263,6 +308,8 @@ ax.set_ylim(0.6, 120)
 
 ax.tick_params(axis='y', direction='in', pad=22)
 
+ax.set_yscale('log')
+ax.set_xscale('log')
 ax2.set_yscale('log')
 ax2.set_xscale('log')
 
@@ -302,29 +349,29 @@ linestyles = ['-', '-', '--', 'dotted']
 linewidths = [5, 5, 4, 3]
 
 print(list_working_models)
-for ni, model in enumerate(list_working_models.keys()):
-    print(model)
-    model_full = list_working_models[model]
-    values_gay_array = np.load(direct_name_axionparams + '/' +
-                               str(model) + '_params_UL.npy')
-
-    cob_contours = ax2.contour(
-        axion_mac2, axion_gay,
-        (values_gay_array.T - np.min(values_gay_array)),
-        levels=[4.61], origin='lower',
-        linestyles=linestyles[ni],
-        colors=model_full['color'], alpha=0.9,
-        linewidths=linewidths[ni],
-        zorder=1,
-        label=model_full['label'],
-        extent=(axion_mac2[0], axion_mac2[-1], None, None))
+# for ni, model in enumerate(list_working_models.keys()):
+#     print(model)
+#     model_full = list_working_models[model]
+#     values_gay_array = np.load(direct_name_axionparams + '/' +
+#                                str(model) + '_params_UL.npy')
+#
+#     cob_contours = ax2.contour(
+#         axion_mac2, axion_gay,
+#         (values_gay_array.T - np.min(values_gay_array)),
+#         levels=[4.61], origin='lower',
+#         linestyles=linestyles[ni],
+#         colors=model_full['color'], alpha=0.9,
+#         linewidths=linewidths[ni],
+#         zorder=1,
+#         label=model_full['label'],
+#         extent=(axion_mac2[0], axion_mac2[-1], None, None))
 
 # The COB models plotting
 for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
-    ax.loglog(waves_ebl, model['callable_func'](waves_ebl),
-              c=model['color'], lw=model['linewidth'],
-              label=model['label'])
+    ax.plot(waves_ebl, model['callable_func'](waves_ebl),
+            c=model['color'], lw=model['linewidth'],
+            label=model['label'])
 
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=lambda_min_total,
@@ -366,3 +413,4 @@ ax2.add_artist(legend11)
 
 plt.savefig('outputs/figures_paper/cb_zoom.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb_zoom.png', bbox_inches='tight')
+plt.show()
