@@ -40,13 +40,13 @@ plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('new_axionparams'
+direct_name = str('CXB_zoom'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
 
 # Choose the max and minimum wavelengthS of the data that we import
-lambda_min_total = 0.05  # [microns]
+lambda_min_total = 0.  # [microns]
 lambda_max_total = 5.  # [microns]
 
 # If the directory for outputs is not present, create it.
@@ -56,12 +56,12 @@ if not os.path.exists('outputs/' + direct_name):
     os.makedirs('outputs/' + direct_name)
 
 # Parameter space for axion characteristics and rest of necessary arrays
-axion_mac2 = np.geomspace(0.3, 30., num=500)
-axion_gay = np.geomspace(1e-12, 1e-7, num=500)
+axion_mac2 = np.geomspace(9e2, 4e3, num=200)
+axion_gay = np.geomspace(6e-17, 1e-15, num=100)
 np.save('outputs/' + direct_name + '/axion_mass', axion_mac2)
 np.save('outputs/' + direct_name + '/axion_gayy', axion_gay)
 
-waves_ebl = np.geomspace(0.01, 10, num=int(1e4))
+waves_ebl = np.geomspace(5e-6, 10, num=int(1e5))
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 
 # We introduce the Finke22 and CUBA splines
@@ -94,10 +94,10 @@ def spline_starburst(lambda_array):
 list_working_models = {
     # 'ModelA': {'label': 'Model A', 'callable_func': spline_starburst,
     #            'color': 'b', 'linewidth': 3},
-    'ModelB': {'label': 'Model B', 'callable_func': spline_pegase0001,
-               'color': 'tab:orange', 'linewidth': 3},
-    'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
-                'color': 'magenta', 'linewidth': 2},
+    # 'ModelB': {'label': 'Model B', 'callable_func': spline_pegase0001,
+    #            'color': 'tab:orange', 'linewidth': 3},
+    # 'Finke22': {'label': 'Finke+22', 'callable_func': spline_finke,
+    #             'color': 'magenta', 'linewidth': 2},
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
              'color': 'k', 'linewidth': 2}
 }
