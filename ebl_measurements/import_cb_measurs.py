@@ -280,6 +280,11 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                           r'$\mathrm{RTXE \ (Revnivtsev \ et \ al. \ 2003)}$'] \
         = r'$\mathrm{RXTE \ (Revnivtsev \ et \ al. \ 2003)}$'
 
+    upper_lims_all['ref'][upper_lims_all['ref']
+                          ==
+                          r'$\mathrm{Dark \ Cloud \ (Mattila et \ al. \ 2012)}$'] \
+        = r'$\mathrm{Dark \ Cloud \ (Mattila \ et \ al. \ 2012)}$ '
+
 
     upper_lims_all['lambda'][upper_lims_all['nuInu'] == 38.70000076293945] \
         = 1.2500206233
