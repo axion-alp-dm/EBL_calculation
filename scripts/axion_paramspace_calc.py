@@ -40,7 +40,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('CXB_zoom'
+direct_name = str('CUB_zoom'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -56,8 +56,8 @@ if not os.path.exists('outputs/' + direct_name):
     os.makedirs('outputs/' + direct_name)
 
 # Parameter space for axion characteristics and rest of necessary arrays
-axion_mac2 = np.geomspace(9e2, 4e3, num=200)
-axion_gay = np.geomspace(6e-17, 1e-15, num=100)
+axion_mac2 = np.geomspace(1e3, 1e4, num=200)
+axion_gay = np.geomspace(4e-17, 2e-16, num=150)
 np.save('outputs/' + direct_name + '/axion_mass', axion_mac2)
 np.save('outputs/' + direct_name + '/axion_gayy', axion_gay)
 

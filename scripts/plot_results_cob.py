@@ -124,8 +124,8 @@ list_working_models = {
                'color': 'tab:orange', 'linewidth': 3},
     'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
                 'color': 'magenta', 'linewidth': 2},
-    # 'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-    #          'color': 'k', 'linewidth': 2}
+    'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
+             'color': 'k', 'linewidth': 2}
 }
 
 ihl_spline = np.loadtxt('outputs/all_paramspace/ihl_spline.txt')
@@ -413,4 +413,6 @@ ax2.add_artist(legend11)
 
 plt.savefig('outputs/figures_paper/cb_zoom.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb_zoom.png', bbox_inches='tight')
+plt.show()
+
 plt.show()
