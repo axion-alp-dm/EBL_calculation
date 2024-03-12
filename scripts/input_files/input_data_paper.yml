@@ -5,9 +5,9 @@ cosmology_params:
 
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelength_array:
-  lmin: 1e-4
-  lmax: 1e1
-  lfsteps: 1000
+  lmin: 1e-1
+  lmax: 10.
+  lfsteps: 50
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
@@ -38,22 +38,22 @@ z_intmax: 40.
 # List of SSP models we want to try
 ssp_models:
 
-  SB99_kneiske:
-    name: 'Model A'
-
-    # SFR INPUTS
-    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [0.0017, 2.65, 2.9, 5.5]
-    sfr_params: [0.19, 2., 4., 5.08]  # MD14 params
-
-    # SSP DATA
-    ssp_type: 'SB99'
-    path_SSP: 'ssp/final_run_spectrum'
-    file_name: ''
-    cut_popstar: False
-
-    # DUST ABSORPTION MODELS
-    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
+#  SB99_kneiske:
+#    name: 'Model A'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+##    sfr_params: [0.0017, 2.65, 2.9, 5.5]
+#    sfr_params: [0.19, 2., 4., 5.08]  # MD14 params
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'ssp/final_run_spectrum'
+#    file_name: ''
+#    cut_popstar: False
+#
+#    # DUST ABSORPTION MODELS
+#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 
   pegase0.0001_Finke:
     name: 'Model B'

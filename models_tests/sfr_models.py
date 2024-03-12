@@ -34,6 +34,7 @@ def sfr_cuba(zz_axis):
     return (6.9e-3 + 0.14*(zz_axis/2.2)**1.5) / (1. + (zz_axis/2.7)**4.1)
 
 
+
 plt.figure()
 x_array = np.linspace(0, 10, num=500)
 
@@ -49,5 +50,10 @@ plt.yscale('log')
 plt.ylabel(r'sfr(z) [M$_{\odot}$year$^{-1}$ Mpc$^{-3}$]')
 plt.xlabel('z')
 plt.legend()
+
+def metall_mean(zz):
+    return 10**(0.153 - 0.074 * zz**1.34)*0.02
+plt.figure()
+plt.plot(x_array, metall_mean(x_array))
 
 plt.show()

@@ -87,12 +87,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
 
-    if config_data['ssp_models'][key]['ssp_type'] == 'generic':
-        ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key],
-                                      sfr=coshh)
-    else:
-        ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+    # if config_data['ssp_models'][key]['ssp_type'] == 'generic':
+    #     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key],
+    #                                   sfr=coshh)
+
+    ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.ebl_sum_contributions()
+    print(10 ** ebl_class.ebl_ssp_spline(
+        freq_array_ebl, 0., grid=False))
 
     plt.figure(fig)
     plt.plot(waves_ebl, 10 ** ebl_class.ebl_total_spline(
