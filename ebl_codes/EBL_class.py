@@ -392,7 +392,7 @@ class EBL_model(object):
 
         elif ssp_type == 'pegase3':
             pegase_metall = [0.1, 0.05, 0.02, 0.008,
-                             # 0.004, 0.0004, 0.0001
+                             0.004, 0.0004, 0.0001
                              ]
             # pegase_metall = [pop_filename]  # [0.02]
 
@@ -401,11 +401,11 @@ class EBL_model(object):
             t_pegase = np.unique(data_pegase[:, 0])
             l_pegase = np.unique(data_pegase[:, 1])
 
-            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l_pegase[::-1] / 1E-10)
+            # self._ssp_log_freq = np.log10(  # log(frequency/Hz)
+            #     c.value / l_pegase[::-1] * 1e10)
             self._ssp_log_freq = np.linspace(11.4,
                                              17.5,
-                                             num=100)
+                                             num=50)
 
             dd_pegase = np.zeros((self._ssp_log_freq.shape[0],
                                   t_pegase.shape[0],
@@ -415,15 +415,7 @@ class EBL_model(object):
             self._ssp_log_time[
                 np.invert(np.isfinite(self._ssp_log_time))] = -43.
             import matplotlib.pyplot as plt
-            plt.figure(20, figsize=(10, 8))
-            plt.title('ssp: %s , %s' % (ssp_type, pop_filename))
-
-            if ssp_type == 'Popstar09':
-                label = 'dotted'
-            elif ssp_type == 'pegase3':
-                label = '--'
-            else:
-                label = 'solid'
+            # plt.figure(20, figsize=(10, 8))
 
             color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
                      'purple', 'brown']
@@ -431,48 +423,58 @@ class EBL_model(object):
             t_pegase[0] = 1e-43
 
             for n_met, met in enumerate(pegase_metall):
+                plt.figure()
+                plt.title(str(n_met) + '  ' + str(met))
                 data_pegase = np.loadtxt(
-                    'ssp/pegase3/spectral_resultsZ' #+ str(met) + '.txt')
-                + '0.0001' + '.txt')
+                    'ssp/pegase3/spectral_resultsZ' + str(met) + '.txt')
+
                 total = data_pegase[:, 2].reshape(
                     t_pegase.shape[0],
-                    l_pegase.shape[0]).T[::-1]
+                    l_pegase.shape[0]).T
 
                 total = np.log10(total)  # log(time/yrs)
                 total[np.isnan(total)] = -43.
                 total[
                     np.invert(np.isfinite(total))] = -43.
+
                 bi = RectBivariateSpline(x=np.log10(l_pegase),
-                                         y=np.log10(t_pegase * 1e6),
+                                         y=np.log10(t_pegase),
                                          z=total,
                                          kx=1, ky=1, s=0)
-                tt, ll = np.meshgrid(np.log10(t_pegase * 1e6),
+                tt, ll = np.meshgrid(np.log10(t_pegase),
                                      np.log10(c.value
                                               / 10**self._ssp_log_freq
-                                              * 1e10))
+                                              * 1e10
+                                              ))
 
                 dd_pegase[:, :, n_met] = (bi(
                     ll, tt, grid=False))
-                if n_met>0:
-                        dd_pegase[:, :, n_met] = dd_pegase[:, :, 0]
 
                 for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
                     aaa = np.abs(self._ssp_log_time - age).argmin()
-                    plt.plot(l_pegase,
-                             total[:, aaa],
+                    plt.plot(l_pegase, total[:, aaa],
                 #      + np.log10(1E10 * c.value)
                 #                    - 2. * np.log10(  # log(frequency/Hz)
-                # c.value / l_pegase / 1E-10),
-                             color=color[i], linestyle=label,
+                # c.value / l_pegase[::-1] / 1E-10),
+                             color=color[i], linestyle='-',
                              label='log(t) = %.2f'
                                    % self._ssp_log_time[aaa],
-                             alpha=float(n_met) / len(pegase_metall))
+                             alpha=float(n_met) / len(pegase_metall)+0.1)
                     plt.scatter(c.value / 10**self._ssp_log_freq* 1e10,
                              dd_pegase[:, aaa, n_met],
                                 # + np.log10(1E10 * c.value)
                                 #    - 2. * self._ssp_log_freq,
                                 color=color[i]
                                 )
+
+                plt.xscale('log')
+
+                # if ssp_type == 'SB99':
+                # plt.legend()
+
+                # plt.xlim(1e2, 1e6)
+                # plt.ylim(10, 22)
+                # plt.show()
 
             self._ssp_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
             self._ssp_log_time[np.isnan(self._ssp_log_time)] = -43.
@@ -488,11 +490,6 @@ class EBL_model(object):
                                    - 2. * self._ssp_log_freq
                                    [:, np.newaxis, np.newaxis])
 
-
-            print(self._ssp_log_freq[0], self._ssp_log_freq[-1])
-            print(c.value /10**self._ssp_log_freq[0]*1e6,
-                  c.value /10**self._ssp_log_freq[-1]*1e6)
-            print(self._ssp_log_emis[0, 0], self._ssp_log_emis[-1, -1])
 
         elif ssp_type == 'generic':
             """
@@ -526,7 +523,7 @@ class EBL_model(object):
                                    [:, np.newaxis])
 
         # import matplotlib.pyplot as plt
-        plt.figure(20, figsize=(10, 8))
+        # plt.figure(20, figsize=(10, 8))
         plt.title('ssp: %s , %s' % (ssp_type, pop_filename))
 
         if ssp_type == 'Popstar09':
@@ -538,27 +535,27 @@ class EBL_model(object):
 
         color = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
                  'purple', 'brown']
-        for metall in range(len(pegase_metall)):
-            for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-                aaa = np.abs(self._ssp_log_time - age).argmin()
-                plt.plot(c.value * 1e10 / 10 ** self._ssp_log_freq,
-                         self._ssp_log_emis[:, aaa, metall],
-                         color=color[i], linestyle=label,
-                         label='log(t) = %.2f'
-                               % self._ssp_log_time[aaa],
-                         alpha=float(metall)/len(pegase_metall))
+        # for metall in range(len(pegase_metall)):
+        #     for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+        #         aaa = np.abs(self._ssp_log_time - age).argmin()
+        #         plt.plot(c.value * 1e10 / 10 ** self._ssp_log_freq,
+        #                  self._ssp_log_emis[:, aaa, metall],
+        #                  color=color[i], linestyle=label, lw=3,
+        #                  label='log(t) = %.2f'
+        #                        % self._ssp_log_time[aaa],
+        #                  alpha=float(metall)/len(pegase_metall)+0.1)
 
         plt.xscale('log')
 
         # if ssp_type == 'SB99':
         # plt.legend()
 
-        # plt.xlim(1e2, 1e6)
-        # plt.ylim(10, 22)
+        plt.xlim(1e2, 1e6)
+        plt.ylim(10, 22)
 
         plt.xlabel('Wavelength [A]')
 
-        plt.show()
+        # plt.show()
 
         # Sanity check and log info
         self._ssp_log_emis[np.isnan(self._ssp_log_emis)] = -43.
@@ -708,9 +705,9 @@ class EBL_model(object):
 
             xx, yy, zz = np.meshgrid(self._ssp_log_time,
                                      self._ssp_log_freq,
-                                     np.array([0.1, 0.05, 0.02, 0.008]#,
-                                               # 0.004, 0.0004, 0.0001])
-            ))
+                                     np.array([0.1, 0.05, 0.02, 0.008,
+                                               0.004, 0.0004, 0.0001])
+            )
 
             # Interior of emissivity integral:
             # L{t(z)-t(z')} * dens(z') * |d(log10(t'))/dt'|

@@ -20,7 +20,7 @@ from iminuit.cost import LeastSquares
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('final_outputs_check_SHARPlims'
+direct_name = str('final_outputs_Zevol'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -121,7 +121,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     m = Minuit(combined_likelihood,
                config_data['ssp_models'][key]['sfr_params'])
-    m.limits = [[0.001, 0.02], [2., 3.5], [1., 3.5], [4., 8.]]
+    # m.limits = [[0.001, 0.02], [2., 3.5], [1., 3.5], [4., 8.]]
     print(m.params)
 
     m.migrad()  # finds minimum of least_squares function

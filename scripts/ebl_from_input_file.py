@@ -93,8 +93,6 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.ebl_sum_contributions()
-    print(10 ** ebl_class.ebl_ssp_spline(
-        freq_array_ebl, 0., grid=False))
 
     plt.figure(fig)
     plt.plot(waves_ebl, 10 ** ebl_class.ebl_total_spline(
@@ -109,7 +107,9 @@ plt.figure(fig)
 ax = plt.gca()
 
 import_cb_data(plot_measurs=True, ax1=ax)
-
+np.savetxt('outputs/data_pegasemetall.txt', np.column_stack((waves_ebl,
+                                            10 ** ebl_class.ebl_ssp_spline(
+        freq_array_ebl, 0., grid=False))))
 # We introduce the Finke22 and CUBA splines
 ebl = {}
 for m in EBL.get_models():

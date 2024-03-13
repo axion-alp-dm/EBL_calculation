@@ -5,9 +5,9 @@ cosmology_params:
 
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelength_array:
-  lmin: 1e-1
-  lmax: 10.
-  lfsteps: 50
+  lmin: 5e-2
+  lmax: 70.
+  lfsteps: 100
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
@@ -61,7 +61,7 @@ ssp_models:
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
 #    sfr_params: [0.0078, 2.7, 3.4, 6.4]
-    sfr_params: [0.0086, 2.49, 3.76, 6.68]  # Finke22 model A params
+    sfr_params: [0.015, 2.7, 2.9, 5.6] # Finke22 model A params
 
     # SSP DATA
     ssp_type: 'pegase3'
