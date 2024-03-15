@@ -38,39 +38,23 @@ z_intmax: 40.
 # List of SSP models we want to try
 ssp_models:
 
-#  SB99_kneiske:
-#    name: 'Model A'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-##    sfr_params: [0.0017, 2.65, 2.9, 5.5]
-#    sfr_params: [0.19, 2., 4., 5.08]  # MD14 params
-#
-#    # SSP DATA
-#    ssp_type: 'SB99'
-#    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa'
-#    file_name: ''
-#    cut_popstar: False
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
-
-  pegase0.0001_Finke:
-    name: 'Model B'
+  Finke22_ModelA:
+    name: 'Finke22 results Model A'
 
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [0.0078, 2.7, 3.4, 6.4]
-    sfr_params: [0.01955168966137473, 1.6196536322550075, 4.527472241869829, 6.616330135889802]
+    sfr_params: [9.2e-3, 2.79, 3.10, 6.97] # Finke22 model A params
 
     # SSP DATA
     ssp_type: 'pegase3'
-    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
-    file_name: '0.0001'
-    cut_popstar: True
+    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_BG03/'
+    file_name: None
+    cut_popstar: None
 
     # Metallicity evolution arguments
     args_metall: [-0.7, 0.2, 1.2, 0.02]
 
-    # DUST ABSORPTION MODELS
+    # Dust absorption parameters
     dust_abs_models: [ 'finke2022_2' ]
+    dust_z_dependence: [1.52, 0.35, 4.12, 5.89]
+    dust_f_absorption: [1.88, 2.18, 2.93, 3.93, 8.57]

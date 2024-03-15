@@ -2,9 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def emissivity_data(directory='', z_min=None, z_max=None, lambda_min=0,
+def emissivity_data(directory=None, z_min=None, z_max=None, lambda_min=0,
                     lambda_max=5,
                     take1ref=None, plot_fig=False):
+    if directory is None:
+        directory = 'data/emissivity_measurs/'
     data = np.loadtxt(directory + 'finke22.txt',
                       dtype={'names': ('z', 'lambda', 'eje',
                                        'eje_p', 'eje_n', 'reference'),

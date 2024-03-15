@@ -9,9 +9,9 @@ from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
 
-from emissivity_data.emissivity_read_data import emissivity_data
-from ebl_measurements.import_cb_measurs import import_cb_data
-from sfr_data.sfr_read import *
+from data.emissivity_measurs.emissivity_read_data import emissivity_data
+from data.cb_measurs.import_cb_measurs import import_cb_data
+from data.sfr_measurs.sfr_read import *
 
 from astropy import units as u
 from astropy.constants import h as h_plank
@@ -46,7 +46,8 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('outputs/final_outputs_Zevol 2024-03-12 17:19:00')
+direct_name = str('outputs/'
+                  'final_outputs_Zevol_fixezZsolar 2024-03-15 12:47:26')
 print(direct_name)
 
 # Configuration file reading and data input/output ---------#
@@ -96,7 +97,7 @@ axes_sfr = fig_sfr.gca()
 
 x_sfr = np.linspace(0, 10)
 
-sfr_data = sfr_data_dict('sfr_data/')
+sfr_data = sfr_data_dict()
 plot_sfr_data(sfr_data)
 
 handles, labels = axes_sfr.get_legend_handles_labels()
@@ -116,6 +117,16 @@ plt.xlim(0, 10)
 plt.xlabel('redshift z')
 plt.ylabel(r'sfr (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
+
+fig_Z = plt.figure()
+plt.xlabel('redshift z')
+plt.ylabel('Z')
+# plt.yscale('log')
+
+def metall_mean(zz, args=[0.153, 0.074, 1.34, 0.02]):
+    return 10 ** (args[0] - args[1] * zz ** args[2]) * args[3]
+
+
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
 fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
 
@@ -125,8 +136,7 @@ for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                0.44, 0.55, 0.79,
                                1.22, 2.2, 3.6]):
     plt.subplot(3, 3, n_lambda + 1)
-    emissivity_data(directory='emissivity_data/',
-                    z_min=None, z_max=None,
+    emissivity_data(z_min=None, z_max=None,
                     lambda_min=ll - 0.05, lambda_max=ll + 0.05,
                     take1ref=None, plot_fig=True)
 
@@ -169,7 +179,7 @@ for a in ax:
 a = plt.subplot(3, 3, 9)
 a.set_xticks([0, 2, 4, 6, 8, 10])
 
-emiss_data = emissivity_data(directory='emissivity_data/')
+emiss_data = emissivity_data()
 freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
 
 
@@ -178,7 +188,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     values_sfr = config_data['ssp_models'][key]['sfr_params']
     values_cov = config_data['ssp_models'][key]['cov_matrix']
     values_cov = np.array(values_cov).reshape(
-        len(values_sfr), len(values_sfr))
+        8, 8)
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 
@@ -220,15 +230,15 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                   linestyle='-',
                                   color=colors[nkey]))
 
-    y, y_cov = propagate(lambda pars:
-                         fit_igl(waves_ebl, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
-                          facecolor=f_color[nkey], alpha=0.5)
-    print(y)
-    print(yerr_prop)
-    print()
+    # y, y_cov = propagate(lambda pars:
+    #                      fit_igl(waves_ebl, pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
+    #                       facecolor=f_color[nkey], alpha=0.5)
+    # print(y)
+    # print(yerr_prop)
+    # print()
 
     # FIGURE: SFR
     plt.figure(fig_sfr)
@@ -249,26 +259,34 @@ for nkey, key in enumerate(config_data['ssp_models']):
     # print(y)
     # print(yerr_prop)
 
+    # Fig Z
+    plt.figure(fig_Z)
+    plt.plot(x_sfr,
+             metall_mean(
+                 x_sfr,
+                 args=config_data['ssp_models'][key]['args_metall']
+                                          ))
+
     # FIGURE: emissivities fit
     plt.figure(fig_emiss_z)
-    # for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
-    #                                0.44, 0.55, 0.79,
-    #                                1.22, 2.2, 3.6]):
-    #     plt.subplot(3, 3, n_lambda + 1)
-    #
-    #     plt.plot(z_array,
-    #              (c.value / (ll * 1e-6))
-    #              * 10 ** ebl_class.emiss_ssp_spline(
-    #                  np.log10(c.value / ll * 1e6) * np.ones(
-    #                      len(z_array)),
-    #                  z_array)
-    #              * 1e-7,
-    #              linestyle='-', color=colors[nkey], lw=2)
-    #
-    # labels_emiss.append(config_data['ssp_models'][key]['name'])
-    # handles_emiss.append(plt.Line2D([], [], linewidth=2,
-    #                                 linestyle='-',
-    #                                 color=colors[nkey]))
+    for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
+                                   0.44, 0.55, 0.79,
+                                   1.22, 2.2, 3.6]):
+        plt.subplot(3, 3, n_lambda + 1)
+
+        plt.plot(z_array,
+                 (c.value / (ll * 1e-6))
+                 * 10 ** ebl_class.emiss_ssp_spline(
+                     np.log10(c.value / ll * 1e6) * np.ones(
+                         len(z_array)),
+                     z_array)
+                 * 1e-7,
+                 linestyle='-', color=colors[nkey], lw=2)
+
+    labels_emiss.append(config_data['ssp_models'][key]['name'])
+    handles_emiss.append(plt.Line2D([], [], linewidth=2,
+                                    linestyle='-',
+                                    color=colors[nkey]))
 
     # y, y_cov = propagate(lambda pars:
     #                      fit_emiss((ll * np.ones(len(z_array)), z_array),
@@ -330,17 +348,22 @@ fig_ebl.savefig(direct_name + '/ebl' + '.png',
 fig_ebl.savefig(direct_name + '/ebl' + '.pdf',
                 bbox_inches='tight')
 
-# fig_sfr.savefig(direct_name + '/sfr' + '.png',
-#                 bbox_inches='tight')
-# fig_sfr.savefig(direct_name + '/sfr' + '.pdf',
-#                 bbox_inches='tight')
+fig_sfr.savefig(direct_name + '/sfr' + '.png',
+                bbox_inches='tight')
+fig_sfr.savefig(direct_name + '/sfr' + '.pdf',
+                bbox_inches='tight')
+
+fig_Z.savefig(direct_name + '/Zev' + '.png',
+                bbox_inches='tight')
+fig_Z.savefig(direct_name + '/Zev' + '.pdf',
+                bbox_inches='tight')
 
 fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
-# fig_emiss_z.savefig(
-#     direct_name + '/emiss_redshift' + '.png',
-#     bbox_inches='tight')
-# fig_emiss_z.savefig(
-#     direct_name + '/emiss_redshift' + '.pdf',
-#     bbox_inches='tight')
-# plt.show()
+fig_emiss_z.savefig(
+    direct_name + '/emiss_redshift' + '.png',
+    bbox_inches='tight')
+fig_emiss_z.savefig(
+    direct_name + '/emiss_redshift' + '.pdf',
+    bbox_inches='tight')
+plt.show()
 

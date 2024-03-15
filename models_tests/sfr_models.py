@@ -51,9 +51,11 @@ plt.ylabel(r'sfr(z) [M$_{\odot}$year$^{-1}$ Mpc$^{-3}$]')
 plt.xlabel('z')
 plt.legend()
 
-def metall_mean(zz):
-    return 10**(0.153 - 0.074 * zz**1.34)*0.02
+def metall_mean(zz, args=[0.153, 0.074, 1.34, 0.02]):
+    return 10 ** (args[0] - args[1] * zz ** args[2]) * args[3]
 plt.figure()
 plt.plot(x_array, metall_mean(x_array))
+plt.plot(x_array, metall_mean(x_array, args=[-1.,0.01, 2., 0.02]))
+plt.yscale('log')
 
 plt.show()

@@ -36,7 +36,7 @@ method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
 data_y_SB99 = 10 ** method_y(np.log10(c.value * 1e6 / waves), 0.,
                           grid=False)
 
-method_y = np.load('outputs/final_outputs_Zevol 2024-03-12 17:19:00/'
+method_y = np.load('outputs/final_outputs_Zevol/'
                        'pegase0.0001_Finkespline.npy',
                        allow_pickle=True).item()
 data_y_newnew = 10 ** method_y(np.log10(c.value * 1e6 / waves), 0.,

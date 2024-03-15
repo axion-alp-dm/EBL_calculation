@@ -19,6 +19,7 @@ __pycache__/*
 *.swp
 *.xml
 *.iml
+*.ecsv
 
 # Byte-compiled / optimized / DLL files
 tests/__pycache__/

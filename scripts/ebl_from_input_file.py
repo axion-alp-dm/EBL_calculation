@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
-from ebl_measurements.import_cb_measurs import import_cb_data
+from data.cb_measurs.import_cb_measurs import import_cb_data
+from astropy.constants import c
+
+from data.emissivity_measurs.emissivity_read_data import emissivity_data
 
 from ebltable.ebl_from_model import EBL
 
@@ -59,8 +62,10 @@ colors = ['b', 'r', 'g', 'orange', 'grey', 'purple']
 j = 0
 
 # We initialize the class with the input file
-config_data = read_config_file('scripts/input_files/input_data_paper.yml')
-ebl_class = EBL_model.input_yaml_data_into_class(config_data, log_prints=True)
+config_data = read_config_file(
+    'scripts/input_files/input_data_Finke.yml')
+ebl_class = EBL_model.input_yaml_data_into_class(config_data,
+                                                 log_prints=True)
 
 # Axion component calculation
 # ebl_class.ebl_axion_calculation(
@@ -79,17 +84,63 @@ ebl_class = EBL_model.input_yaml_data_into_class(config_data, log_prints=True)
 # plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(
 # freq_array_ebl, 0., grid=False),
 # linestyle=models[2], color='k')
-def coshh(z):
-    return np.exp(-1.82 - np.cosh(0.145 * (z - 20)))
+
+
+fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
+
+z_array = np.linspace(0, 10)
+
+for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
+                               0.44, 0.55, 0.79,
+                               1.22, 2.2, 3.6]):
+    plt.subplot(3, 3, n_lambda + 1)
+    emissivity_data(z_min=None, z_max=None,
+                    lambda_min=ll - 0.05, lambda_max=ll + 0.05,
+                    take1ref=None, plot_fig=True)
+
+    if n_lambda != 8:
+        plt.annotate(r'%r$\,\mu m$' % ll, xy=(5, 1e35), fontsize=28)
+
+    plt.xlim(min(z_array), max(z_array))
+    plt.ylim(1e33, 3e35)
+
+    plt.yscale('log')
+
+handles_emiss, labels_emiss = [], []
+
+plt.subplot(3, 3, 8)
+plt.xlabel(r'redshift z', fontsize=34)
+
+plt.subplot(3, 3, 4)
+plt.ylabel(r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
+           fontsize=40)
+
+plt.subplot(3, 3, 9)
+plt.annotate(r'3.6$\,\mu m$', xy=(6, 1e34), fontsize=28)
+
+ax = [plt.subplot(3, 3, i) for i in [2, 3, 5, 6, 8, 9]]
+for a in ax:
+    a.set_yticklabels([])
+
+ax = [plt.subplot(3, 3, i + 1) for i in range(6)]
+for a in ax:
+    a.set_xticklabels([])
+
+ax = [plt.subplot(3, 3, i + 1) for i in range(6, 8)]
+for a in ax:
+    a.set_xticks([0, 2, 4, 6, 8])
+
+ax = [plt.subplot(3, 3, i) for i in range(1, 7)]
+for a in ax:
+    a.set_xticks([0, 2, 4, 6, 8, 10])
+
+a = plt.subplot(3, 3, 9)
+a.set_xticks([0, 2, 4, 6, 8, 10])
 
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
-
-    # if config_data['ssp_models'][key]['ssp_type'] == 'generic':
-    #     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key],
-    #                                   sfr=coshh)
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.ebl_sum_contributions()
@@ -103,6 +154,26 @@ for nkey, key in enumerate(config_data['ssp_models']):
              linestyle=models[1], color=colors[nkey])
 
     ebl_class.logging_prints = False
+
+    plt.figure(fig_emiss_z)
+    for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
+                                   0.44, 0.55, 0.79,
+                                   1.22, 2.2, 3.6]):
+        plt.subplot(3, 3, n_lambda + 1)
+
+        plt.plot(z_array,
+                 (c.value / (ll * 1e-6))
+                 * 10 ** ebl_class.emiss_ssp_spline(
+                     np.log10(c.value / ll * 1e6) * np.ones(
+                         len(z_array)),
+                     z_array)
+                 * 1e-7,
+                 linestyle='-', color=colors[nkey], lw=2)
+
+    labels_emiss.append(config_data['ssp_models'][key]['name'])
+    handles_emiss.append(plt.Line2D([], [], linewidth=2,
+                                    linestyle='-',
+                                    color=colors[nkey]))
 plt.figure(fig)
 ax = plt.gca()
 

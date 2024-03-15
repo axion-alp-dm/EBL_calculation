@@ -2,7 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def sfr_data_dict(ext_path=''):
+def sfr_data_dict(ext_path=None):
+    if ext_path is None:
+        ext_path = 'data/sfr_measurs/'
+
     md_data = np.loadtxt(ext_path + 'sfr_data/MadauDickinson_uvdata.txt',
                          usecols=range(1, 7))
     z_lo = md_data[:, 0]
