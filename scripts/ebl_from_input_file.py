@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
-from data.cb_measurs.import_cb_measurs import import_cb_data
 from astropy.constants import c
 
+from data.cb_measurs.import_cb_measurs import import_cb_data
 from data.emissivity_measurs.emissivity_read_data import emissivity_data
+from data.sfr_measurs.sfr_read import *
 
 from ebltable.ebl_from_model import EBL
 
@@ -49,17 +50,25 @@ def read_config_file(ConfigFile):
     return parsed_yaml
 
 
-# FIGURE: EBL FOR DIFFERENT MODELS -----------------------------------
-
-fig = plt.figure(figsize=(15, 8))
-axes = fig.gca()
-
-waves_ebl = np.logspace(-1, 3, num=700)
-freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
-
 models = ['solid', 'dashed', 'dotted', 'dashdot']
-colors = ['b', 'r', 'g', 'orange', 'grey', 'purple']
-j = 0
+colors = ['b', 'r', 'g', 'orange', 'grey',
+          'purple', 'k', 'cyan', 'brown']
+
+linstyles_ssp = ['solid', '--', 'dotted', '-.']
+
+markers = ['.', 'x', '+', '*', '^', '>', '<']
+
+# FIGURE: METALLICITIES FOR DIFFERENT MODELS ---------------------------
+fig_met, ax_met = plt.subplots(figsize=(8, 8))
+plt.yscale('log')
+aa = np.loadtxt('outputs/metall_finke.txt')
+plt.plot(aa[:, 0], aa[:, 1])
+
+# FIGURE: COB FOR DIFFERENT MODELS -------------------------------------
+fig_cob, ax_cob = plt.subplots(figsize=(10, 8))
+
+waves_ebl = np.logspace(-1, 3, num=50)
+freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
 
 # We initialize the class with the input file
 config_data = read_config_file(
@@ -88,7 +97,7 @@ ebl_class = EBL_model.input_yaml_data_into_class(config_data,
 
 fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
 
-z_array = np.linspace(0, 10)
+z_array = np.linspace(0., 10.)
 
 for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                0.44, 0.55, 0.79,
@@ -137,23 +146,53 @@ for a in ax:
 a = plt.subplot(3, 3, 9)
 a.set_xticks([0, 2, 4, 6, 8, 10])
 
+# SFRs FOR SSP MODELS ------------------------------
+fig_sfr, ax_sfr = plt.subplots(figsize=(12, 8))
+
+z_data = np.linspace(float(config_data['redshift_array']['zmin']),
+                     float(config_data['redshift_array']['zmax']),
+                     num=500)
+
+sfr_data = sfr_data_dict()
+plot_sfr_data(sfr_data)
+
+plt.yscale('log')
+plt.ylabel('sfr(z)')
+plt.xlabel('z')
+
+# SSP SYNTHETIC SPECTRA
+
+fig_ssp, ax_ssp = plt.subplots(figsize=(10, 8))
+plt.xscale('log')
+plt.title('More transparency, less metallicity')
+# plt.yscale('log')
+plt.ylim(0., 30.)
+
+xx_amstrongs = np.logspace(1, 7, 2000)
+
+ax_ssp.set_xlabel('Wavelength [A]')
+plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '  # /Lsun '
+           r'[erg s$^{-1}$ $\mathrm{\AA}^{-1}$ M$_{\odot}^{-1}$])')
+
+previous_ssp = []
+labels_ssp1 = []
+handles_ssp1 = []
+labels_ssp2 = []
+handles_ssp2 = []
+
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
-    ebl_class.ebl_sum_contributions()
 
-    plt.figure(fig)
-    plt.plot(waves_ebl, 10 ** ebl_class.ebl_total_spline(
+    ax_cob.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
         freq_array_ebl, 0., grid=False),
-             linestyle=models[0], color=colors[nkey])
-    plt.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
-        freq_array_ebl, 0., grid=False),
-             linestyle=models[1], color=colors[nkey])
+                linestyle='-', color=colors[nkey%len(colors)],
+                lw=3, markersize=16, marker=markers[nkey])
 
-    ebl_class.logging_prints = False
+    ebl_class.logging_prints = True
 
     plt.figure(fig_emiss_z)
     for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
@@ -168,19 +207,68 @@ for nkey, key in enumerate(config_data['ssp_models']):
                          len(z_array)),
                      z_array)
                  * 1e-7,
-                 linestyle='-', color=colors[nkey], lw=2)
+                 linestyle='-', marker=markers[nkey],
+                 color=colors[nkey%len(colors)], lw=2)
 
-    labels_emiss.append(config_data['ssp_models'][key]['name'])
+    labels_emiss.append(
+        config_data['ssp_models'][key]['name'])
     handles_emiss.append(plt.Line2D([], [], linewidth=2,
                                     linestyle='-',
-                                    color=colors[nkey]))
-plt.figure(fig)
-ax = plt.gca()
+                                    color=colors[nkey%len(colors)]))
 
-import_cb_data(plot_measurs=True, ax1=ax)
-np.savetxt('outputs/data_pegasemetall.txt', np.column_stack((waves_ebl,
-                                            10 ** ebl_class.ebl_ssp_spline(
-        freq_array_ebl, 0., grid=False))))
+    ax_met.plot(z_array,
+                ebl_class.metall_mean(
+                    function_input=config_data['ssp_models'][key][
+                        'metall_formula'],
+                    zz_array=z_array,
+                    args=config_data['ssp_models'][key]['args_metall']),
+                label=config_data['ssp_models'][key]['name'],
+                color=colors[nkey%len(colors)])
+
+    ax_sfr.plot(z_data, ebl_class.sfr_function(
+        function_input=config_data['ssp_models'][key]['sfr'],
+        xx_array=z_data,
+        params=config_data['ssp_models'][key]['sfr_params']),
+                label=config_data['ssp_models'][key]['name'],
+                color=colors[nkey%len(colors)])
+
+    color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
+                 'purple', 'brown']
+
+    if config_data['ssp_models'][key]['path_SSP'] not in previous_ssp:
+        previous_ssp.append(config_data['ssp_models'][key]['path_SSP'])
+        labels_ssp2.append(
+            config_data['ssp_models'][key]['path_SSP'].replace(
+                'data/ssp_synthetic_spectra/', ''))
+        handles_ssp2.append(
+            plt.Line2D([], [], linewidth=2,
+                       linestyle=linstyles_ssp[len(previous_ssp) - 1],
+                       color='k'))
+        list_met = ebl_class._ssp_metall
+        list_met = np.sort(list_met)
+        for n_met, met in enumerate(list_met):
+            for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+                ax_ssp.plot(
+                    xx_amstrongs,
+                    ebl_class.ssp_lumin_spline(
+                        xi=(
+                            np.log10(c.value / xx_amstrongs * 1e10),
+                            age, np.log10(met)),
+                    ),
+                    linestyle=linstyles_ssp[len(previous_ssp) - 1],
+                    color=color_ssp[i],
+                    alpha=float(n_met) / len(list_met) * 1.1
+                )
+                if n_met == 0 and len(previous_ssp) == 1:
+                    labels_ssp1.append(age)
+                    handles_ssp1.append(
+                        plt.Line2D([], [], linewidth=2, linestyle='-',
+                                   color=color_ssp[i]))
+
+
+plt.figure(fig_cob)
+import_cb_data(plot_measurs=True, ax1=ax_cob)
+
 # We introduce the Finke22 and CUBA splines
 ebl = {}
 for m in EBL.get_models():
@@ -190,66 +278,62 @@ for m, e in ebl.items():
     nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
 spline_finke = UnivariateSpline(waves_ebl, nuInu['finke2022'], s=0, k=1)
 spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
-plt.loglog(waves_ebl, spline_finke(waves_ebl), c='orange', label='Finke22 '
-                                                                 'model A')
-plt.loglog(waves_ebl, spline_cuba(waves_ebl), c='fuchsia', label='CUBA')
-
+ax_cob.plot(waves_ebl, spline_finke(waves_ebl),
+            c='orange', label='Finke22 model A')
+ax_cob.plot(waves_ebl, spline_cuba(waves_ebl),
+            c='fuchsia', label='CUBA')
 
 plt.yscale('log')
 plt.xscale('log')
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
 
-legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left",
-                      title=r'Measurements')
-legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
-                                  color='k') for i in range(4)],
-                      ['Total', 'SSP', 'IHL', 'Axion decay'
-                               '\n(example)'
-                               '\n'
-                               r'    m$_a = 1$ eV'
-                               '\n'
-                               r'    g$_{a\gamma} = 5 \cdot 10^{-10}$ GeV$^{-1}$'], loc=3,
-                      title=r'Components')
-legend33 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
-                                  color=colors[i])
-                       for i in range(len(config_data['ssp_models']))],
-                      [config_data['ssp_models'][key]['name']
-                       for key in config_data['ssp_models']],
-                      title=r'SSP models', bbox_to_anchor=(1.04, 0.1),
-                      loc="lower left")
-axes.add_artist(legend11)
-axes.add_artist(legend22)
-axes.add_artist(legend33)
+# legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left",
+#                       title=r'Measurements')
+# legend22 = plt.legend([
+#     plt.Line2D([], [], linewidth=2, linestyle=models[i],
+#                color='k') for i in range(4)],
+#     ['Total', 'SSP', 'IHL', 'Axion decay'
+#                             '\n(example)'
+#                             '\n'
+#                             r'    m$_a = 1$ eV'
+#                             '\n'
+#                             r'    g$_{a\gamma} = 5 \cdot 10^{-10}$ GeV$^{'
+#                             r'-1}$'], loc=4,
+#     title=r'Components')
+legend33 = ax_cob.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
+                                     color=colors[i])
+                          for i in range(len(config_data['ssp_models']))],
+                         [config_data['ssp_models'][key]['name']
+                          for key in config_data['ssp_models']],
+                         title=r'SSP models',  # bbox_to_anchor=(1.04, 0.1),
+                         loc=1
+                         )
+# axes.add_artist(legend11)
+# axes.add_artist(legend22)
+ax_cob.add_artist(legend33)
 
 plt.xlim([.1, 200])
 plt.ylim(1e-2, 100)
-# plt.grid("major")
-# plt.grid("minor")
-plt.grid(True, which="both", ls="-")
-plt.subplots_adjust(left=0.125, right=.65, top=.95, bottom=.13)
 
+ax_sfr.legend()
+ax_met.legend()
+print(previous_ssp)
 
-# SFRs FOR SSP MODELS ------------------------------
-plt.figure(figsize=(12, 8))
+plt.figure(fig_ssp)
+legend11 = plt.legend(handles_ssp1, labels_ssp1,
+                      loc=1,
+                      title=r'Age log10(years)')
+legend22 = plt.legend(handles_ssp2, labels_ssp2,
+                      loc=4,
+                      )
+ax_ssp.add_artist(legend11)
+ax_ssp.add_artist(legend22)
 
-z_data = np.linspace(float(config_data['redshift_array']['zmin']),
-                     float(config_data['redshift_array']['zmax']),
-                     num=500)
-
-
-for nkey, key in enumerate(config_data['ssp_models']):
-    plt.plot(z_data, ebl_class.sfr_function(
-        function_input=config_data['ssp_models'][key]['sfr'],
-        xx_array=z_data,
-        params=config_data['ssp_models'][key]['sfr_params']),
-             label=config_data['ssp_models'][key]['name'])
-
-
-plt.legend()
-plt.yscale('log')
-plt.ylabel('sfr(z)')
-plt.xlabel('z')
-
+np.savetxt('outputs/data_pegasemetall.txt',
+           np.column_stack((
+               waves_ebl,
+               10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0.,
+                                              grid=False))))
 
 plt.show()

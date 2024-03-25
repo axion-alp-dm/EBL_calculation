@@ -10,7 +10,7 @@ from matplotlib.legend_handler import HandlerTuple
 from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
-from ebl_measurements.import_cb_measurs import import_cb_data
+from data.cb_measurs.import_cb_measurs import import_cb_data
 
 from astropy import units as u
 from astropy.constants import c
@@ -151,7 +151,7 @@ for working_model_name in list_working_models.keys():
         for nb, bb in enumerate(axion_gay):
             ebl_class.ebl_axion_calculation(aa, bb)
 
-            values_gay_array[na, nb] += 2. * chi2_upperlims(
+            values_gay_array[na, nb] += chi2_upperlims(
                 x_model=(10 ** ebl_class.ebl_axion_spline(
                     np.log10(c.value / (upper_lims_all['lambda'] * 1e-6)),
                     0.,

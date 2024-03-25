@@ -5,9 +5,9 @@ cosmology_params:
 
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelength_array:
-  lmin: 5e-2
-  lmax: 70.
-  lfsteps: 100
+  lmin: 1e-2
+  lmax: 500.
+  lfsteps: 50
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
@@ -52,9 +52,167 @@ ssp_models:
     cut_popstar: None
 
     # Metallicity evolution arguments
-    args_metall: [-0.7, 0.2, 1.2, 0.02]
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall: [-0.7, 0.4, 0.95, 0.02]
 
     # Dust absorption parameters
     dust_abs_models: [ 'finke2022_2' ]
-    dust_z_dependence: [1.52, 0.35, 4.12, 5.89]
-    dust_f_absorption: [1.88, 2.18, 2.93, 3.93, 8.57]
+    dust_abs_params:
+      params_ab18: [1.52, 0.35, 4.12, 5.89]
+
+#  Finke22_Modelkroupa:
+#    name: 'Finke22 Kroupa Z=0.02'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
+#    file_name: None
+#    cut_popstar: None
+#
+#    # Metallicity evolution arguments
+#    metall_formula: 'lambda zz, args : np.ones(np.shape(zz)) * args[3]'
+#    args_metall: [ -0.7, 0.4, 1.2, 0.02 ]
+#
+#    # Dust absorption parameters
+#    dust_abs_models: [ 'finke2022_2' ]
+#    dust_abs_params:
+#      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
+#
+#
+#  Finke22_ModelkroupaZ0001:
+#    name: 'Finke22 Kroupa Z=0.0001'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+#
+#    # SSP DATA
+#    ssp_type: 'pegase3'
+#    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
+#    file_name: None
+#    cut_popstar: None
+#
+#    # Metallicity evolution arguments
+#    metall_formula: 'lambda zz, args : np.ones(np.shape(zz)) * args[3]'
+#    args_metall: [ -0.7, 0.4, 1.2, 0.0001 ]
+#
+#    # Dust absorption parameters
+#    dust_abs_models: [ 'finke2022_2' ]
+#    dust_abs_params:
+#      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
+#
+  Finke22_ModelkroupaZevol:
+    name: 'Finke22 Kroupa Z evol'
+
+    # SFR INPUTS
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
+    file_name: None
+    cut_popstar: None
+
+    # Metallicity evolution arguments
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall: [ -0., 0.4, 0.95, 0.02 ]
+
+    # Dust absorption parameters
+    dust_abs_models: [ 'finke2022_2' ]
+    dust_abs_params:
+      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
+
+  Finke22_ModelkroupaZevol2:
+    name: 'Finke22 Kroupa Z = Z(A)'
+
+    # SFR INPUTS
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
+    file_name: None
+    cut_popstar: None
+
+    # Metallicity evolution arguments
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall: [-0.7, 0.4, 0.95, 0.02]
+
+    # Dust absorption parameters
+    dust_abs_models: [ 'finke2022_2' ]
+    dust_abs_params:
+      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
+
+  SB99_dustFinke:
+    name: 'SB99 Zdust Fin'
+
+    # SFR INPUTS
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+
+    # SSP DATA
+    ssp_type: 'SB99'
+    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa_padova/'
+#    file_prefix: 'kroupa_'
+    file_name: '/kroupa_'
+    cut_popstar: None
+
+    # Metallicity evolution arguments
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall: [ -0., 0.4, 0.95, 0.014 ]
+
+    # Dust absorption parameters
+    dust_abs_models: [ 'finke2022_2' ]
+    dust_abs_params:
+      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
+
+  SB99_DustKne:
+    name: 'SB99 dust kn'
+
+    # SFR INPUTS
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+
+    # SSP DATA
+    ssp_type: 'SB99'
+    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa_padova/'
+#    file_prefix: 'kroupa_'
+    file_name: '/kroupa_'
+    cut_popstar: None
+
+    # Metallicity evolution arguments
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall: [ -0., 0.4, 0.95, 0.03 ]
+
+    # Dust absorption parameters
+    dust_abs_models: [ 'kneiske2002', '' ]
+    dust_abs_params: None
+
+#  SB99_Z02:
+#    name: 'SB99 Z=0.02'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa/'
+##    file_prefix: 'kroupa_'
+#    file_name: '/kroupa_'
+#    cut_popstar: None
+#
+#    # Metallicity evolution arguments
+#    metall_formula: 'lambda zz, args : np.ones(np.shape(zz)) * args[3]'
+#    args_metall: [ -0.7, 0.4, 1.2, 0.02 ]
+#
+#    # Dust absorption parameters
+#    dust_abs_models: [ 'finke2022_2' ]
+#    dust_abs_params:
+#      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]

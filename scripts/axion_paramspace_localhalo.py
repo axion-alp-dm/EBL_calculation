@@ -10,7 +10,7 @@ from matplotlib.legend_handler import HandlerTuple
 from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
-from ebl_measurements.import_cb_measurs import import_cb_data
+from data.cb_measurs.import_cb_measurs import import_cb_data
 
 from astropy import units as u
 from astropy.constants import c
@@ -107,7 +107,7 @@ upper_lims_all, _ = import_cb_data(
     lambda_max_total=lambda_max_total,
     ax1=ax, plot_measurs=True)
 
-chi2_min = 2. * chi2_upperlims(
+chi2_min = chi2_upperlims(
     x_model=spline_cuba(upper_lims_all['lambda']),
     x_obs=upper_lims_all['nuInu'],
     err_obs=upper_lims_all['1 sigma'])
@@ -116,7 +116,7 @@ chi2_delta = chi2_min + 4.61  # for upper limits
 
 nuInu_extra = (upper_lims_all['nuInu']
                - spline_cuba(upper_lims_all['lambda'])
-               + upper_lims_all['1 sigma'] * (chi2_delta / 2.) ** 0.5)
+               + upper_lims_all['1 sigma'] * chi2_delta ** 0.5)
 
 sigma = (2. * upper_lims_all['lambda']
          * (220. * u.km * u.s ** -1 / c).to(1))

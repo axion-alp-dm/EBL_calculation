@@ -18,8 +18,8 @@ def sfr_data_dict(ext_path=None):
     sfr_uv_up = sfr_uv * np.log(10) * md_data[:, 4]
 
     sfr1_table = np.column_stack((z_uv_dat, z_uv_lo, z_uv_up,
-                                 sfr_uv, sfr_uv_lo, sfr_uv_up,
-                                 np.ones(len(z_uv_dat), dtype=int)))
+                                  sfr_uv, sfr_uv_lo, sfr_uv_up,
+                                  np.ones(len(z_uv_dat), dtype=int)))
 
     md_data = np.loadtxt(ext_path + 'sfr_data/MadauDickinson_irdata.txt',
                          usecols=range(1, 6))
@@ -34,8 +34,8 @@ def sfr_data_dict(ext_path=None):
     sfr_ir_up = sfr_ir * np.log(10) * md_data[:, 4]
 
     sfr2_table = np.column_stack((z_ir_dat, z_ir_lo, z_ir_up,
-                                 sfr_ir, sfr_ir_lo, sfr_ir_up,
-                                 2 * np.ones(len(z_ir_dat), dtype=int)))
+                                  sfr_ir, sfr_ir_lo, sfr_ir_up,
+                                  2 * np.ones(len(z_ir_dat), dtype=int)))
 
     dr_data = np.loadtxt(ext_path + 'sfr_data/Driver_SFR.txt')
     z_lo = dr_data[:, 1]
@@ -49,8 +49,8 @@ def sfr_data_dict(ext_path=None):
     sfr_dr_up = sfr_dr_lo
 
     sfr3_table = np.column_stack((z_dr, z_dr_lo, z_dr_up,
-                                 sfr_dr, sfr_dr_lo, sfr_dr_up,
-                                 3 * np.ones(len(z_dr), dtype=int)))
+                                  sfr_dr, sfr_dr_lo, sfr_dr_up,
+                                  3 * np.ones(len(z_dr), dtype=int)))
 
     bo_data = np.loadtxt(ext_path + 'sfr_data/Bourne2017.txt')
     z_bo_lo = bo_data[:, 2]
@@ -61,8 +61,8 @@ def sfr_data_dict(ext_path=None):
     sfr_bo_up = bo_data[:, 5]
 
     sfr4_table = np.column_stack((z_bo, z_bo_lo, z_bo_up,
-                                 sfr_bo, sfr_bo_lo, sfr_bo_up,
-                                 4 * np.ones(len(z_bo), dtype=int)))
+                                  sfr_bo, sfr_bo_lo, sfr_bo_up,
+                                  4 * np.ones(len(z_bo), dtype=int)))
 
     z_bouw = np.array([3.8, 4.9, 5.9])
     sfr_bouw = 10 ** (-np.array([1.0, 1.26, 1.55])) * (1.15 / 1.4)
@@ -71,15 +71,14 @@ def sfr_data_dict(ext_path=None):
 
     sfr5_table = np.column_stack((z_bouw, np.zeros(len(z_bouw)),
                                   np.zeros(len(z_bouw)),
-                                 sfr_bouw, dsfr_bouw, dsfr_bouw,
-                                 5 * np.ones(len(z_bouw), dtype=int)))
+                                  sfr_bouw, dsfr_bouw, dsfr_bouw,
+                                  5 * np.ones(len(z_bouw), dtype=int)))
 
     return np.concatenate((sfr1_table, sfr2_table, sfr3_table,
                            sfr4_table, sfr5_table))
 
 
 def plot_sfr_data(dict_srd):
-
     refs = np.unique(dict_srd[:, -1])
     ref_names = [r'Madau $&$ Dickinson UV data',
                  r'Madau $&$ Dickinson IR data',
@@ -96,5 +95,6 @@ def plot_sfr_data(dict_srd):
                                                 dict_values[:, 2]),
                      y=dict_values[:, 3], yerr=(dict_values[:, 4],
                                                 dict_values[:, 5]),
-                     label=ref_names[int(ref)-1],
-                     linestyle='', marker=markers[nref % len(markers)])
+                     label=ref_names[int(ref) - 1],
+                     linestyle='', marker=markers[nref % len(markers)],
+                     zorder=1e5)

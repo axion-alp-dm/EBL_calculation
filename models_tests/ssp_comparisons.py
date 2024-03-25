@@ -10,6 +10,8 @@ from matplotlib.pyplot import cycler
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.cm
 
+from scipy.interpolate import RectBivariateSpline
+
 # import matplotlib.pylab as pl
 # import matplotlib as mpl
 
@@ -72,6 +74,7 @@ def get_cycle(cmap, N=None, use_index="auto"):
         colors = cmap(np.linspace(0, 1, N))
         return cycler("color", colors)
 
+
 cividis_mine = mpl.colormaps['cividis']._resample(10)
 cividis_mine.colors[-1, 1] = 0.7
 cividis_mine.colors[-1, 2] = 0.
@@ -84,15 +87,17 @@ plt.rcParams["axes.prop_cycle"] = get_cycle(cividis_mine, N)
 if os.path.basename(os.getcwd()) == 'models_tests':
     os.chdir("..")
 
-work_with_Lnu = False
+work_with_Lnu = True
 
 # Starburst 99 ------------------------------------------------------------
-data_starburst_old = np.loadtxt('ssp/final_run_spectrum', skiprows=6)
+data_starburst_old = np.loadtxt(
+    'data/ssp_synthetic_spectra/final_run_spectrum', skiprows=6)
 t_old = np.unique(data_starburst_old[:, 0])
 l_old = np.unique(data_starburst_old[:, 1])
 dd_old = data_starburst_old[:, 3].reshape(t_old.shape[0], l_old.shape[0]).T
 
-data_starburst = np.loadtxt('ssp/low_res_for_real.spectrum1', skiprows=6)
+data_starburst = np.loadtxt(
+    'data/ssp_synthetic_spectra/low_res_for_real.spectrum1', skiprows=6)
 t = np.unique(data_starburst[:, 0])
 l = np.unique(data_starburst[:, 1])
 dd = data_starburst[:, 3].reshape(t.shape[0], l.shape[0]).T
@@ -120,7 +125,8 @@ if work_with_Lnu is True:
 pegase_metall = [0.1, 0.05, 0.02, 0.008, 0.004, 0.0004, 0.0001]
 
 data_pegase = np.loadtxt(
-    'ssp/pegase3/spectral_resultsZ0.02.txt')
+    'data/ssp_synthetic_spectra/pegase3/spectra_BG03/'
+    'spectral_resultsZ0.02.txt')
 t_pegase = np.unique(data_pegase[:, 0])
 l_pegase = np.unique(data_pegase[:, 1])
 
@@ -130,21 +136,21 @@ dd_pegase = np.zeros((l_pegase.shape[0],
 
 for n_met, met in enumerate(pegase_metall):
     data_pegase = np.loadtxt(
-        'ssp/pegase3/spectral_resultsZ' + str(met) + '.txt')
+        'data/ssp_synthetic_spectra/pegase3/spectra_BG03/'
+        'spectral_resultsZ'
+        + str(met) + '.txt')
     dd_pegase[:, :, n_met] = data_pegase[:, 2].reshape(t_pegase.shape[0],
                                                        l_pegase.shape[0]).T
     print(n_met, met)
-
 
 pegase_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
 pegase_wave = l_pegase  # amstrongs
 pegase_log_emis = np.log10(dd_pegase)  # - np.log10(3.828e33)
 
-
 if work_with_Lnu is True:
     pegase_log_emis += (np.log10(1E10 * c)
                         - 2. * np.log10(c * 1e10 / l_pegase
-                                        )[:, np.newaxis])
+                                        )[:, np.newaxis, np.newaxis])
 
 
 # PopStar 09 ------------------------------------------------------------
@@ -249,30 +255,186 @@ def popstar09(path, name):
 
 
 # Figures ------------------------------------------------------
+fig = plt.figure(figsize=(10, 10))
+axes = fig.gca()
+# Stripped stars ------------------------------------------------------
+for n_metall, metall in enumerate(['002', '0002', '006','014']): #  '002', '0002', '006',
 
-def fig_plot(age, color):
-    # aaa = np.abs(pop21_log_time - age).argmin()
-    # plt.plot(pop21_wave, pop21_lumin_cube[:, aaa],
-    #          '-',
-    #          label='Popstar21 Z = 0.02, log(t) = %.2f' %
-    #                pop21_log_time[aaa],
-    #          color=color)
-    # aaa = np.abs(pop09_log_time - age).argmin()
-    # plt.plot(pop09_wave, pop09_lumin_cube[:, aaa],
-    #          linestyle='solid',
-    #          label='%.1f Myr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
-    #          color=color, alpha=0.4)
+    if metall == '0002':
+        sb99_lambda_stripped = np.log10(np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + '001' +
+            '_constant.txt', skiprows=8, max_rows=1)[1:])
+        sb99_times_stripped = np.log10(np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + '001' +
+            '_constant.txt', skiprows=9, usecols=0))
+        print(c)
+        sb99_emiss_stripped = (np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + '001' +
+            '_constant.txt', skiprows=9)[:, 1:]
+                             #   - 6.
+                             # -10.
+                               # + 2. * sb99_lambda_stripped[np.newaxis, :]
+                               # - np.log10(1E10 * c)
+                               )
 
-    aaa = np.abs(st99_log_time - age).argmin()
-    plt.plot(st99_wave, st99_log_emis[:, aaa],
-             linestyle='dotted', lw=2,
-             color=color)
+    elif metall == '006':
+        sb99_lambda_stripped = np.log10(np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + '008' +
+            '_constant.txt', skiprows=8, max_rows=1)[1:])
+        sb99_times_stripped = np.log10(np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + '008' +
+            '_constant.txt', skiprows=9, usecols=0))
+        sb99_emiss_stripped = (np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + '008' +
+            '_constant.txt', skiprows=9)[:, 1:]
+                             #   - 6.
+                             # -10.
+                               # + 2. * sb99_lambda_stripped[np.newaxis, :]
+                               # - np.log10(1E10 * c)
+                               )
 
-    aaa = np.abs(pegase_log_time - age).argmin()
-    plt.plot(pegase_wave, pegase_log_emis[:, aaa, -1],
-             linestyle='-', lw=2,
-             label='%.1f Gyr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
-             color=color)
+    else:
+        sb99_lambda_stripped = np.log10(np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + metall +
+            '_constant.txt', skiprows=8, max_rows=1)[1:])
+        sb99_times_stripped = np.log10(np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + metall +
+            '_constant.txt', skiprows=9, usecols=0))
+        sb99_emiss_stripped = (np.loadtxt(
+            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+            + metall +
+            '/SED_SB99_Z0.'
+            + metall +
+            '_constant.txt', skiprows=9)[:, 1:]
+                             #   - 6.
+                             # -10.
+                               # + 2. * sb99_lambda_stripped[np.newaxis, :]
+                               # - np.log10(1E10 * c)
+                               )
+
+        sb99_emiss_stripped[np.isnan(sb99_emiss_stripped)] = -43.
+        sb99_emiss_stripped[
+            np.invert(np.isfinite(sb99_emiss_stripped))] = -43.
+
+    spline_sb = RectBivariateSpline(sb99_lambda_stripped,
+                                    sb99_times_stripped,
+                                    sb99_emiss_stripped.T,
+                                    kx=1, ky=1, s=0)
+
+    stripp_lambda_stripped = np.log10(np.loadtxt(
+        'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+        + metall +
+        '/SED_Z0.'
+        + metall +
+        '_starburst.txt', max_rows=1)[1:])
+    stripp_times_stripped = np.log10(np.loadtxt(
+        'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+        + metall +
+        '/SED_Z0.'
+        + metall +
+        '_starburst.txt', skiprows=8, usecols=0))
+    stripp_emiss_stripped = (np.log10(np.loadtxt(
+        'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
+        + metall +
+        '/SED_Z0.'
+        + metall +
+        '_starburst.txt', skiprows=8)[:, 1:])
+                             # - 6.
+                             # -10.
+                             )
+
+    stripp_emiss_stripped[np.isnan(stripp_emiss_stripped)] = -43.
+    stripp_emiss_stripped[
+        np.invert(np.isfinite(stripp_emiss_stripped))] = -43.
+
+    spline_stripped = RectBivariateSpline(stripp_lambda_stripped,
+                                          stripp_times_stripped,
+                                          stripp_emiss_stripped.T,
+                                          kx=1, ky=1, s=0)
+
+    for ni, age in enumerate(np.log10(
+            [12.7, 50, 100, 500, 800]) + 6.):
+        # for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+        color = next(axes._get_lines.prop_cycler)['color']
+        print(ni, color)
+
+        # aaa = np.abs(st99_log_time - age).argmin()
+        # plt.plot(st99_wave, st99_log_emis[:, aaa],
+        #          linestyle='dotted', lw=2,
+        #          color=color)
+
+        aaa = np.abs(pegase_log_time - age).argmin()
+        plt.plot(pegase_wave, pegase_log_emis[:, aaa, -1],
+                 linestyle='dotted', lw=2,
+                 label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
+                 color=color, alpha=1.2 * n_metall / 4.+0.1)
+
+        aaa = np.abs(sb99_times_stripped - age).argmin()
+        plt.plot(10 ** sb99_lambda_stripped,
+                 sb99_emiss_stripped[aaa, :],
+                 linestyle='-', lw=2,
+                 label='%.0f Myr' % ((10 ** age) * 1e-6),
+                 color=color, alpha=1.2 * n_metall / 4.+0.1)
+
+        aaa = np.abs(stripp_times_stripped - age).argmin()
+        plt.plot(10 ** stripp_lambda_stripped,
+                 stripp_emiss_stripped[aaa, :],
+                 linestyle='--', lw=1,
+                 label='%.0f Myr' % ((10 ** age) * 1e-6),
+                 color=color, alpha=1.2 * n_metall / 4.+0.1)
+
+plt.xscale('log')
+plt.show()
+
+
+# spline_sum = = RectBivariateSpline()
+# def fig_plot(age, color):
+#     # aaa = np.abs(pop21_log_time - age).argmin()
+#     # plt.plot(pop21_wave, pop21_lumin_cube[:, aaa],
+#     #          '-',
+#     #          label='Popstar21 Z = 0.02, log(t) = %.2f' %
+#     #                pop21_log_time[aaa],
+#     #          color=color)
+#     aaa = np.abs(pop09_log_time - age).argmin()
+#     plt.plot(pop09_wave, pop09_lumin_cube[:, aaa],
+#              linestyle='.',
+#              label='%.1f Myr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
+#              color=color, alpha=0.4)
+#
+#     aaa = np.abs(st99_log_time - age).argmin()
+#     plt.plot(st99_wave, st99_log_emis[:, aaa],
+#              linestyle='dotted', lw=2,
+#              color=color)
+#
+#     aaa = np.abs(pegase_log_time - age).argmin()
+#     plt.plot(pegase_wave, pegase_log_emis[:, aaa, -1],
+#              linestyle='-', lw=2,
+#              label='%.1f Gyr' % ((10 ** pop09_log_time[aaa]) * 1e-6),
+#              color=color)
 
 
 def pop_age(path, time, wave, emiss):
@@ -294,10 +456,10 @@ def pop_age(path, time, wave, emiss):
     plt.xlabel('wavelenght [A]')
 
 
-path09 = 'ssp/PopStar09/sp-kro-z0200/'
-pop09_log_time, pop09_wave, pop09_lumin_cube = popstar09(
-    path09,
-    name='spneb_kro_0.15_100_z0200_t')
+# path09 = 'data/ssp_synthetic_spectra/PopStar09/sp-kro-z0200/'
+# pop09_log_time, pop09_wave, pop09_lumin_cube = popstar09(
+#     path09,
+#     name='spneb_kro_0.15_100_z0200_t')
 
 # # pop_age('ssp/final_run_spectrum', st99_log_time, st99_wave, st99_log_emis)
 # # pop_age(path09, pop09_log_time, pop09_wave, pop09_lumin_cube)
@@ -313,21 +475,33 @@ for ni, age in enumerate(np.log10([1., 2., 3., 4, 5., 10, 20, 100, 500,
     color = next(axes._get_lines.prop_cycler)['color']
     print(ni, color)
 
-    aaa = np.abs(st99_log_time - age).argmin()
-    plt.plot(st99_wave*1e-4, st99_log_emis[:, aaa],
-             linestyle='dotted', lw=2,
+    # aaa = np.abs(st99_log_time - age).argmin()
+    # plt.plot(st99_wave*1e-4, st99_log_emis[:, aaa],
+    #          linestyle='dotted', lw=2,
+    #          color=color)
+    #
+    # aaa = np.abs(pegase_log_time - age).argmin()
+    # plt.plot(pegase_wave*1e-4, pegase_log_emis[:, aaa, -1],
+    #          linestyle='-', lw=2,
+    #          label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
+    #          color=color)
+
+    plt.plot(10 ** sb99_lambda_stripped,
+             spline_sb(sb99_lambda_stripped, age, grid=False),
+             linestyle='-', lw=2,
+             label='%.0f Myr' % ((10 ** age) * 1e-6),
              color=color)
 
-    aaa = np.abs(pegase_log_time - age).argmin()
-    plt.plot(pegase_wave*1e-4, pegase_log_emis[:, aaa, -1],
-             linestyle='-', lw=2,
-             label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
+    plt.plot(10 ** stripp_lambda_stripped,
+             spline_stripped(stripp_lambda_stripped, age, grid=False),
+             linestyle='--', lw=2,
+             label='%.0f Myr' % ((10 ** age) * 1e-6),
              color=color)
 
 plt.xscale('log')
 
-plt.xlim(1e-2, 1e2)
-plt.ylim(24, 34)
+# plt.xlim(1e-2, 1e2)
+# plt.ylim(24, 34)
 models = ['dotted', '-']
 legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=models[i],
                                   color='k') for i in range(2)],
@@ -340,7 +514,7 @@ axes.add_artist(legend22)
 plt.legend(fontsize=18, title='Ages', title_fontsize=22)
 
 plt.xlabel(r'Wavelength ($\mu$m)')
-plt.ylabel(r'log$_{10}$(L$_{\lambda}$ ' #/Lsun '
+plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '  # /Lsun '
            r'[erg s$^{-1}$ $\mathrm{\AA}^{-1}$ M$_{\odot}^{-1}$])')
 
 plt.savefig('outputs/figures_paper/ssp_compar.pdf', bbox_inches='tight')
@@ -351,53 +525,53 @@ if work_with_Lnu is True:
     plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun '
                r'[erg s$^{-1}$ Hz$^{-1}$ Msun$^{-1}$])')
     plt.ylim(10, 22)
-#
-# # ---------------------------------------------
-# fig = plt.figure()
-# axes = fig.gca()
-# plt.title('ssp pegase')
-# for age in [1, 2, 3, 5, 10, 20, 100, 500]:
-#     color = next(axes._get_lines.prop_cycler)['color']
-#
-#     aaa = np.abs(t_pegase - age).argmin()
-#     plt.plot(l_pegase, pegase_log_emis[:, aaa, 2],
-#              linestyle='-',
-#              label='%.0fMyrs' % t_pegase[aaa],
-#              color=color)
-#
-#     aaa = np.abs((10 ** pop09_log_time) * 1e-6 - age).argmin()
-#     plt.plot(pop09_wave, pop09_lumin_cube[:, aaa],
-#              linestyle='--',
-#              # marker='+',
-#              color=color)
-#
-#     aaa = np.abs(st99_t_total / 1e6 - age).argmin()
-#     plt.plot(st99_wave, st99_log_emis[:, aaa],
-#              linestyle='dotted',
-#              # marker='x',
-#              color=color)
-#
-# plt.xscale('log')
-# plt.xlim(1e2, 1e5)
-# # plt.ylim(10**-7, 10)
-# legend11 = plt.legend(loc="lower center")
-# lines = ['-', '--', 'dotted']
-# legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=lines[i],
-#                                   color='k')
-#                        for i in range(3)],
-#                       ['Pegase3', 'PopStar09', 'SB99'],
-#                       loc='upper right',
-#                       title=r'SSP model')
-#
-# axes.add_artist(legend11)
-# axes.add_artist(legend22)
-# plt.xlabel('wavelenght [A]')
-# plt.ylabel(r'log$_{10}$(L$_{\lambda}$/Lsun '
-#            r'[erg s$^{-1}$ A$^{-1}$ Msun$^{-1}$])')
-# if work_with_Lnu is True:
-#     plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun [erg s$^{-1}$ Hz$^{-1}$ Msun$^{'
-#                r'-1}$])')
-#     plt.ylim(10, 22)
+plt.show()
+# ---------------------------------------------
+fig = plt.figure()
+axes = fig.gca()
+plt.title('ssp pegase')
+for age in [1, 2, 3, 5, 10, 20, 100, 500]:
+    color = next(axes._get_lines.prop_cycler)['color']
+
+    aaa = np.abs(t_pegase - age).argmin()
+    plt.plot(l_pegase, pegase_log_emis[:, aaa, 2],
+             linestyle='-',
+             label='%.0fMyrs' % t_pegase[aaa],
+             color=color)
+
+    aaa = np.abs((10 ** pop09_log_time) * 1e-6 - age).argmin()
+    plt.plot(pop09_wave, pop09_lumin_cube[:, aaa],
+             linestyle='--',
+             # marker='+',
+             color=color)
+
+    aaa = np.abs(st99_t_total / 1e6 - age).argmin()
+    plt.plot(st99_wave, st99_log_emis[:, aaa],
+             linestyle='dotted',
+             # marker='x',
+             color=color)
+
+plt.xscale('log')
+plt.xlim(1e2, 1e5)
+# plt.ylim(10**-7, 10)
+legend11 = plt.legend(loc="lower center")
+lines = ['-', '--', 'dotted']
+legend22 = plt.legend([plt.Line2D([], [], linewidth=2, linestyle=lines[i],
+                                  color='k')
+                       for i in range(3)],
+                      ['Pegase3', 'PopStar09', 'SB99'],
+                      loc='upper right',
+                      title=r'SSP model')
+
+axes.add_artist(legend11)
+axes.add_artist(legend22)
+plt.xlabel('wavelenght [A]')
+plt.ylabel(r'log$_{10}$(L$_{\lambda}$/Lsun '
+           r'[erg s$^{-1}$ A$^{-1}$ Msun$^{-1}$])')
+if work_with_Lnu is True:
+    plt.ylabel(r'log$_{10}$(L$_{\nu}$/Lsun [erg s$^{-1}$ Hz$^{-1}$ Msun$^{'
+               r'-1}$])')
+    plt.ylim(10, 22)
 #
 # # ---------------------------------------------
 # fig = plt.figure()

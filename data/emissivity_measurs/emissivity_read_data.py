@@ -35,7 +35,7 @@ def emissivity_data(directory=None, z_min=None, z_max=None, lambda_min=0,
                                data_individual['eje_p']),
                          marker=markers[nref % len(markers)],
                          label=ref,
-                         linestyle='')
+                         linestyle='', zorder=1e4)
 
     return data
 
@@ -63,7 +63,7 @@ def plot_emissivities(data, z_min=None, z_max=None,
                            data_individual['eje_p']),
                      marker=markers[nref % len(markers)],
                      label=ref,
-                     linestyle='')
+                     linestyle='', zorder=1e4)
 
     return
 
