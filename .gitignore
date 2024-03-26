@@ -2,12 +2,14 @@
 /*.png
 *.txt
 *.sh
+*.dat
 outputs/
-ebl_measurements/optical_data_2023/
+data/ssp_synthetic_spectra/*
+data/Swire_library/*
 envs/
-ssp/
 /.idea/
 .idea/
+
 
 */__pycache__/*
 __pycache__/*
