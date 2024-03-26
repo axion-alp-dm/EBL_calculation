@@ -5,9 +5,9 @@ cosmology_params:
 
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelength_array:
-  lmin: 5e-2
-  lmax: 70.
-  lfsteps: 100
+  lmin: 3e-1
+  lmax: 1.
+  lfsteps: 700
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
