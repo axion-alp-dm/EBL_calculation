@@ -36,8 +36,14 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('outputs/figures/paper/')
+direct_name = str('outputs/lorri_smeared/')
 print(direct_name)
+
+# If the directory for outputs is not present, create it.
+if not os.path.exists("outputs/"):
+    os.makedirs("outputs/")
+if not os.path.exists('outputs/' + direct_name):
+    os.makedirs('outputs/' + direct_name)
 
 lorri_trans = np.loadtxt('data/lorri_transmitance.txt')
 lorri_trans[:, 0] = lorri_trans[:, 0] * 1e-3
@@ -45,7 +51,7 @@ lorri_trans[:, 1] = lorri_trans[:, 1] * 1e-2  #/ max(lorri_trans[:, 1])
 lorri_spline = UnivariateSpline(lorri_trans[:, 0], lorri_trans[:, 1],
                                 k=1, s=0, ext=1)
 
-waves_ebl = np.geomspace(3e-1, 1, num=500)
+waves_ebl = np.geomspace(3e-1, 10, num=5000)
 
 ebl = {}
 for m in EBL.get_models():
@@ -100,16 +106,52 @@ def axion_contr(lmbd, mass, gayy):
     return ebl_axion_cube
 
 
+axion_mass_array = np.geomspace(3., 2.48/0.1, num=250)
+axion_gayy_array = np.geomspace(2e-11, 5e-10, num=250)
+values_gay_array_NH = np.zeros(
+    (len(axion_mass_array), len(axion_gayy_array)))
+
+np.save('outputs/' + direct_name + '/axion_mass', axion_mass_array)
+np.save('outputs/' + direct_name + '/axion_gayy', axion_gayy_array)
+
+for na, aa in enumerate(axion_mass_array):
+    if na % 25 == 0:
+        print(na)
+
+    for nb, bb in enumerate(axion_gayy_array):
+        total_yy = (axion_contr(waves_ebl, aa, bb)
+                    + spline_cuba(waves_ebl)
+                    )
+        total_spline = UnivariateSpline(
+            waves_ebl, total_yy, s=0, k=1)
+        mean_lambda = avg_lmbd_v2(f_nu=total_spline)
+
+        values_gay_array_NH[na, nb] += (
+                ((16.7 - total_spline(mean_lambda)) / 1.47) ** 2.)
+
+np.save('outputs/' + direct_name + '/CUBA' + 'lorri_smeared',
+        values_gay_array_NH)
+
+plt.figure()
+plt.contour(axion_mass_array, axion_gayy_array,
+            values_gay_array_NH.T - np.min(values_gay_array_NH),
+            levels=[5.99], origin='lower',
+            colors='cyan', zorder=1e10, linewidths=10, alpha=0.9)
+nh_contours = plt.contour(axion_mass_array, axion_gayy_array,
+                          values_gay_array_NH.T - np.min(values_gay_array_NH),
+            levels=[2.30], origin='lower',
+            colors='r', zorder=1e10, linewidths=4, alpha=0.9)
+plt.xscale('log')
+plt.yscale('log')
+plt.show()
+
 # fig, (ax, ax2) = plt.subplots(1, 2, figsize=(10, 8))
 fig, ax = plt.subplots()
 plt.tight_layout()
 fig2, ax2 = plt.subplots()
 plt.tight_layout()
-axion_mass_array = np.linspace(3.5, 5., num=40)
-
 mean_lambda = np.zeros(len(axion_mass_array))
 mean_lambda_only = np.zeros(len(axion_mass_array))
-
 for i in range(len(mean_lambda)):
     total_yy = (axion_contr(waves_ebl,
                             axion_mass_array[i], 1e-10)

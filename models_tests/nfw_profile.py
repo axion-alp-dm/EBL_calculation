@@ -21,9 +21,48 @@ for i in [0.40, 0.42, 0.45]:
     print(i, aaa, aaa/aaa_042, 14.5318*aaa/aaa_042)
 
 
-aaa = (c/128./np.pi/u.sr / u.micron
-       * (1*u.eV)**2
-       * (1e-10*u.GeV**-1)**2
-       *1.11e22* u.GeV * u.cm ** -2
-       ).to(u.nW*u.sr**-1*u.m**-2)
-print(aaa)
+print('\nSky patches')
+
+coord_vector = [[0., 180.],
+                [345.41, 85.74],
+                [271.45, 28.41],
+                [66.27, -57.69],
+                [98.81, -62.03],
+                [20.89, 47.72],
+                [357.91, 55.25],
+                [301.11, 40.02],
+                [48.34, 30.86],
+                [349.46, 67.87],
+                [33.78, -62.32],
+                [54.33, -60.76],
+                [61.88, 38.45],
+                [73.08, -76.15],
+                [350.96, -65.06],
+                [275.02, -61.69],
+                [92.71, -59.91],
+                [98.06, -60.23],
+                [59.51, 61.34],
+                [57.26, 60.26]
+                ]
+
+xx_int = np.geomspace(1e-10, 300, num=50000)
+Dfact = []
+for ni, coord in enumerate(coord_vector):
+    rr_from_ss = np.sqrt(
+        xx_int ** 2. + r_sun ** 2. - 2. * r_sun * xx_int
+        * np.cos(coord[0] * np.pi / 180)
+        * np.cos(coord[1] * np.pi / 180))
+
+    Dfact.append(simpson(nfw_density(rr_from_ss),
+                         x=xx_int * u.kpc.to(u.cm)))
+    print(coord, Dfact[ni])
+
+aa = np.where(max(Dfact) == Dfact)[0][0]
+print('max')
+print(coord_vector[aa], Dfact[aa])
+
+aa = np.where(min(Dfact) == Dfact)[0][0]
+print('min')
+print(coord_vector[aa], Dfact[aa])
+print(Dfact[np.where(max(Dfact) == Dfact)[0][0]]
+      /Dfact[np.where(min(Dfact) == Dfact)[0][0]])

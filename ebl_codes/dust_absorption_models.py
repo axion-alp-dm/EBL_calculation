@@ -213,15 +213,15 @@ def dust_att_finke2(lambda_array, params_dust=None):
         lambda_steps_fn22 = params_dust['lambda_steps_fn22']
     except:
         lambda_steps_fn22 = [0.15, 0.167, 0.218, 0.422, 2.]
-        print('   -> Default parameters for lambda_steps_fn22 chosen: ',
-              lambda_steps_fn22)
+        # print('   -> Default parameters for lambda_steps_fn22 chosen: ',
+        #       lambda_steps_fn22)
 
     try:
         fesc_steps_fn22 = params_dust['fesc_steps_fn22']
     except:
         fesc_steps_fn22 = np.array([1.88, 2.18, 2.93, 3.93, 8.57]) * 0.1
-        print('   -> Default parameters for fesc_steps_fn22 chosen: ',
-              fesc_steps_fn22)
+        # print('   -> Default parameters for fesc_steps_fn22 chosen: ',
+        #       fesc_steps_fn22)
 
     yy = np.zeros(np.shape(lambda_array))
     yy += ((fesc_steps_fn22[1]

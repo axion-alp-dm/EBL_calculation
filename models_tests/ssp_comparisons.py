@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.constants import c
 from astropy import units as u
 
+from scipy.interpolate import UnivariateSpline, RectBivariateSpline, \
+    interpn, RegularGridInterpolator
 from astropy.cosmology import FlatLambdaCDM, z_at_value
 
 from matplotlib.pyplot import cycler
@@ -75,7 +77,7 @@ def get_cycle(cmap, N=None, use_index="auto"):
         return cycler("color", colors)
 
 
-cividis_mine = mpl.colormaps['cividis']._resample(10)
+cividis_mine = mpl.colormaps['cividis'].resampled(10)
 cividis_mine.colors[-1, 1] = 0.7
 cividis_mine.colors[-1, 2] = 0.
 cividis_mine.colors = cividis_mine.colors[::-1]
@@ -120,6 +122,66 @@ if work_with_Lnu is True:
     st99_log_emis += (np.log10(1E10 * c)
                       - 2. * np.log10(c * 1e10 / st99_wave
                                       )[:, np.newaxis])
+
+
+# ----------------------------------------------------------------------
+# STARBURST WITH METALLICITY EVOLUTION
+def load_sb99(path_ssp, pop_filename):
+    ssp_metall = np.sort(np.array(os.listdir(path_ssp),
+                                  dtype=float))
+    print(ssp_metall)
+    d = np.loadtxt(path_ssp + '/0.004/kroupa_004.spectrum1', skiprows=6)
+
+    # Get unique time steps and frequencies, and spectral data
+    t_total = np.unique(d[:, 0])
+    l_total = np.unique(d[:, 1])
+    print(len(t_total), np.log10(t_total[0]), np.log10(t_total[-1]))
+    print(len(l_total), np.log10(l_total[0]), np.log10(l_total[-1]))
+
+    dd_total = np.zeros((l_total.shape[0],
+                         t_total.shape[0],
+                         len(ssp_metall) + 1))
+
+    for n_met, met in enumerate(ssp_metall):
+        data = np.loadtxt(
+            path_ssp + str(met) + '/' + pop_filename
+            + str(met).replace('0.', '')
+            + '.spectrum1',
+            skiprows=6)
+
+        dd_total[:, :, n_met + 1] = data[:, 2].reshape(
+            t_total.shape[0],
+            l_total.shape[0]).T
+
+    ssp_metall = np.insert(ssp_metall, 0, 1e-43)
+    print(ssp_metall)
+    dd_total[:, :, 0] = dd_total[:, :, 1]
+
+    # Define the quantities we will work with
+    sb99_log_time = np.log10(t_total)  # log(time/yrs)
+    sb99_log_freq = np.log10(  # log(frequency/Hz)
+        c / l_total[::-1] / 1E-10)
+    ssp_log_emis = (dd_total[::-1]  # log(em[erg/s/Hz/M_solar])
+                                    # - 6.
+                                    # + np.log10(1E10 * c)
+                                    # - 2. * sb99_log_freq[:, np.newaxis,
+                                    #        np.newaxis]
+                                    )
+
+    ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
+    ssp_log_emis[
+        np.invert(np.isfinite(ssp_log_emis))] = -43.
+
+    ssp_lumin_spline = RegularGridInterpolator(
+        points=(sb99_log_freq,
+                sb99_log_time,
+                np.log10(ssp_metall)),
+        values=ssp_log_emis,
+        method='linear',
+        bounds_error=False, fill_value=-1.
+    )
+    return ssp_lumin_spline
+
 
 # Pegase ------------------------------------------------------------
 pegase_metall = [0.1, 0.05, 0.02, 0.008, 0.004, 0.0004, 0.0001]
@@ -255,95 +317,28 @@ def popstar09(path, name):
 
 
 # Figures ------------------------------------------------------
+
+sb99_spline = load_sb99('data/ssp_synthetic_spectra'
+                        '/starburst99/kroupa_padova/',
+                        'kroupa_')
+
+lambda_array = np.logspace(2., 6., num=2000)
+time_array = np.logspace(6.3, 10, num=500)
+print('limits: ', lambda_array[0], lambda_array[-1],
+      time_array[0], time_array[-1])
+direct = 'data/ssp_synthetic_spectra/starburst99/only_stripped/'
+
 fig = plt.figure(figsize=(10, 10))
 axes = fig.gca()
+
+all_stripped_data = np.zeros((499, 1000, 6))
+metall_str_array = np.zeros(6, dtype=float)
+
 # Stripped stars ------------------------------------------------------
-for n_metall, metall in enumerate(['002', '0002', '006','014']): #  '002', '0002', '006',
-
-    if metall == '0002':
-        sb99_lambda_stripped = np.log10(np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + '001' +
-            '_constant.txt', skiprows=8, max_rows=1)[1:])
-        sb99_times_stripped = np.log10(np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + '001' +
-            '_constant.txt', skiprows=9, usecols=0))
-        print(c)
-        sb99_emiss_stripped = (np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + '001' +
-            '_constant.txt', skiprows=9)[:, 1:]
-                             #   - 6.
-                             # -10.
-                               # + 2. * sb99_lambda_stripped[np.newaxis, :]
-                               # - np.log10(1E10 * c)
-                               )
-
-    elif metall == '006':
-        sb99_lambda_stripped = np.log10(np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + '008' +
-            '_constant.txt', skiprows=8, max_rows=1)[1:])
-        sb99_times_stripped = np.log10(np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + '008' +
-            '_constant.txt', skiprows=9, usecols=0))
-        sb99_emiss_stripped = (np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + '008' +
-            '_constant.txt', skiprows=9)[:, 1:]
-                             #   - 6.
-                             # -10.
-                               # + 2. * sb99_lambda_stripped[np.newaxis, :]
-                               # - np.log10(1E10 * c)
-                               )
-
-    else:
-        sb99_lambda_stripped = np.log10(np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + metall +
-            '_constant.txt', skiprows=8, max_rows=1)[1:])
-        sb99_times_stripped = np.log10(np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + metall +
-            '_constant.txt', skiprows=9, usecols=0))
-        sb99_emiss_stripped = (np.loadtxt(
-            'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
-            + metall +
-            '/SED_SB99_Z0.'
-            + metall +
-            '_constant.txt', skiprows=9)[:, 1:]
-                             #   - 6.
-                             # -10.
-                               # + 2. * sb99_lambda_stripped[np.newaxis, :]
-                               # - np.log10(1E10 * c)
-                               )
-
-        sb99_emiss_stripped[np.isnan(sb99_emiss_stripped)] = -43.
-        sb99_emiss_stripped[
-            np.invert(np.isfinite(sb99_emiss_stripped))] = -43.
-
-    spline_sb = RectBivariateSpline(sb99_lambda_stripped,
-                                    sb99_times_stripped,
-                                    sb99_emiss_stripped.T,
-                                    kx=1, ky=1, s=0)
+for n_metall, metall in enumerate(['0002', '002', '006', '014']):
+    #
+    # if not os.path.exists(direct + '0.' + metall):
+    #     os.makedirs(direct + '0.' + metall)
 
     stripp_lambda_stripped = np.log10(np.loadtxt(
         'data/ssp_synthetic_spectra/published_runs_starburst99/run_Z'
@@ -362,51 +357,105 @@ for n_metall, metall in enumerate(['002', '0002', '006','014']): #  '002', '0002
         + metall +
         '/SED_Z0.'
         + metall +
-        '_starburst.txt', skiprows=8)[:, 1:])
-                             # - 6.
-                             # -10.
-                             )
+        '_starburst.txt', skiprows=8)[:, 1:]))
+    print(len(stripp_times_stripped), stripp_times_stripped[0],
+          stripp_times_stripped[-1])
+    print(len(stripp_lambda_stripped), stripp_lambda_stripped[0],
+          stripp_lambda_stripped[-1])
 
     stripp_emiss_stripped[np.isnan(stripp_emiss_stripped)] = -43.
     stripp_emiss_stripped[
         np.invert(np.isfinite(stripp_emiss_stripped))] = -43.
 
+    all_stripped_data[:, :, n_metall + 1] = stripp_emiss_stripped
+
     spline_stripped = RectBivariateSpline(stripp_lambda_stripped,
                                           stripp_times_stripped,
                                           stripp_emiss_stripped.T,
                                           kx=1, ky=1, s=0)
+    # for time in time_array:
+    #     data_emiss = lambda_array * time
+    #     np.savetxt(direct + '0.' + metall + '/stripped'
+    #            + metall + '.spectrum1',
+    #                np.column_stack((
+    #                    time * np.ones(len(lambda_array)),
+    #                    lambda_array,
+    #                    data_emiss
+    #                )))
 
-    for ni, age in enumerate(np.log10(
-            [12.7, 50, 100, 500, 800]) + 6.):
+    for ni, age in enumerate(np.log10(  # 12.7, 50, 100, 500, 800
+            [11.]) + 6.):
         # for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
         color = next(axes._get_lines.prop_cycler)['color']
         print(ni, color)
 
-        # aaa = np.abs(st99_log_time - age).argmin()
         # plt.plot(st99_wave, st99_log_emis[:, aaa],
         #          linestyle='dotted', lw=2,
         #          color=color)
-
-        aaa = np.abs(pegase_log_time - age).argmin()
-        plt.plot(pegase_wave, pegase_log_emis[:, aaa, -1],
-                 linestyle='dotted', lw=2,
-                 label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
-                 color=color, alpha=1.2 * n_metall / 4.+0.1)
-
-        aaa = np.abs(sb99_times_stripped - age).argmin()
-        plt.plot(10 ** sb99_lambda_stripped,
-                 sb99_emiss_stripped[aaa, :],
-                 linestyle='-', lw=2,
+        metall_float = float('0.' + metall)
+        print(metall_float)
+        metall_str_array[n_metall + 1] = metall_float
+        plt.plot(st99_wave,
+                 sb99_spline((np.log10(c / st99_wave * 1e10),
+                              age, np.log10(metall_float))),
+                 linestyle='-.', lw=2,
                  label='%.0f Myr' % ((10 ** age) * 1e-6),
-                 color=color, alpha=1.2 * n_metall / 4.+0.1)
+                 color=color, alpha=1.2 * n_metall / 4. + 0.1)
+
+        # aaa = np.abs(pegase_log_time - age).argmin()
+        # plt.plot(pegase_wave, pegase_log_emis[:, aaa, -1],
+        #          linestyle='dotted', lw=2,
+        #          label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
+        #          color=color, alpha=1.2 * n_metall / 4.+0.1)
 
         aaa = np.abs(stripp_times_stripped - age).argmin()
         plt.plot(10 ** stripp_lambda_stripped,
                  stripp_emiss_stripped[aaa, :],
                  linestyle='--', lw=1,
                  label='%.0f Myr' % ((10 ** age) * 1e-6),
-                 color=color, alpha=1.2 * n_metall / 4.+0.1)
+                 color=color, alpha=1.2 * n_metall / 4. + 0.1)
 
+all_stripped_data[:, :, 0] = all_stripped_data[:, :, 1]
+all_stripped_data[:, :, -1] = all_stripped_data[:, :, -2]
+metall_str_array[0] = 1e-10
+metall_str_array[-1] = 0.05
+
+spline_stripped_total = RegularGridInterpolator(
+    points=(stripp_times_stripped,
+            stripp_lambda_stripped,
+            np.log10(metall_str_array),
+            ),
+    values=all_stripped_data,
+    method='linear',
+    bounds_error=False, fill_value=-1
+)
+
+for n_met, metall in enumerate([1e-10, 4.e-04, 4.e-03,
+                                8.e-03, 2.e-02, 5.e-02]):
+    print(metall)
+    if not os.path.exists(direct + str(metall)):
+        os.makedirs(direct + str(metall))
+
+    with open(direct + str(metall) + '/stripped'
+              + str(metall) + '.spectrum1', 'w') as f:
+        for time in time_array:
+            data_emiss = np.log10(
+                # 10 ** sb99_spline(xi=(np.log10(c / lambda_array * 1e10),
+                #                       np.log10(time), np.log10(metall)))
+                10 ** spline_stripped_total(
+                    xi=(
+                        np.log10(time),
+                        np.log10(lambda_array),
+                        np.log10(metall)))
+            )
+            np.savetxt(f,
+                       np.column_stack((
+                           time * np.ones(len(lambda_array)),
+                           lambda_array,
+                           data_emiss
+                       )))
+
+print(metall_str_array)
 plt.xscale('log')
 plt.show()
 
@@ -485,12 +534,6 @@ for ni, age in enumerate(np.log10([1., 2., 3., 4, 5., 10, 20, 100, 500,
     #          linestyle='-', lw=2,
     #          label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
     #          color=color)
-
-    plt.plot(10 ** sb99_lambda_stripped,
-             spline_sb(sb99_lambda_stripped, age, grid=False),
-             linestyle='-', lw=2,
-             label='%.0f Myr' % ((10 ** age) * 1e-6),
-             color=color)
 
     plt.plot(10 ** stripp_lambda_stripped,
              spline_stripped(stripp_lambda_stripped, age, grid=False),

@@ -51,7 +51,7 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 
 config_data = read_config_file(
-    'scripts/input_files/input_data_paper.yml')
+    'scripts/input_files/input_data_Finke.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use
@@ -129,7 +129,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     m = Minuit(combined_likelihood, aaa)
     m.limits = [[None, None], [None, None], [None, None], [None, None],
-                [-3., 0.2], [0., 1.], [1., 5.], [0.1, 0.25]]
+                [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25]]
     m.fixed[7] = True
     m.values[7] = 0.02
     print(m.params)

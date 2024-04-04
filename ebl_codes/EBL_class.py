@@ -311,10 +311,10 @@ class EBL_model(object):
 
             self._ssp_metall = np.sort(np.array(os.listdir(path_ssp),
                                                 dtype=float))
-            print(self._ssp_metall)
+            # print(self._ssp_metall)
             d = np.loadtxt(path_ssp
-                           + '/0.004/kroupa_004.spectrum1',
-                           skiprows=6)
+                           + '/0.004/' + pop_filename + '004.spectrum1',
+                           skiprows=cut_popstar)
 
             # Get unique time steps and frequencies, and spectral data
             t_total = np.unique(d[:, 0])
@@ -329,14 +329,14 @@ class EBL_model(object):
                     path_ssp + str(met) + pop_filename
                     + str(met).replace('0.', '')
                     + '.spectrum1',
-                    skiprows=6)
+                    skiprows=cut_popstar)
 
                 dd_total[:, :, n_met+1] = data[:, 2].reshape(
                     t_total.shape[0],
                     l_total.shape[0]).T
 
             self._ssp_metall = np.insert(self._ssp_metall, 0, 1e-43)
-            print(self._ssp_metall)
+            # print(self._ssp_metall)
             dd_total[:, :, 0] = dd_total[:, :, 1]
 
             # Define the quantities we will work with
@@ -526,6 +526,13 @@ class EBL_model(object):
             exit()
 
         # Sanity check and log info
+        # print(np.where(self._ssp_log_time[1:]<self._ssp_log_time[:-1]))
+        # print(np.where(self._ssp_log_freq[1:]<self._ssp_log_freq[:-1]))
+        # print(sum(self._ssp_log_time[1:]>self._ssp_log_time[:-1]),
+        #       len(self._ssp_log_time))
+        # print(sum(self._ssp_log_freq[1:]>self._ssp_log_freq[:-1]),
+        #       len(self._ssp_log_freq))
+        # print()
         ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
         ssp_log_emis[
             np.invert(np.isfinite(ssp_log_emis))] = -43.

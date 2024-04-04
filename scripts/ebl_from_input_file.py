@@ -64,6 +64,9 @@ plt.yscale('log')
 aa = np.loadtxt('outputs/metall_finke.txt')
 plt.plot(aa[:, 0], aa[:, 1])
 
+plt.xlabel('redshift z')
+plt.ylabel('Z')
+
 # FIGURE: COB FOR DIFFERENT MODELS -------------------------------------
 fig_cob, ax_cob = plt.subplots(figsize=(10, 8))
 
@@ -72,7 +75,9 @@ freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
 
 # We initialize the class with the input file
 config_data = read_config_file(
-    'scripts/input_files/input_data_Finke.yml')
+    # 'scripts/input_files/input_data_Finke.yml')
+    'outputs/final_outputs_Zevol_fixezZsolar 2024-04-03 '
+    '15:18:21/input_data.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 
