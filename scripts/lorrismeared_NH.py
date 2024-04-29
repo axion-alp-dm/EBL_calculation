@@ -13,6 +13,7 @@ from astropy.constants import h as h_plank
 from astropy.cosmology import FlatLambdaCDM
 
 from ebltable.ebl_from_model import EBL
+from data.cb_measurs.import_cb_measurs import import_cb_data
 
 all_size = 34
 plt.rcParams['mathtext.fontset'] = 'stix'
@@ -36,7 +37,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('lorri_smeared_newVal_full/')
+direct_name = str('lorri_smeared_host/')
 print(direct_name)
 
 # If the directory for outputs is not present, create it.
@@ -51,7 +52,7 @@ lorri_trans[:, 1] = lorri_trans[:, 1] * 1e-2  # / max(lorri_trans[:, 1])
 lorri_spline = UnivariateSpline(lorri_trans[:, 0], lorri_trans[:, 1],
                                 k=1, s=0, ext=1)
 
-waves_ebl = np.geomspace(5e-6, 1., num=20000)
+waves_ebl = np.geomspace(0.1, 1.3, num=20000)
 
 ebl = {}
 for m in EBL.get_models():
@@ -107,8 +108,22 @@ def axion_contr(lmbd, mass, gayy):
     return ebl_axion_cube
 
 
-axion_mass_array = np.geomspace(3, 1e7, num=700)
-axion_gayy_array = np.geomspace(8e-12, 2e-10, num=250)
+D_factor = 2.20656e22 * u.GeV * u.cm ** -2
+
+
+def host_axion_contr(xx, mass, gay, v_dispersion=220.):
+    sigma = (2. * 2.48 / mass
+             * (v_dispersion * u.km * u.s ** -1 / c).to(1))
+    nuInu_values = (
+            14.53 * mass ** 3. * (gay*1e10) ** 2.
+            * (D_factor / (1.11e22 * u.GeV * u.cm ** -2)).to(1)
+            * np.exp(-0.5 * ((xx - 2.48/mass) / sigma) ** 2.))
+
+    return nuInu_values
+
+
+axion_mass_array = np.geomspace(2., 9., num=750)
+axion_gayy_array = np.geomspace(1e-11, 1e-7, num=700)
 values_gay_array_NH = np.zeros(
     (len(axion_mass_array), len(axion_gayy_array)))
 
@@ -122,7 +137,7 @@ for na, aa in enumerate(axion_mass_array):
     #     break
 
     for nb, bb in enumerate(axion_gayy_array):
-        total_yy = (axion_contr(waves_ebl, aa, bb)
+        total_yy = (host_axion_contr(waves_ebl, aa, bb)
                     + spline_cuba(waves_ebl)
                     )
         total_spline = UnivariateSpline(
@@ -134,6 +149,26 @@ for na, aa in enumerate(axion_mass_array):
 
 np.save('outputs/' + direct_name + '/CUBA' + 'lorri_smeared',
         values_gay_array_NH)
+
+fig, ax1 = plt.subplots()
+upper_lims_all, _ = import_cb_data(
+    lambda_min_total=0.,
+    lambda_max_total=1300.,
+    ax1=ax1, plot_measurs=True)
+total_yy = (host_axion_contr(waves_ebl, 3.837, 2e-11)
+                    + spline_cuba(waves_ebl))
+total_spline = UnivariateSpline(
+            waves_ebl, total_yy, s=0, k=1)
+mean_lambda = avg_lmbd_v2(f_nu=total_spline)
+print(mean_lambda)
+plt.axvline(mean_lambda, c='k')
+plt.axhline(21.98, c='b')
+plt.axhline(21.98+1.23, alpha=0.5, c='b')
+plt.axhline(21.98-1.23, alpha=0.5, c='b')
+plt.loglog(waves_ebl, total_yy, marker='x')
+plt.xlim(0.3, 1.)
+plt.show()
+
 
 plt.figure()
 plt.contour(axion_mass_array, axion_gayy_array,

@@ -11,6 +11,7 @@ from astropy.constants import c
 from data.cb_measurs.import_cb_measurs import import_cb_data
 from data.emissivity_measurs.emissivity_read_data import emissivity_data
 from data.sfr_measurs.sfr_read import *
+from data.metallicity_measurs.import_metall import import_met_data
 
 from ebltable.ebl_from_model import EBL
 
@@ -30,6 +31,9 @@ plt.rc('xtick.major', size=7, width=1.5, top=True)
 plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
+
+input_file_dir = ('outputs/final_outputs_Zevol_fixezZsolar '
+                  '2024-04-23 14:34:55/')
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -61,8 +65,8 @@ markers = ['.', 'x', '+', '*', '^', '>', '<']
 # FIGURE: METALLICITIES FOR DIFFERENT MODELS ---------------------------
 fig_met, ax_met = plt.subplots(figsize=(8, 8))
 plt.yscale('log')
-aa = np.loadtxt('outputs/metall_finke.txt')
-plt.plot(aa[:, 0], aa[:, 1])
+aa = import_met_data(ax=ax_met)
+# aa = import_met_data(ax=ax_met, z_sun=0.014)
 
 plt.xlabel('redshift z')
 plt.ylabel('Z')
@@ -74,10 +78,7 @@ waves_ebl = np.logspace(-1, 3, num=50)
 freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
 
 # We initialize the class with the input file
-config_data = read_config_file(
-    # 'scripts/input_files/input_data_Finke.yml')
-    'outputs/final_outputs_Zevol_fixezZsolar 2024-04-03 '
-    '15:18:21/input_data.yml')
+config_data = read_config_file(input_file_dir + 'input_data.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 
@@ -191,10 +192,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
     print('SSP model: ', config_data['ssp_models'][key]['name'])
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+    print(10 ** ebl_class.ebl_ssp_spline(
+        np.log10(c.value/0.608*1e6), 0., grid=False),
+          21.98 - 10 ** ebl_class.ebl_ssp_spline(
+        np.log10(c.value/0.608*1e6), 0., grid=False))
 
     ax_cob.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
         freq_array_ebl, 0., grid=False),
-                linestyle='-', color=colors[nkey%len(colors)],
+                linestyle='-', color=colors[nkey % len(colors)],
                 lw=3, markersize=16, marker=markers[nkey])
 
     ebl_class.logging_prints = True
@@ -213,13 +218,13 @@ for nkey, key in enumerate(config_data['ssp_models']):
                      z_array)
                  * 1e-7,
                  linestyle='-', marker=markers[nkey],
-                 color=colors[nkey%len(colors)], lw=2)
+                 color=colors[nkey % len(colors)], lw=2)
 
     labels_emiss.append(
         config_data['ssp_models'][key]['name'])
     handles_emiss.append(plt.Line2D([], [], linewidth=2,
                                     linestyle='-',
-                                    color=colors[nkey%len(colors)]))
+                                    color=colors[nkey % len(colors)]))
 
     ax_met.plot(z_array,
                 ebl_class.metall_mean(
@@ -228,14 +233,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     zz_array=z_array,
                     args=config_data['ssp_models'][key]['args_metall']),
                 label=config_data['ssp_models'][key]['name'],
-                color=colors[nkey%len(colors)])
+                color=colors[nkey % len(colors)])
 
     ax_sfr.plot(z_data, ebl_class.sfr_function(
         function_input=config_data['ssp_models'][key]['sfr'],
         xx_array=z_data,
         params=config_data['ssp_models'][key]['sfr_params']),
                 label=config_data['ssp_models'][key]['name'],
-                color=colors[nkey%len(colors)])
+                color=colors[nkey % len(colors)])
 
     color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
                  'purple', 'brown']
@@ -269,7 +274,6 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     handles_ssp1.append(
                         plt.Line2D([], [], linewidth=2, linestyle='-',
                                    color=color_ssp[i]))
-
 
 plt.figure(fig_cob)
 import_cb_data(plot_measurs=True, ax1=ax_cob)
@@ -341,4 +345,32 @@ np.savetxt('outputs/data_pegasemetall.txt',
                10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0.,
                                               grid=False))))
 
+# Save the figures
+fig_cob.savefig(input_file_dir + '/ebl_bare' + '.png',
+                bbox_inches='tight')
+fig_cob.savefig(input_file_dir + '/ebl_bare' + '.pdf',
+                bbox_inches='tight')
+
+fig_sfr.savefig(input_file_dir + '/sfr_bare' + '.png',
+                bbox_inches='tight')
+fig_sfr.savefig(input_file_dir + '/sfr_bare' + '.pdf',
+                bbox_inches='tight')
+
+fig_met.savefig(input_file_dir + '/Zev_bare' + '.png',
+                bbox_inches='tight')
+fig_met.savefig(input_file_dir + '/Zev_bare' + '.pdf',
+                bbox_inches='tight')
+
+fig_ssp.savefig(input_file_dir + '/ssp_bare' + '.png',
+                bbox_inches='tight')
+fig_ssp.savefig(input_file_dir + '/ssp_bare' + '.pdf',
+                bbox_inches='tight')
+
+fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
+fig_emiss_z.savefig(
+    input_file_dir + '/emiss_redshift_bare' + '.png',
+    bbox_inches='tight')
+fig_emiss_z.savefig(
+    input_file_dir + '/emiss_redshift_bare' + '.pdf',
+    bbox_inches='tight')
 plt.show()

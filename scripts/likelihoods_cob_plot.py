@@ -12,6 +12,7 @@ from ebl_codes.EBL_class import EBL_model
 from data.emissivity_measurs.emissivity_read_data import emissivity_data
 from data.cb_measurs.import_cb_measurs import import_cb_data
 from data.sfr_measurs.sfr_read import *
+from data.metallicity_measurs.import_metall import import_met_data
 
 from astropy import units as u
 from astropy.constants import h as h_plank
@@ -46,8 +47,8 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('outputs/'
-                  'final_outputs_Zevol_fixezZsolar 2024-04-03 10:07:56')
+direct_name = str('outputs/final_outputs_Zevol_fixezZsolar '
+                       '2024-04-23 14:34:55/')
 print(direct_name)
 
 # Configuration file reading and data input/output ---------#
@@ -118,13 +119,13 @@ plt.xlabel('redshift z')
 plt.ylabel(r'sfr (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
 
-fig_Z = plt.figure()
+fig_Z, ax_met = plt.subplots(figsize=(8, 8))
+plt.yscale('log')
+aa = import_met_data(ax=ax_met)
+# aa = import_met_data(ax=ax_met, z_sun=0.014)
+
 plt.xlabel('redshift z')
 plt.ylabel('Z')
-# plt.yscale('log')
-
-def metall_mean(zz, args=[0.153, 0.074, 1.34, 0.02]):
-    return 10 ** (args[0] - args[1] * zz ** args[2]) * args[3]
 
 
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
@@ -186,6 +187,9 @@ freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
 for nkey, key in enumerate(config_data['ssp_models']):
 
     values_sfr = config_data['ssp_models'][key]['sfr_params']
+    values_metall = config_data['ssp_models'][key]['args_metall']
+    values_sfr = np.concatenate((values_sfr, values_metall))
+    print(values_sfr)
     values_cov = config_data['ssp_models'][key]['cov_matrix']
     values_cov = np.array(values_cov).reshape(
         8, 8)
@@ -219,6 +223,12 @@ for nkey, key in enumerate(config_data['ssp_models']):
             config_data['ssp_models'][key]['sfr'], x, params)
 
 
+    def metall(x, params):
+        return ebl_class.metall_mean(
+            function_input=config_data['ssp_models'][key]['metall_formula'],
+            zz_array=x,
+            args=params[4:])
+
     # FIGURE: cob fit
     axes_ebl.plot(waves_ebl,
                   10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0.,
@@ -230,15 +240,15 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                   linestyle='-',
                                   color=colors[nkey]))
 
-    # y, y_cov = propagate(lambda pars:
-    #                      fit_igl(waves_ebl, pars),
-    #                      values_sfr, values_cov)
-    # yerr_prop = np.diag(y_cov) ** 0.5
-    # axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
-    #                       facecolor=f_color[nkey], alpha=0.5)
-    # print(y)
-    # print(yerr_prop)
-    # print()
+    y, y_cov = propagate(lambda pars:
+                         fit_igl(waves_ebl, pars),
+                         values_sfr, values_cov)
+    yerr_prop = np.diag(y_cov) ** 0.5
+    axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
+                          facecolor=f_color[nkey], alpha=0.5)
+    print(y)
+    print(yerr_prop)
+    print()
 
     # FIGURE: SFR
     plt.figure(fig_sfr)
@@ -250,22 +260,27 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                   linestyle='-',
                                   color=colors[nkey]))
 
-    # y, y_cov = propagate(lambda pars:
-    #                      sfr(x_sfr, pars),
-    #                      values_sfr, values_cov)
-    # yerr_prop = np.diag(y_cov) ** 0.5
-    # plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
-    #                  facecolor=f_color[nkey], alpha=0.5)
-    # print(y)
-    # print(yerr_prop)
+    y, y_cov = propagate(lambda pars:
+                         sfr(x_sfr, pars),
+                         values_sfr, values_cov)
+    yerr_prop = np.diag(y_cov) ** 0.5
+    plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+                     facecolor=f_color[nkey], alpha=0.5)
+    print(y)
+    print(yerr_prop)
 
     # Fig Z
     plt.figure(fig_Z)
-    plt.plot(x_sfr,
-             metall_mean(
-                 x_sfr,
-                 args=config_data['ssp_models'][key]['args_metall']
-                                          ))
+    plt.plot(x_sfr, metall(x_sfr, params=values_sfr))
+
+    y, y_cov = propagate(lambda pars:
+                         metall(x_sfr, pars),
+                         values_sfr, values_cov)
+    yerr_prop = np.diag(y_cov) ** 0.5
+    plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+                     facecolor=f_color[nkey], alpha=0.5)
+    print(y)
+    print(yerr_prop)
 
     # FIGURE: emissivities fit
     plt.figure(fig_emiss_z)
@@ -288,13 +303,13 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                     linestyle='-',
                                     color=colors[nkey]))
 
-    # y, y_cov = propagate(lambda pars:
-    #                      fit_emiss((ll * np.ones(len(z_array)), z_array),
-    #                                pars),
-    #                      values_sfr, values_cov)
-    # yerr_prop = np.diag(y_cov) ** 0.5
-    # plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
-    #                  facecolor=f_color[nkey], alpha=0.5)
+    y, y_cov = propagate(lambda pars:
+                         fit_emiss((ll * np.ones(len(z_array)), z_array),
+                                   pars),
+                         values_sfr, values_cov)
+    yerr_prop = np.diag(y_cov) ** 0.5
+    plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
+                     facecolor=f_color[nkey], alpha=0.5)
 
     # print(yerr_prop)
 
@@ -365,5 +380,5 @@ fig_emiss_z.savefig(
 fig_emiss_z.savefig(
     direct_name + '/emiss_redshift' + '.pdf',
     bbox_inches='tight')
-plt.show()
+# plt.show()
 

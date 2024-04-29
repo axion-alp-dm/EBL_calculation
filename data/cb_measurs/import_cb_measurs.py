@@ -176,12 +176,12 @@ def dictionary_datatype(obs_type,
     return t
 
 
-def import_cb_data(lambda_min_total=0., lambda_max_total=5,
+def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                    plot_measurs=False, ax1=None):
     # Datapoints we use in the study
     upper_lims_cob = dictionary_datatype(
         obs_type='UL',
-        lambda_max=5.,
+        lambda_max=1300.,
         plot_measurs=False)
 
     upperlims_cub = import_spectrum_data(
@@ -199,7 +199,8 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
             '$\mathrm{AKARI \ (Tsumura \ et \ al. \ 2013)}$',
             '$\mathrm{IRTS \ (Matsumoto \ et \ al. \ 2015)}$',
             '$\mathrm{Pioneer \ 10/11 \ (Matsuoka \ et \ al. \ 2011)}$',
-            '$\mathrm{HST \ (Brown \ et \ al. \ 2000)}$'], lambda_max=5.,
+            '$\mathrm{HST \ (Brown \ et \ al. \ 2000)}$'],
+        lambda_max=5.,
         import_one_type=1)
 
     upper_lims_cxb = import_spectrum_data(
@@ -264,7 +265,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
 
     upper_lims_all['type'][upper_lims_all['type'] == 2] = 3
     upper_lims_all['type'][upper_lims_all['ref']
-                           == r'NH/LORRI (Lauer+ ’22)'] = 2
+                           == r'NH/LORRI (Symons+ ‘23)'] = 2
 
     upper_lims_all['ref'][upper_lims_all['ref']
                           == r'COBE/DIRBE (Arendt \& Dwek ‘03)'] = \
@@ -354,8 +355,8 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
 
                 elif datatype == 2:
                     ax1.errorbar(x=data['lambda'], y=data['nuInu'],
-                                 yerr=[data['nuInu_errn'],
-                                       data['nuInu_errp']],
+                                 # yerr=[data['nuInu_errn'],
+                                 #       data['nuInu_errp']],
                                  linestyle='', color=color_i,
                                  label=name,
                                  marker='*',
@@ -369,7 +370,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5,
                                  linestyle='', color='k',
                                  marker='.',
                                  mfc='k',
-                                 markersize=8, zorder=1e5
+                                 markersize=8, zorder=5e5
                                  )
 
                 elif datatype == 0:

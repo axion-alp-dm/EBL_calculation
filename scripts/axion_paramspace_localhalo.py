@@ -41,7 +41,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('individuals'
+direct_name = str('individuals_Dfact'
                   # + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -58,7 +58,8 @@ if not os.path.exists("outputs/"):
 if not os.path.exists('outputs/' + direct_name):
     os.makedirs('outputs/' + direct_name)
 
-D_factor = 1.11e22 * u.GeV * u.cm ** -2
+D_factor = 2.20656e22 * u.GeV * u.cm ** -2
+# D_factor = 1.1e22 * u.GeV * u.cm ** -2
 def chi2_upperlims(x_model, x_obs, err_obs):
     """
 
@@ -118,11 +119,13 @@ nuInu_extra = (upper_lims_all['nuInu']
                - spline_cuba(upper_lims_all['lambda'])
                + upper_lims_all['1 sigma'] * chi2_delta ** 0.5)
 
-sigma = (2. * upper_lims_all['lambda']
-         * (220. * u.km * u.s ** -1 / c).to(1))
+# sigma = (2. * upper_lims_all['lambda']
+#          * (220. * u.km * u.s ** -1 / c).to(1))
 g_ay_array = (1e-10 *
               (nuInu_extra
-               / (15.56979 * (2.48 / upper_lims_all['lambda']) ** 3.)
+               / (14.53
+                  * (2.48 / upper_lims_all['lambda']) ** 3.
+                  * (D_factor / (1.11e22 * u.GeV * u.cm ** -2)).to(1))
                ) ** 0.5
               )
 
@@ -144,9 +147,9 @@ print(host_function_std(2.48, 1., 1e-10))
 aaa = nuInu_maybe(1., 1e-10)
 print('aaa', aaa)
 
-np.savetxt('outputs/' + direct_name + '/dips.txt',
-           np.column_stack((2.48 / upper_lims_all['lambda'],
-                            g_ay_array.value)))
+# np.savetxt('outputs/' + direct_name + '/dipsD.txt',
+#            np.column_stack((2.48 / upper_lims_all['lambda'],
+#                             g_ay_array.value)))
 
 
 h=0.7

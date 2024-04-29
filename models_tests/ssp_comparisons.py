@@ -77,12 +77,12 @@ def get_cycle(cmap, N=None, use_index="auto"):
         return cycler("color", colors)
 
 
-cividis_mine = mpl.colormaps['cividis'].resampled(10)
+cividis_mine = mpl.colormaps['cividis']._resample(6)
 cividis_mine.colors[-1, 1] = 0.7
 cividis_mine.colors[-1, 2] = 0.
 cividis_mine.colors = cividis_mine.colors[::-1]
 print(cividis_mine.colors)
-N = 10
+N = 6
 plt.rcParams["axes.prop_cycle"] = get_cycle(cividis_mine, N)
 
 # Check that the working directory is correct for the paths
@@ -162,11 +162,11 @@ def load_sb99(path_ssp, pop_filename):
     sb99_log_freq = np.log10(  # log(frequency/Hz)
         c / l_total[::-1] / 1E-10)
     ssp_log_emis = (dd_total[::-1]  # log(em[erg/s/Hz/M_solar])
-                                    # - 6.
-                                    # + np.log10(1E10 * c)
-                                    # - 2. * sb99_log_freq[:, np.newaxis,
-                                    #        np.newaxis]
-                                    )
+                    - 6.
+                    # + np.log10(1E10 * c)
+                    # - 2. * sb99_log_freq[:, np.newaxis,
+                    #        np.newaxis]
+                    )
 
     ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
     ssp_log_emis[
@@ -322,6 +322,57 @@ sb99_spline = load_sb99('data/ssp_synthetic_spectra'
                         '/starburst99/kroupa_padova/',
                         'kroupa_')
 
+fig = plt.figure(figsize=(10, 10))
+axes = fig.gca()
+
+lambda_array = np.logspace(2., 6., num=500)
+freq = np.log10(c / lambda_array * 1e10)
+
+for ni, age in enumerate(np.log10([5., 10, 20, 100, 500,
+                                   900]) + 6):
+    color = next(axes._get_lines.prop_cycler)['color']
+
+    for nmetall, metall in enumerate([0.0004, 0.004, 0.008, 0.02, 0.05]):
+        if nmetall == 4:
+            plt.plot(lambda_array,
+                     sb99_spline((freq, age, np.log10(metall))),
+                     linestyle='-', lw=2,
+                     label='%.0f Myr' % ((10 ** age) * 1e-6),
+                     color=color,
+                     alpha=0.3 + nmetall / 6.)
+        else:
+            plt.plot(lambda_array,
+                     sb99_spline((freq, age, np.log10(metall))),
+                     linestyle='-', lw=2,
+                     color=color,
+                     alpha=0.3 + nmetall / 6.)
+
+plt.xscale('log')
+
+plt.xlim(1e2, 1e6)
+plt.ylim(24, 34)
+models = ['dotted', '-']
+legend22 = plt.legend(
+    [plt.Line2D([], [], linewidth=2, linestyle='-',
+                color=color, alpha=0.3 + i / 6.) for i in range(5)],
+    [0.0004, 0.004, 0.008, 0.02, 0.05],
+    loc=8, bbox_to_anchor=(0.47, 0.005),
+    fontsize=20,
+    title='   Metallicity\n(transparency)', title_fontsize=22)
+
+axes.add_artist(legend22)
+
+plt.legend(fontsize=18, title='Ages', title_fontsize=22)
+
+plt.xlabel(r'Wavelength ($\AA$)')
+plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '  # /Lsun '
+           r'[erg s$^{-1}$ $\mathrm{\AA}^{-1}$ M$_{\odot}^{-1}$])')
+
+plt.savefig('outputs/figures_paper/ssp_final.pdf', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/ssp_final.jpg',
+            bbox_inches='tight')
+plt.show()
+
 lambda_array = np.logspace(2., 6., num=2000)
 time_array = np.logspace(6.3, 10, num=500)
 print('limits: ', lambda_array[0], lambda_array[-1],
@@ -383,9 +434,9 @@ for n_metall, metall in enumerate(['0002', '002', '006', '014']):
     #                    data_emiss
     #                )))
 
-    for ni, age in enumerate(np.log10(  # 12.7, 50, 100, 500, 800
-            [11.]) + 6.):
-        # for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+    # for ni, age in enumerate(np.log10(  # 12.7, 50, 100, 500, 800
+    #         [11.]) + 6.):
+    for ni, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
         color = next(axes._get_lines.prop_cycler)['color']
         print(ni, color)
 
@@ -408,56 +459,58 @@ for n_metall, metall in enumerate(['0002', '002', '006', '014']):
         #          label='%.0f Myr' % ((10 ** pegase_log_time[aaa]) * 1e-6),
         #          color=color, alpha=1.2 * n_metall / 4.+0.1)
 
-        aaa = np.abs(stripp_times_stripped - age).argmin()
-        plt.plot(10 ** stripp_lambda_stripped,
-                 stripp_emiss_stripped[aaa, :],
-                 linestyle='--', lw=1,
-                 label='%.0f Myr' % ((10 ** age) * 1e-6),
-                 color=color, alpha=1.2 * n_metall / 4. + 0.1)
+        # aaa = np.abs(stripp_times_stripped - age).argmin()
+        # plt.plot(10 ** stripp_lambda_stripped,
+        #          stripp_emiss_stripped[aaa, :],
+        #          linestyle='--', lw=1,
+        #          label='%.0f Myr' % ((10 ** age) * 1e-6),
+        #          color=color, alpha=1.2 * n_metall / 4. + 0.1)
 
-all_stripped_data[:, :, 0] = all_stripped_data[:, :, 1]
-all_stripped_data[:, :, -1] = all_stripped_data[:, :, -2]
-metall_str_array[0] = 1e-10
-metall_str_array[-1] = 0.05
+# all_stripped_data[:, :, 0] = all_stripped_data[:, :, 1]
+# all_stripped_data[:, :, -1] = all_stripped_data[:, :, -2]
+# metall_str_array[0] = 1e-10
+# metall_str_array[-1] = 0.05
+#
+# spline_stripped_total = RegularGridInterpolator(
+#     points=(stripp_times_stripped,
+#             stripp_lambda_stripped,
+#             np.log10(metall_str_array),
+#             ),
+#     values=all_stripped_data,
+#     method='linear',
+#     bounds_error=False, fill_value=-1
+# )
 
-spline_stripped_total = RegularGridInterpolator(
-    points=(stripp_times_stripped,
-            stripp_lambda_stripped,
-            np.log10(metall_str_array),
-            ),
-    values=all_stripped_data,
-    method='linear',
-    bounds_error=False, fill_value=-1
-)
-
-for n_met, metall in enumerate([1e-10, 4.e-04, 4.e-03,
-                                8.e-03, 2.e-02, 5.e-02]):
-    print(metall)
-    if not os.path.exists(direct + str(metall)):
-        os.makedirs(direct + str(metall))
-
-    with open(direct + str(metall) + '/stripped'
-              + str(metall) + '.spectrum1', 'w') as f:
-        for time in time_array:
-            data_emiss = np.log10(
-                # 10 ** sb99_spline(xi=(np.log10(c / lambda_array * 1e10),
-                #                       np.log10(time), np.log10(metall)))
-                10 ** spline_stripped_total(
-                    xi=(
-                        np.log10(time),
-                        np.log10(lambda_array),
-                        np.log10(metall)))
-            )
-            np.savetxt(f,
-                       np.column_stack((
-                           time * np.ones(len(lambda_array)),
-                           lambda_array,
-                           data_emiss
-                       )))
+# for n_met, metall in enumerate([1e-10, 4.e-04, 4.e-03,
+#                                 8.e-03, 2.e-02, 5.e-02]):
+#     print(metall)
+#     if not os.path.exists(direct + str(metall)):
+#         os.makedirs(direct + str(metall))
+#
+#     with open(direct + str(metall) + '/stripped'
+#               + str(metall) + '.spectrum1', 'w') as f:
+#         for time in time_array:
+#             data_emiss = np.log10(
+#                 # 10 ** sb99_spline(xi=(np.log10(c / lambda_array * 1e10),
+#                 #                       np.log10(time), np.log10(metall)))
+#                 10 ** spline_stripped_total(
+#                     xi=(
+#                         np.log10(time),
+#                         np.log10(lambda_array),
+#                         np.log10(metall)))
+#             )
+#             np.savetxt(f,
+#                        np.column_stack((
+#                            time * np.ones(len(lambda_array)),
+#                            lambda_array,
+#                            data_emiss
+#                        )))
 
 print(metall_str_array)
 plt.xscale('log')
-plt.show()
+
+
+# plt.show()
 
 
 # spline_sum = = RectBivariateSpline()
@@ -515,6 +568,8 @@ def pop_age(path, time, wave, emiss):
 # # pop_age(path21, pop21_log_time, pop21_wave, pop21_lumin_cube)
 #
 #
+
+
 fig = plt.figure(figsize=(10, 10))
 axes = fig.gca()
 

@@ -10,7 +10,7 @@ from matplotlib.legend_handler import HandlerTuple
 from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
-from ebl_measurements.import_cb_measurs import import_cb_data
+from data.cb_measurs.import_cb_measurs import import_cb_data
 
 from astropy import units as u
 from astropy.constants import c
@@ -74,7 +74,6 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-
 def read_config_file(ConfigFile):
     with open(ConfigFile, 'r') as stream:
         try:
@@ -84,11 +83,16 @@ def read_config_file(ConfigFile):
     return parsed_yaml
 
 
-config_data = read_config_file(
-    'scripts/input_files/input_data_paper.yml')
-ebl_class = EBL_model.input_yaml_data_into_class(config_data)
+# We initialize the class with the input file
+config_data = read_config_file('outputs/final_outputs_Zevol_fixezZsolar '
+                       '2024-04-11 13:41:34/' + 'input_data.yml')
+ebl_class = EBL_model.input_yaml_data_into_class(config_data,
+                                                 log_prints=True)
+ebl_class.ebl_ssp_calculation(
+    config_data['ssp_models']['SB99_dustFinke'])
 
-waves_ebl = np.geomspace(5e-6, 10, num=int(1e6))
+
+waves_ebl = np.geomspace(5e-6, 1e4, num=int(1e6))
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 
 # We introduce the Finke22 and CUBA splines
@@ -102,27 +106,17 @@ spline_finke = UnivariateSpline(waves_ebl, nuInu['finke2022'], s=0, k=1)
 spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
 
-def spline_pegase0001(lambda_array):
-    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
-                       'pegase0.0001_Finkespline.npy',
-                       allow_pickle=True).item()
-    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
-                          grid=False)
 
 
 def spline_starburst(lambda_array):
-    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
-                       'SB99_kneiskespline.npy',
-                       allow_pickle=True).item()
-    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), 0.,
+    return 10 ** ebl_class.ebl_ssp_spline(
+        np.log10(c.value * 1e6 / lambda_array), 0.,
                           grid=False)
 
 
 list_working_models = {
-    'ModelA': {'label': 'Model A', 'callable_func': spline_starburst,
+    'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
                'color': 'b', 'linewidth': 3},
-    'ModelB': {'label': 'Model B', 'callable_func': spline_pegase0001,
-               'color': 'tab:orange', 'linewidth': 3},
     'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
                 'color': 'magenta', 'linewidth': 2},
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
@@ -138,7 +132,7 @@ for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
 
     plt.loglog(waves_ebl, model['callable_func'](waves_ebl),
-               c=model['color'], lw=model['linewidth'], zorder=2
+               c=model['color'], lw=model['linewidth'], zorder=2/(ni+1)
                )
 
     handlers.append(plt.Line2D([], [],
@@ -165,7 +159,7 @@ labels.append(r'CUBA + cosmic axion''\n '
 # We introduce all the EBL measurements
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=0.,
-    lambda_max_total=5.,
+    lambda_max_total=1300.,
     ax1=ax1, plot_measurs=True)
 
 plt.xlim(5e-6, 1e1)
@@ -176,7 +170,7 @@ legend22 = plt.legend(handlers, labels,
 
 
 handles, labels = ax1.get_legend_handles_labels()
-
+handles = [h[0] for h in handles]
 for i in range(len(labels)):
     if labels[i].__contains__('LORRI'):
         handles[i] = (plt.Line2D([], [], linestyle='',
@@ -218,7 +212,7 @@ plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
 fig, ax = plt.subplots(figsize=(8.75, 7))
 
 z_array = [0., 0.2, 0.5, 1., 2., 5.]
-lambda_array = np.geomspace(0.05, 10.)
+lambda_array = np.geomspace(0.05, 10., num=500)
 
 N = len(z_array)
 cividis_mine = mpl.colormaps['cividis']._resample(N)
@@ -227,19 +221,10 @@ cividis_mine.colors[-1, 2] = 0.
 cividis_mine.colors = cividis_mine.colors[::-1]
 ax.set_prop_cycle(get_cycle(cividis_mine, N))
 
-def spline_pegase0001(lambda_array, z_value):
-    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
-                       'pegase0.0001_Finkespline.npy',
-                       allow_pickle=True).item()
-    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), z_value,
-                          grid=False)
-
 
 def spline_starburst(lambda_array, z_value):
-    method_y = np.load('outputs/final_outputs_check_NOlims 2024-02-22 15:26:04/'
-                       'SB99_kneiskespline.npy',
-                       allow_pickle=True).item()
-    return 10 ** method_y(np.log10(c.value * 1e6 / lambda_array), z_value,
+    return 10 ** ebl_class.ebl_ssp_spline(
+        np.log10(c.value * 1e6 / lambda_array), z_value,
                           grid=False)
 
 nuInu = {}
@@ -250,8 +235,6 @@ for ni, i in enumerate(z_array):
     color = next(ax._get_lines.prop_cycler)['color']
     plt.plot(lambda_array, spline_starburst(lambda_array, i),
              color=color, linestyle='-', label=i, lw=2)
-    plt.plot(lambda_array, spline_pegase0001(lambda_array, i),
-             color=color, linestyle='--', lw=2)
     plt.plot(lambda_array, nuInu['finke2022'][ni],
              color=color, linestyle='dotted', lw=2)
 
@@ -265,14 +248,14 @@ plt.ylim(5e-3, 20)
 plt.xscale('log')
 plt.yscale('log')
 
-lines = ['-', '--', 'dotted']
+lines = ['-', 'dotted']
 legend1 = plt.legend(ncol=3, loc=3,
                       fontsize=18,
                       title_fontsize=20, title='Redshift')
 legend2 = plt.legend([plt.Line2D([], [], linestyle=lines[i],
                                  color='k')
-                      for i in range(3)],
-                     ['Model A', 'Model B', 'Finke22'],
+                      for i in range(2)],
+                     ['Our model', 'Finke22'],
                      loc=2, fontsize=16, framealpha=0.4)
 
 ax.add_artist(legend1)
@@ -283,4 +266,4 @@ plt.savefig('outputs/figures_paper/cb_redshifs.pdf',
 plt.savefig('outputs/figures_paper/cb_redshifs.png',
             bbox_inches='tight')
 
-# plt.show()
+plt.show()

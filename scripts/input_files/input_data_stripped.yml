@@ -5,9 +5,9 @@ cosmology_params:
 
 # WAVELENGTH ARRAY FOR EBL [microns]
 wavelength_array:
-  lmin: 5e-3
-  lmax: 1.
-  lfsteps: 700
+  lmin: 5e-2
+  lmax: 20.
+  lfsteps: 200
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
@@ -38,39 +38,33 @@ z_intmax: 40.
 # List of SSP models we want to try
 ssp_models:
 
-#  SB99_kneiske:
-#    name: 'Model A'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-##    sfr_params: [0.0017, 2.65, 2.9, 5.5]
-#    sfr_params: [0.19, 2., 4., 5.08]  # MD14 params
-#
-#    # SSP DATA
-#    ssp_type: 'SB99'
-#    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa'
-#    file_name: ''
-#    cut_popstar: False
-#
-#    # DUST ABSORPTION MODELS
-#    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
-
-  pegase0.0001_Finke:
-    name: 'Model B'
+  SB99_dustFinkestrippedonly:
+    name: 'Only stripped stars'
 
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [0.0078, 2.7, 3.4, 6.4]
-    sfr_params: [0.01955168966137473, 1.6196536322550075, 4.527472241869829, 6.616330135889802]
+    sfr_params:
+    - 0.013107341038317264
+    - 2.420045114675467
+    - 3.2990898078661317
+    - 6.658375996690348
 
     # SSP DATA
-    ssp_type: 'pegase3'
-    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
-    file_name: '0.0001'
-    cut_popstar: True
+    ssp_type: 'SB99'
+    path_SSP: 'data/ssp_synthetic_spectra/starburst99/only_stripped/'
+    #    file_prefix: 'stripped_'
+    file_name: '/stripped0.'
+    cut_popstar: 0
 
     # Metallicity evolution arguments
-    args_metall: [-0.7, 0.2, 1.2, 0.02]
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall:
+    - -0.542121168976453
+    - 0.008154222671585984
+    - 2.266468189061395
+    - 0.02
 
-    # DUST ABSORPTION MODELS
+    # Dust absorption parameters
     dust_abs_models: [ 'finke2022_2' ]
+    dust_abs_params:
+      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]

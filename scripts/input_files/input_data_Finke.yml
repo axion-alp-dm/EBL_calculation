@@ -149,28 +149,28 @@ ssp_models:
 #    dust_abs_params:
 #      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
 
-  SB99_dustFinke:
-    name: 'SB99 Zdust Fin'
-
-    # SFR INPUTS
-    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
-
-    # SSP DATA
-    ssp_type: 'SB99'
-    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa_padova/'
-#    file_prefix: 'kroupa_'
-    file_name: '/kroupa_'
-    cut_popstar: 6
-
-    # Metallicity evolution arguments
-    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-    args_metall: [ -0., 0.4, 0.95, 0.014 ]
-
-    # Dust absorption parameters
-    dust_abs_models: [ 'finke2022_2' ]
-    dust_abs_params:
-      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
+#  SB99_dustFinke:
+#    name: 'SB99 Zdust Fin'
+#
+#    # SFR INPUTS
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+#
+#    # SSP DATA
+#    ssp_type: 'SB99'
+#    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa_padova/'
+##    file_prefix: 'kroupa_'
+#    file_name: '/kroupa_'
+#    cut_popstar: 6
+#
+#    # Metallicity evolution arguments
+#    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+#    args_metall: [ -0., 0.4, 0.95, 0.014 ]
+#
+#    # Dust absorption parameters
+#    dust_abs_models: [ 'finke2022_2' ]
+#    dust_abs_params:
+#      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
 
 #  SB99_dustFinkestripped:
 #    name: 'SB99 Zdust Fin with stripped'
@@ -218,27 +218,27 @@ ssp_models:
 #    dust_abs_params:
 #      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
 
-#  SB99_DustKne:
-#    name: 'SB99 dust kn'
-#
-#    # SFR INPUTS
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
-#
-#    # SSP DATA
-#    ssp_type: 'SB99'
-#    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa_padova/'
-##    file_prefix: 'kroupa_'
-#    file_name: '/kroupa_'
-#    cut_popstar: 6
-#
-#    # Metallicity evolution arguments
-#    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-#    args_metall: [ -0., 0.4, 0.95, 0.03 ]
-#
-#    # Dust absorption parameters
-#    dust_abs_models: [ 'kneiske2002', '' ]
-#    dust_abs_params: None
+  SB99_DustKne:
+    name: 'SB99 dust kn'
+
+    # SFR INPUTS
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+
+    # SSP DATA
+    ssp_type: 'SB99'
+    path_SSP: 'data/ssp_synthetic_spectra/starburst99/kroupa_padova/'
+#    file_prefix: 'kroupa_'
+    file_name: '/kroupa_'
+    cut_popstar: 6
+
+    # Metallicity evolution arguments
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall: [ -0., 0.4, 0.95, 0.03 ]
+
+    # Dust absorption parameters
+    dust_abs_models: [ 'kneiske2002', '' ]
+    dust_abs_params: None
 
 #  SB99_Z02:
 #    name: 'SB99 Z=0.02'

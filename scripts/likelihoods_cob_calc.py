@@ -9,6 +9,7 @@ from ebl_codes.EBL_class import EBL_model
 from data.emissivity_measurs.emissivity_read_data import emissivity_data
 from data.cb_measurs.import_cb_measurs import import_cb_data
 from data.sfr_measurs.sfr_read import *
+from data.metallicity_measurs.import_metall import import_met_data
 
 from astropy import units as u
 from astropy.constants import h as h_plank
@@ -61,6 +62,9 @@ upper_lims_ebldata, igl_ebldata = import_cb_data(
 
 print(np.shape(igl_ebldata))
 
+# Metallicity evolution data
+z_data = import_met_data()
+
 # FIGURE: sfr fit ------------------------------------------------
 sfr_data = sfr_data_dict()
 print(np.shape(sfr_data))
@@ -102,6 +106,11 @@ for nkey, key in enumerate(config_data['ssp_models']):
         return ebl_class.sfr_function(
             config_data['ssp_models'][key]['sfr'], x, params[0:4])
 
+    def metall(x, params):
+        return ebl_class.metall_mean(
+            config_data['ssp_models'][key]['metall_formula'],
+            x, params[4:])
+
 
     combined_likelihood = (LeastSquares(igl_ebldata['lambda'],
                                         igl_ebldata['nuInu'],
@@ -118,6 +127,11 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                           (sfr_data[:, 4]
                                            + sfr_data[:, 5]) / 2.,
                                           sfr)
+                           + LeastSquares(z_data[:, 0],
+                                          z_data[:, 1],
+                                          (z_data[:, 2]
+                                           + z_data[:, 3]) / 2.,
+                                          metall)
                            )
 
     init_time = time.process_time()
@@ -165,6 +179,11 @@ for nkey, key in enumerate(config_data['ssp_models']):
         'sfr data: ' + str(chi2_measurs(
             sfr(sfr_data[:, 0], aaa),
             sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.))
+        + '\n')
+    outputs.write(
+        'metallicity data: ' + str(chi2_measurs(
+            metall(z_data[:, 0], aaa),
+            z_data[:, 1], (z_data[:, 2] + z_data[:, 3]) / 2.))
         + '\n')
     outputs.write('\n\n\n')
     outputs.close()
