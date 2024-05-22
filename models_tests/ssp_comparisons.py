@@ -12,6 +12,8 @@ from matplotlib.pyplot import cycler
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 import matplotlib.cm
 
+import matplotlib as mpl
+
 from scipy.interpolate import RectBivariateSpline
 
 # import matplotlib.pylab as pl
@@ -45,9 +47,6 @@ bi_r = LinearSegmentedColormap.from_list("",
                                           "#a349a4", "#990099",
                                           "#ff0080",
                                           "#ff0080"])  # reversed
-
-import matplotlib as mpl
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 
 def get_cycle(cmap, N=None, use_index="auto"):

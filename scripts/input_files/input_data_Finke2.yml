@@ -1,0 +1,62 @@
+# COSMOLOGY CONSTANTS (flat LCDM assumed)
+cosmology_params:
+  cosmo: [ .7, .3, .7 ]   # [h_0, omega_matter, omega_L]
+  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
+
+# WAVELENGTH ARRAY FOR EBL [microns]
+wavelength_array:
+  lmin: 1e-2
+  lmax: 500.
+  lfsteps: 50
+
+# REDSHIFT ARRAY FOR MRF (ebl at any redshift)
+redshift_array:
+  zmin: 1e-6  # This cannot be 0 at least working with SB99 or everything crushes :)
+  zmax: 10.
+  zsteps: 300
+
+# INTEGRATION TIME STEP
+t_intsteps: 201
+
+# PRINT LOGGING OF OUR PROCESSES
+log_prints: True
+
+# AXION DECAY BEING CONSIDERED
+axion_params:
+  axion_mass:  1.      # [eV]
+  axion_gayy: 5e-10  # [GeV**-1]
+
+# INTRA HALO LIGHT PARAMETERS
+ihl_params:
+  A_ihl: -3.23
+  alpha: 1
+
+# SSP INFORMATION
+# Maximum redshift at which we form SSPs
+z_intmax: 40.
+
+# List of SSP models we want to try
+ssp_models:
+  Finke22_ModelkroupaZevol:
+    name: 'Finke22 Kroupa Z evol dust Kneiske'
+
+    # SFR INPUTS
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params: [ 9.2e-3, 2.79, 3.10, 6.97 ] # Finke22 model A params
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
+    file_name: None
+    cut_popstar: None
+
+    # Metallicity evolution arguments
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    args_metall: [ -0., 0.4, 0.95, 0.02 ]
+
+    # Dust absorption parameters
+    dust_abs_models:
+    - kneiske2002
+    - ''
+    dust_abs_params: None
+

@@ -450,7 +450,7 @@ class EBL_model(object):
         elif ssp_type == 'pegase3':
             self._ssp_metall = [0.1, 0.05, 0.02, 0.008,
                                 0.004, 0.0004, 0.0001]
-            print(self._ssp_metall)
+            # print(self._ssp_metall)
 
             data_pegase = np.loadtxt(
                 path_ssp + 'spectral_resultsZ0.0001.txt')

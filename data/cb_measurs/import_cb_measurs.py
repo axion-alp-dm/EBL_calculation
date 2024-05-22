@@ -361,7 +361,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  label=name,
                                  marker='*',
                                  mfc='white',
-                                 markersize=24, markeredgewidth=2,
+                                 markersize=28, markeredgewidth=2,
                                  zorder=1e5
                                  )
                     ax1.errorbar(x=data['lambda'], y=data['nuInu'],

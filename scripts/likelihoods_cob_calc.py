@@ -52,7 +52,7 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 
 config_data = read_config_file(
-    'scripts/input_files/input_data_Finke.yml')
+    'scripts/input_files/input_data_Finke2.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use
