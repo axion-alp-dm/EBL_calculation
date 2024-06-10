@@ -217,7 +217,7 @@ for refi in np.unique(upper_lims_all['ref']):
     plt.hlines(0.9*upper_lims_all[ind_args]['nuInu'],
                xmin=data_ind-err_neg, xmax=err_pos+data_ind,
                colors='k')
-plt.show()
+
 P = np.zeros((len(waves_ebl), len(upper_lims_all)))
 
 for ni, i in enumerate(upper_lims_all):

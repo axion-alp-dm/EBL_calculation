@@ -48,7 +48,7 @@ if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
 direct_name = str('outputs/final_outputs_Zevol_fixezZsolar '
-                       '2024-04-23 14:34:55/')
+                       '2024-06-05 09:10:05/')
 print(direct_name)
 
 # Configuration file reading and data input/output ---------#

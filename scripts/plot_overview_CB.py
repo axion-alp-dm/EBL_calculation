@@ -84,9 +84,8 @@ def read_config_file(ConfigFile):
 
 
 # We initialize the class with the input file
-# config_data = read_config_file('outputs/final_outputs_Zevol_fixezZsolar '
-#                        '2024-04-11 13:41:34/' + 'input_data.yml')
-config_data = read_config_file('scripts/input_files/input_data_Finke.yml')
+config_data = read_config_file('outputs/final_outputs_Zevol_fixezZsolar '
+                       '2024-04-11 13:41:34/' + 'input_data.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 ebl_class.ebl_ssp_calculation(
@@ -142,25 +141,25 @@ for ni, working_model_name in enumerate(list_working_models.keys()):
                                color=model['color']))
     labels.append(model['label'])
 
-# ebl_class.change_axion_contribution(1e2, 1e-13)
-# plt.loglog(waves_ebl,
-#            (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
-#                                              grid=False)
-#             + spline_cuba(waves_ebl)), c='green', zorder=1)
-#
-# handlers.append(plt.Line2D([], [],
-#                            linewidth=2,
-#                            linestyle='-',
-#                            color='green'))
-# labels.append(r'CUBA + cosmic axion''\n '
-#               r'decay (example)''\n'
-#               r'    m$_a = 10^2$ eV''\n'
-#               r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$')
+ebl_class.change_axion_contribution(1e2, 1e-13)
+plt.loglog(waves_ebl,
+           (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
+                                             grid=False)
+            + spline_cuba(waves_ebl)), c='green', zorder=1)
+
+handlers.append(plt.Line2D([], [],
+                           linewidth=2,
+                           linestyle='-',
+                           color='green'))
+labels.append(r'CUBA + cosmic axion''\n '
+              r'decay (example)''\n'
+              r'    m$_a = 10^2$ eV''\n'
+              r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$')
 
 # We introduce all the EBL measurements
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=0.,
-    lambda_max_total=5.,
+    lambda_max_total=1300.,
     ax1=ax1, plot_measurs=True)
 
 plt.xlim(5e-6, 1e1)

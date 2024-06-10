@@ -37,7 +37,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('lorri_smeared_new_total_220_maxZoom2/')
+direct_name = str('lorri_smeared_new_total_220_value11_zoom/')
 print(direct_name)
 
 # If the directory for outputs is not present, create it.
@@ -151,7 +151,7 @@ print('avg flux of cuba: ',
           lambda_array=waves_ebl)
       * c.value / mean_lmbd_cuba * 1e6)
 
-axion_mass_array = np.geomspace(2, 9, num=10000)
+axion_mass_array = np.linspace(2, 9, num=10000)
 axion_gayy_array = np.geomspace(1.e-11, 1e-7, num=500)
 
 values_gay_array_NH = np.zeros(
@@ -195,9 +195,9 @@ for na, aa in enumerate(axion_mass_array):
                              ) * c.value / mean_lambda * 1e6
 
         values_gay_array_NH[na, nb] += (
-                ((21.98 * pivot_vw / mean_lambda
+                ((11.08 * pivot_vw / mean_lambda
                   - mean_flux
-                  ) / (1.23 * pivot_vw / mean_lambda)
+                  ) / (1.65 * pivot_vw / mean_lambda)
                  ) ** 2.)
 
         # if na % 1 == 0 and nb % 1 == 0:
@@ -258,7 +258,7 @@ plt.xlim(0.1, 1.5)
 plt.legend()
 np.save('outputs/' + direct_name + '/CUBA' + 'lorri_smeared',
         values_gay_array_NH)
-plt.show()
+# plt.show()
 
 fig, ax1 = plt.subplots()
 import_cb_data(
@@ -306,7 +306,7 @@ nh_contours = plt.contour(axion_mass_array, axion_gayy_array,
                           colors='r', zorder=1e10, linewidths=4, alpha=0.9)
 plt.xscale('log')
 plt.yscale('log')
-# plt.show()
+plt.show()
 
 # fig, (ax, ax2) = plt.subplots(1, 2, figsize=(10, 8))
 fig, ax = plt.subplots()
