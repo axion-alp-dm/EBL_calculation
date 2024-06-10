@@ -243,11 +243,11 @@ for na, aa in enumerate(axion_mass_array):
                              lambda_array=waves_ebl
                              ) * c.value / mean_lambda * 1e6
 
-        values_gay_array_NH[na, nb] += (
-                ((21.98 * pivot_vw / mean_lambda
-                  - mean_flux
-                  ) / (1.23 * pivot_vw / mean_lambda)
-                 ) ** 2.)
+        # values_gay_array_NH[na, nb] += (
+        #         ((21.98 * pivot_vw / mean_lambda
+        #           - mean_flux
+        #           ) / (1.23 * pivot_vw / mean_lambda)
+        #          ) ** 2.)
 
 
 
