@@ -119,6 +119,7 @@ def cosmic_axion_contr(lmbd, mass, gayy):
 
     z_star = (axion_mass / (2. * h_plank.to(u.eV * u.s) * freq)
               - 1.)
+    print(axion_mass, axion_gayy, freq[0], z_star[0], cosmo.H(z_star[0]))
 
     ebl_axion_cube = (
             ((cosmo.Odm(0.) * cosmo.critical_density0
@@ -129,6 +130,7 @@ def cosmic_axion_contr(lmbd, mass, gayy):
               ).to(u.nW * u.m ** -2 * u.sr ** -1)
              ).value
             * (z_star > 0.))
+    print(ebl_axion_cube[0])
     return ebl_axion_cube
 
 
@@ -161,8 +163,8 @@ for m, e in ebl.items():
     nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
 spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
-axion_mass_array = np.geomspace(5e2, 1e6, num=50)
-axion_gayy_array = np.geomspace(1.e-20, 3e-15, num=25)
+axion_mass_array = np.geomspace(5e2, 1e6, num=5)
+axion_gayy_array = np.geomspace(1.e-20, 3e-15, num=3)
 
 values_gay_array_NH = np.zeros(
     (len(axion_mass_array), len(axion_gayy_array)))
@@ -181,6 +183,7 @@ upper_lims_all, _ = import_cb_data(
     ax1=ax1, plot_measurs=True)
 
 upper_lims_all.sort('lambda')
+print(upper_lims_all)
 upper_lims_all['x_min'] = np.zeros(len(upper_lims_all))
 upper_lims_all['x_max'] = np.zeros(len(upper_lims_all))
 
@@ -217,7 +220,7 @@ for refi in np.unique(upper_lims_all['ref']):
     plt.hlines(0.9*upper_lims_all[ind_args]['nuInu'],
                xmin=data_ind-err_neg, xmax=err_pos+data_ind,
                colors='k')
-plt.show()
+# plt.show()
 P = np.zeros((len(waves_ebl), len(upper_lims_all)))
 
 for ni, i in enumerate(upper_lims_all):
@@ -248,6 +251,12 @@ for na, aa in enumerate(axion_mass_array):
                 + spline_cuba(waves_ebl)
         ) * waves_ebl * 1e-6 / c.value)
 
+        plt.plot(waves_ebl, (
+            # host_axion_contr(waves_ebl, aa, bb, v_dispersion=220)
+             + cosmic_axion_contr(waves_ebl, aa, bb)
+             + spline_cuba(waves_ebl)
+             ))
+
         Pf_l = P * (intensity_points / waves_ebl)[:, np.newaxis]
         Pf_l = simpson(y=Pf_l, x=waves_ebl, axis=0)
 
@@ -264,10 +273,17 @@ for na, aa in enumerate(axion_mass_array):
                      / upper_lims_all['1 sigma']
                      * upper_lims_all['lambda'] / mean_lambda) ** 2.
                     * (upper_lims_all['nuInu'] < mean_flux)))
+        print(aa, bb)
+        print('Pf_l', Pf_l[0])
+        print('Pf', Pf[0])
+        print(mean_lambda[0], mean_flux[0])
+        print('upper_lims_all[nuInu', upper_lims_all['nuInu'])
+        print(values_gay_array_NH)
+        print()
 
 np.save('outputs/' + direct_name + '/CUBA_params_Xrays',
         values_gay_array_NH)
-
+print(values_gay_array_NH)
 plt.xlim(5e-6, 3e-3)
 plt.ylim(5e-7, 5e-1)
 
