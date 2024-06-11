@@ -109,11 +109,11 @@ freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 # np.savetxt('cuba.txt', aaa)
 spline_cuba = np.loadtxt('data/cuba.txt')[:, 1]
 
-axion_mass_array = np.geomspace(5e2, 1e6, num=5)
-axion_gayy_array = np.geomspace(1.e-20, 3e-15, num=3)
+axion_mass_array = np.geomspace(5e2, 1e6, num=800)
+axion_gayy_array = np.geomspace(1.e-20, 3e-15, num=500)
 
 
-print(2.48/axion_mass_array)
+# print(2.48/axion_mass_array)
 
 np.save('outputs/' + direct_name + '/axion_mass', axion_mass_array)
 np.save('outputs/' + direct_name + '/axion_gayy', axion_gayy_array)
@@ -192,7 +192,7 @@ def cosmic_axion_contr(lmbd, mass, gayy):
     z_star = (axion_mass / (2. * 4.1356677e-15 * freq) - 1.)
 
     H_z = h * 100 * np.sqrt(omegaM * (1+z_star)**3. + 1. - omegaM)
-    print(axion_mass, axion_gayy, freq[0], z_star[0], H_z[0])
+    # print(axion_mass, axion_gayy, freq[0], z_star[0], H_z[0])
 
     ebl_axion_cube = (
             30856775814913.668 *
@@ -203,7 +203,7 @@ def cosmic_axion_contr(lmbd, mass, gayy):
               / H_z
              )
             * (z_star > 0.))
-    print(ebl_axion_cube[0])
+    # print(ebl_axion_cube[0])
     return ebl_axion_cube
 
 
@@ -226,7 +226,7 @@ def host_axion_contr(xx, mass, gay, v_dispersion=220.):
 # #@jit(locals={'mean_flux':ty.float64})
 #@jit(forceobj=False)
 def calculate_chi2(aa, bb):
-    print(aa, bb)
+    # print(aa, bb)
     intensity_points = (
             (host_axion_contr(waves_ebl, aa, bb, v_dispersion=220)
              + cosmic_axion_contr(waves_ebl, aa, bb)
@@ -243,17 +243,17 @@ def calculate_chi2(aa, bb):
     # Pf_l = Pf_l[:, 0]
     # Pf_l = simpson(y=Pf_l, x=waves_ebl, axis=0)
     Pf_l = np.trapz(y=Pf_l.T, x=waves_ebl)
-    print('Pf_l', Pf_l[0])
+    # print('Pf_l', Pf_l[0])
 
     Pf = P * intensity_points[:, np.newaxis]
     # Pf = Pf[:, 0]
     Pf = np.trapz(y=Pf.T, x=waves_ebl)
-    print('Pf', Pf[0])
+    # print('Pf', Pf[0])
     # Pf = simpson(y=Pf, x=waves_ebl, axis=0)
 
     mean_lambda = Pf / Pf_l
     mean_flux = Pf_l / P_l * 3e8 / mean_lambda * 1e6
-    print(mean_lambda[0], mean_flux[0])
+    # print(mean_lambda[0], mean_flux[0])
 
     values_gay_array_NH = (
         sum(((upper_lims_all['nuInu']
@@ -263,15 +263,15 @@ def calculate_chi2(aa, bb):
              * upper_lims_all['lambda'] / mean_lambda) ** 2.
             * (upper_lims_all['nuInu'] < mean_flux)))
 
-    print('upper_lims_all[nuInu', upper_lims_all['nuInu'])
-    print((((upper_lims_all['nuInu']
-              * upper_lims_all['lambda'] / mean_lambda
-              - mean_flux)
-             / upper_lims_all['1 sigma']
-             * upper_lims_all['lambda'] / mean_lambda) ** 2.
-            * (upper_lims_all['nuInu'] < mean_flux)))
-    print(values_gay_array_NH)
-    print()
+    # print('upper_lims_all[nuInu', upper_lims_all['nuInu'])
+    # print((((upper_lims_all['nuInu']
+    #           * upper_lims_all['lambda'] / mean_lambda
+    #           - mean_flux)
+    #          / upper_lims_all['1 sigma']
+    #          * upper_lims_all['lambda'] / mean_lambda) ** 2.
+    #         * (upper_lims_all['nuInu'] < mean_flux)))
+    # print(values_gay_array_NH)
+    # print()
 
     return values_gay_array_NH
 
@@ -282,21 +282,21 @@ def calculate_all():
     values_gay_array_NH = np.zeros(
         (len(axion_mass_array), len(axion_gayy_array)))
 
-    for na in range(len(axion_mass_array)):
-        if na % 1 == 0:
+    for na in prange(len(axion_mass_array)):
+        if na % 25 == 0:
             print('mass ', na)
             # time_init = time.process_time()
 
-        for nb in range(len(axion_gayy_array)):
-            if nb % 2 == 0:
-                print('gay ', nb)
+        for nb in prange(len(axion_gayy_array)):
+            # if nb % 2 == 0:
+            #     print('gay ', nb)
             # time_init = time.process_time()
 
-            print(na, nb, values_gay_array_NH[na, nb])
+            # print(na, nb, values_gay_array_NH[na, nb])
             values_gay_array_NH[na, nb] = calculate_chi2(
                 float64(axion_mass_array[na]), axion_gayy_array[nb])
-            print(na, nb, values_gay_array_NH[na, nb])
-            print(values_gay_array_NH)
+            # print(na, nb, values_gay_array_NH[na, nb])
+            # print(values_gay_array_NH)
 
     return values_gay_array_NH
 
