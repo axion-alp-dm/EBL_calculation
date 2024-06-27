@@ -122,7 +122,7 @@ plt.ylabel(r'sfr (M$_{\odot}$ / yr / Mpc$^{3}$)')
 fig_Z, ax_met = plt.subplots(figsize=(8, 8))
 plt.yscale('log')
 aa = import_met_data(ax=ax_met)
-# aa = import_met_data(ax=ax_met, z_sun=0.014)
+plt.xlim(0, 10)
 
 plt.xlabel('redshift z')
 plt.ylabel('Z')

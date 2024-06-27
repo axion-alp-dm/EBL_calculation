@@ -7,9 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerTuple
 
-print(sys.path)
-sys.path.append('/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/')
-
 from scipy.integrate import simpson
 from scipy.interpolate import UnivariateSpline
 
@@ -20,7 +17,6 @@ from astropy import units as u
 from astropy.constants import c
 from astropy.constants import h as h_plank
 from astropy.cosmology import FlatLambdaCDM
-from astropy.table import vstack
 
 from ebltable.ebl_from_model import EBL
 
@@ -76,7 +72,7 @@ plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
 plt.rc('xtick.minor', size=7, width=1.5)
 plt.rc('ytick.minor', size=7, width=1.5)
 
-direct_name = str('xrays_zoom_total3_rep')
+direct_name = str('xrays_zoom')
 print(direct_name)
 
 # Check that the working directory is correct for the paths
@@ -165,38 +161,26 @@ for m, e in ebl.items():
     nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
 spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
-# axion_mass_array = np.geomspace(5e2+2.5, 3e4+2.5, num=400)
-# axion_gayy_array = np.geomspace(1.e-17, 1e-14, num=300)
-axion_mass_array = np.geomspace(9800, 20500, num=80)
-axion_gayy_array = np.geomspace(3.e-18, 3e-17, num=100)
-# axion_mass_array = np.geomspace(2e4, 1e7, num=600)
-# axion_gayy_array = np.geomspace(1.e-20, 1e-17, num=300)
+axion_mass_array = np.geomspace(5e2, 1e5, num=2)
+axion_gayy_array = np.geomspace(1.e-19, 3e-15, num=2)
 
 values_gay_array_NH = np.zeros(
     (len(axion_mass_array), len(axion_gayy_array)))
 values_gay_array_NH2 = np.zeros(
     (len(axion_mass_array), len(axion_gayy_array)))
 
-np.save('outputs/' + direct_name + '/axion_mass', axion_mass_array)
-np.save('outputs/' + direct_name + '/axion_gayy', axion_gayy_array)
-
-# Beginning of figure specifications
+# We introduce all the EBL measurements
 plt.figure(figsize=(16, 10))  # figsize=(16, 10))
 ax1 = plt.gca()
-
-# We introduce all the EBL measurements
 upper_lims_cxb, _ = import_cb_data(
     lambda_min_total=0.,
     lambda_max_total=3.e-3,
-    ax1=ax1, plot_measurs=True)
+    plot_measurs=True, ax1=ax1)
 
 upper_lims_cub, _ = import_cb_data(
     lambda_min_total=3.e-3,
     lambda_max_total=0.1,
     ax1=ax1, plot_measurs=True)
-
-print(upper_lims_cub)
-print(upper_lims_cxb)
 
 upper_lims_cxb.sort('lambda')
 
@@ -223,16 +207,6 @@ for refi in np.unique(upper_lims_cxb['ref']):
     upper_lims_cxb['x_min'][ind_args] = data_ind - err_neg
     upper_lims_cxb['x_max'][ind_args] = err_pos + data_ind
 
-    plt.errorbar(
-        data_ind,
-        upper_lims_cxb[ind_args]['nuInu'],
-        yerr=upper_lims_cxb[ind_args]['1 sigma'],
-        xerr=(err_neg, err_pos),
-        marker='+', ls='')
-
-    for i in range(len(data_ind) - 1):
-        plt.axvline(np.sqrt(data_ind[i] * data_ind[i + 1]), c='k', alpha=0.3)
-
     plt.hlines(0.9 * upper_lims_cxb[ind_args]['nuInu'],
                xmin=data_ind - err_neg, xmax=err_pos + data_ind,
                colors='k')
@@ -245,20 +219,11 @@ for ni, i in enumerate(upper_lims_cxb):
 
 P_den = -(upper_lims_cxb['x_min']
           - upper_lims_cxb['x_max'])
-
-# upper_lims_all = vstack([upper_lims_all, upper_lims_cub])
-plt.show()
 time_init = time.process_time()
 
 for na, aa in enumerate(axion_mass_array):
-    if na % 10 == 0:
-        print('mass ', na)  # , time.process_time() - time_init)
-        # time_init = time.process_time()
 
     for nb, bb in enumerate(axion_gayy_array):
-        # if nb % 2 == 0:
-        #     print('gay ', nb)#, time.process_time() - time_init)
-        # time_init = time.process_time()
 
         intensity_points = ((
                 host_axion_contr(waves_ebl, aa, bb,
@@ -266,31 +231,19 @@ for na, aa in enumerate(axion_mass_array):
                 + cosmic_axion_contr(waves_ebl, aa, bb)
                 + spline_cuba(waves_ebl)
         ))
+
         intensity_points2 = ((
-                cosmic_axion_contr(waves_ebl, aa, bb)
+            # host_axion_contr(waves_ebl, aa, bb,
+            #                  v_dispersion=220)
+                + cosmic_axion_contr(waves_ebl, aa, bb)
                 + spline_cuba(waves_ebl)
         ))
+        print(max(host_axion_contr(waves_ebl, aa, bb,
+                                 v_dispersion=220)))
 
-        spline_total = UnivariateSpline(waves_ebl, intensity_points,
-                                        k=1, s=0)
-        spline_cosmic = UnivariateSpline(waves_ebl, intensity_points2,
-                                         k=1, s=0)
+        # plt.plot(waves_ebl, intensity_points)
 
-        values_gay_array_NH[na, nb] += sum(
-                ((upper_lims_cub['nuInu']
-                  - spline_total(upper_lims_cub['lambda']))
-                 / upper_lims_cub['1 sigma']) ** 2.
-                * (upper_lims_cub['nuInu']
-                   < spline_total(upper_lims_cub['lambda']))
-        )
 
-        values_gay_array_NH2[na, nb] += sum(
-                ((upper_lims_cub['nuInu']
-                  - spline_cosmic(upper_lims_cub['lambda']))
-                 / upper_lims_cub['1 sigma']) ** 2.
-                * (upper_lims_cub['nuInu']
-                   < spline_cosmic(upper_lims_cub['lambda']))
-        )
 
         for i in range(len(upper_lims_cxb)):
             minn = np.where((waves_ebl > upper_lims_cxb['x_min'][i]))[0][0]
@@ -317,31 +270,8 @@ for na, aa in enumerate(axion_mass_array):
                   / upper_lims_cxb['1 sigma'][i]) ** 2.
                  * (upper_lims_cxb['nuInu'][i] < mean_flux2)
                  ))
-
-np.save('outputs/' + direct_name + '/CUBA_params_total',
-        values_gay_array_NH)
-np.save('outputs/' + direct_name + '/CUBA_params_cosmic',
-        values_gay_array_NH2)
-print('Total time for', len(axion_gayy_array) * len(axion_mass_array),
-      'its:', time.process_time() - time_init, 's')
-print(values_gay_array_NH)
-
-plt.xlim(5e-6, 3e-3)
-plt.ylim(5e-7, 5e-1)
-
-plt.xscale('log')
-plt.yscale('log')
-
-plt.figure()
-plt.contour(axion_mass_array, axion_gayy_array,
-            values_gay_array_NH.T - np.min(values_gay_array_NH),
-            levels=[5.99], origin='lower',
-            colors='cyan', zorder=1e10, linewidths=10, alpha=0.9)
-nh_contours = plt.contour(axion_mass_array, axion_gayy_array,
-                          values_gay_array_NH.T - np.min(values_gay_array_NH),
-                          levels=[2.30], origin='lower',
-                          colors='r', zorder=1e10, linewidths=4, alpha=0.9)
-plt.xscale('log')
-plt.yscale('log')
-
+        print(aa, bb)
+        print(values_gay_array_NH[na, nb], values_gay_array_NH2[na, nb],
+              values_gay_array_NH[na, nb] - values_gay_array_NH2[na, nb])
+        print()
 plt.show()

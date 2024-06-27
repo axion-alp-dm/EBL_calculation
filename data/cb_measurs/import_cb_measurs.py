@@ -266,6 +266,8 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
     upper_lims_all['type'][upper_lims_all['type'] == 2] = 3
     upper_lims_all['type'][upper_lims_all['ref']
                            == r'NH/LORRI (Symons+ ‘23)'] = 2
+    upper_lims_all['type'][upper_lims_all['ref']
+                           == r'NH/LORRI (Postman+, in prep)'] = 2
 
     upper_lims_all['ref'][upper_lims_all['ref']
                           == r'COBE/DIRBE (Arendt \& Dwek ‘03)'] = \
@@ -323,7 +325,9 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
 
     if plot_measurs:
         markers = ['>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
+        colors_nh = ['lime', '#00A2FF']
         i = 0
+        i_nh = 0
 
         for ni, name in enumerate(names_all_upper):
             data_total = upper_lims_all[upper_lims_all['ref'] == name]
@@ -355,12 +359,17 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
 
                 elif datatype == 2:
                     ax1.errorbar(x=data['lambda'], y=data['nuInu'],
-                                 # yerr=[data['nuInu_errn'],
-                                 #       data['nuInu_errp']],
-                                 linestyle='', color=color_i,
+                                 linestyle='', color='w',
+                                 marker='*',
+                                 markerfacecolor='w',
+                                 markersize=28, markeredgewidth=2,
+                                 zorder=1e5, alpha=0.8
+                                 )
+                    ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+                                 linestyle='', color=colors_nh[i_nh],
                                  label=name,
                                  marker='*',
-                                 mfc='white',
+                                 markerfacecolor='none',
                                  markersize=28, markeredgewidth=2,
                                  zorder=1e5
                                  )
@@ -372,6 +381,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  mfc='k',
                                  markersize=8, zorder=5e5
                                  )
+                    i_nh += 1
 
                 elif datatype == 0:
                     # continue

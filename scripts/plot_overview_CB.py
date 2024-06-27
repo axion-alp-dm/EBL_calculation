@@ -159,7 +159,7 @@ labels.append(r'CUBA + cosmic axion''\n '
 # We introduce all the EBL measurements
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=0.,
-    lambda_max_total=1300.,
+    lambda_max_total=5.,
     ax1=ax1, plot_measurs=True)
 
 plt.xlim(5e-6, 1e1)
@@ -173,12 +173,13 @@ handles, labels = ax1.get_legend_handles_labels()
 handles = [h[0] for h in handles]
 for i in range(len(labels)):
     if labels[i].__contains__('LORRI'):
+        print(handles[i].get_c())
         handles[i] = (plt.Line2D([], [], linestyle='',
-                                 color='g', markerfacecolor='w',
+                                 color=handles[i].get_c(), markerfacecolor='w',
                                  marker='*', markersize=16),
                       plt.Line2D([], [], linestyle='',
                                  color='k', markerfacecolor='k',
-                                 marker='.', markersize=8)
+                                 marker='.', markersize=6)
                       )
 legend11 = plt.legend(handles, labels,
                       handler_map={tuple: HandlerTuple(ndivide=1)},

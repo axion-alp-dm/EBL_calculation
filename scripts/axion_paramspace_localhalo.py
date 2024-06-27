@@ -47,7 +47,7 @@ direct_name = str('individuals_Dfact'
 print(direct_name)
 
 # Choose the max and minimum wavelengthS of the data that we import
-lambda_min_total = 0.  # [microns]
+lambda_min_total = 3e-3  # [microns]
 lambda_max_total = 5.  # [microns]
 
 fig, ax = plt.subplots()
@@ -59,7 +59,7 @@ if not os.path.exists('outputs/' + direct_name):
     os.makedirs('outputs/' + direct_name)
 
 D_factor = 2.20656e22 * u.GeV * u.cm ** -2
-# D_factor = 1.1e22 * u.GeV * u.cm ** -2
+# D_factor = 1.11e22 * u.GeV * u.cm ** -2
 def chi2_upperlims(x_model, x_obs, err_obs):
     """
 
@@ -147,9 +147,9 @@ print(host_function_std(2.48, 1., 1e-10))
 aaa = nuInu_maybe(1., 1e-10)
 print('aaa', aaa)
 
-# np.savetxt('outputs/' + direct_name + '/dipsD.txt',
-#            np.column_stack((2.48 / upper_lims_all['lambda'],
-#                             g_ay_array.value)))
+np.savetxt('outputs/' + direct_name + '/dipsD.txt',
+           np.column_stack((2.48 / upper_lims_all['lambda'],
+                            g_ay_array.value)))
 
 
 h=0.7

@@ -314,11 +314,33 @@ lg2 = plt.legend([plt.Line2D([], [], linestyle='-', lw=2,
                  handler_map={tuple: HandlerTuple(ndivide=1)},
                  fontsize=18, loc=1)
 
+# ax3.errorbar(x=0.608, y=21.98,
+#              linestyle='', color='limegreen',
+#              marker='*',
+#              mfc='white',
+#              markersize=30, markeredgewidth=3,
+#              zorder=1e5
+#              )
+# ax3.errorbar(x=0.608, y=21.98,
+#              yerr=[1.23],
+#              linestyle='', color='k',
+#              marker='.',
+#              mfc='k',
+#              markersize=8, zorder=5e5
+#              )
+
 ax3.errorbar(x=0.608, y=21.98,
-             linestyle='', color='limegreen',
+             linestyle='', color='w',
              marker='*',
-             mfc='white',
-             markersize=30, markeredgewidth=3,
+             markerfacecolor='w',
+             markersize=28, markeredgewidth=2,
+             zorder=1e5, alpha=0.8
+             )
+ax3.errorbar(x=0.608, y=21.98,
+             linestyle='', color='#00A2FF',
+             marker='*',
+             markerfacecolor='none',
+             markersize=28, markeredgewidth=2,
              zorder=1e5
              )
 ax3.errorbar(x=0.608, y=21.98,
@@ -328,12 +350,34 @@ ax3.errorbar(x=0.608, y=21.98,
              mfc='k',
              markersize=8, zorder=5e5
              )
+
+ax3.errorbar(x=0.608, y=11.08,
+             linestyle='', color='w',
+             marker='*',
+             markerfacecolor='w',
+             markersize=28, markeredgewidth=2,
+             zorder=6e5, alpha=0.5
+             )
+ax3.errorbar(x=0.608, y=11.08,
+             linestyle='', color='lime',
+             marker='*',
+             markerfacecolor='none',
+             markersize=28, markeredgewidth=2,
+             zorder=7e5
+             )
+ax3.errorbar(x=0.608, y=11.08,
+             yerr=[1.65],
+             linestyle='', color='k',
+             marker='.',
+             mfc='k',
+             markersize=8, zorder=8e5
+             )
 ax3.set_yscale('log')
 ax4.set_yscale('linear')
 plt.xlim(0.25, 1.)
 ax4.set_ylim(0., 0.7)
 ax3.set_ylim(2., 3000)
-ax3.axvline(0.608, c='k', alpha=0.9, lw=2)
+ax3.axvline(0.608, c='k', alpha=0.7, lw=2, ls='-')
 ax3.set_xticks(ticks=[0.3, 0.4, 0.6, 0.8, 1.],
                labels=['0.3', '0.4', '0.6', '0.8', '1.'])
 axtop.set_xticks(ticks=axion_mass_array,

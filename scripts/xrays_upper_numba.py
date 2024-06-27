@@ -15,7 +15,7 @@ from astropy import units as u
 from astropy.constants import c
 from astropy.cosmology import FlatLambdaCDM
 
-# from ebltable.ebl_from_model import EBL
+from ebltable.ebl_from_model import EBL
 
 from matplotlib.pyplot import cycler
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
@@ -106,11 +106,11 @@ freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 #     nuInu[m] = e.ebl_array(np.array([0.]), waves_ebl)
 # spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)(waves_ebl)
 # aaa = np.column_stack((waves_ebl, spline_cuba))
-# np.savetxt('cuba.txt', aaa)
+# np.savetxt('data/cuba.txt', aaa)
 spline_cuba = np.loadtxt('data/cuba.txt')[:, 1]
 
-axion_mass_array = np.geomspace(5e2, 1e6, num=800)
-axion_gayy_array = np.geomspace(1.e-20, 3e-15, num=500)
+axion_mass_array = np.geomspace(5e2, 1e6, num=5)
+axion_gayy_array = np.geomspace(1.e-20, 3e-15, num=10)
 
 
 # print(2.48/axion_mass_array)
@@ -208,7 +208,7 @@ def cosmic_axion_contr(lmbd, mass, gayy):
 
 
 # D_factor = 2.20656e22 * u.GeV * u.cm ** -2
-D_factor = 1.11e22 # * u.GeV * u.cm ** -2
+D_factor = 1.11e22  # * u.GeV * u.cm ** -2
 
 
 #@jit
@@ -226,28 +226,29 @@ def host_axion_contr(xx, mass, gay, v_dispersion=220.):
 # #@jit(locals={'mean_flux':ty.float64})
 #@jit(forceobj=False)
 def calculate_chi2(aa, bb):
-    # print(aa, bb)
+    print(aa, bb)
     intensity_points = (
-            (host_axion_contr(waves_ebl, aa, bb, v_dispersion=220)
+            (
+             # host_axion_contr(waves_ebl, aa, bb, v_dispersion=220)
              + cosmic_axion_contr(waves_ebl, aa, bb)
              + spline_cuba
              )
             * waves_ebl * 1e-6 / 3e8)
-    plt.plot(waves_ebl, (
-            # host_axion_contr(waves_ebl, aa, bb, v_dispersion=220)
-             + cosmic_axion_contr(waves_ebl, aa, bb)
-             + spline_cuba
-             ))
+    # plt.plot(waves_ebl, (
+    #         # host_axion_contr(waves_ebl, aa, bb, v_dispersion=220)
+    #          + cosmic_axion_contr(waves_ebl, aa, bb)
+    #          + spline_cuba
+    #          ))
 
-    Pf_l = P * (intensity_points / waves_ebl)[:, np.newaxis]
-    # Pf_l = Pf_l[:, 0]
+    Pf_l = (P * (intensity_points / waves_ebl)[:, np.newaxis])#[0, :]
+    # Pf_l = Pf_l[0, :]
     # Pf_l = simpson(y=Pf_l, x=waves_ebl, axis=0)
-    Pf_l = np.trapz(y=Pf_l.T, x=waves_ebl)
+    Pf_l = np.trapz(y=Pf_l, x=waves_ebl, axis=0)
     # print('Pf_l', Pf_l[0])
 
-    Pf = P * intensity_points[:, np.newaxis]
-    # Pf = Pf[:, 0]
-    Pf = np.trapz(y=Pf.T, x=waves_ebl)
+    Pf = (P * intensity_points[:, np.newaxis])#[0, :]
+    # Pf = Pf[0, :]
+    Pf = np.trapz(y=Pf, x=waves_ebl, axis=0)
     # print('Pf', Pf[0])
     # Pf = simpson(y=Pf, x=waves_ebl, axis=0)
 
@@ -275,17 +276,17 @@ def calculate_chi2(aa, bb):
 
     return values_gay_array_NH
 
-
-#@jit(parallel=True, forceobj=False)
+time_init = time.process_time()
+#@jit(parallel=False, forceobj=False)
 def calculate_all():
 
     values_gay_array_NH = np.zeros(
         (len(axion_mass_array), len(axion_gayy_array)))
 
     for na in prange(len(axion_mass_array)):
-        if na % 25 == 0:
+        if na % 1 == 0:
             print('mass ', na)
-            # time_init = time.process_time()
+            # ti = time.process_time()
 
         for nb in prange(len(axion_gayy_array)):
             # if nb % 2 == 0:
@@ -305,12 +306,13 @@ def calculate_all():
 values_chi2_array = calculate_all()
 np.save('outputs/' + direct_name + '/CUBA_params_Xrays',
         values_chi2_array)
-
-print(np.max(values_chi2_array))
+print('Total time for', len(axion_gayy_array)*len(axion_mass_array),
+      'its:', time.process_time() - time_init, 's')
+print('max: ', np.max(values_chi2_array))
 print(values_chi2_array)
 
 plt.xlim(5e-6, 3e-3)
-plt.ylim(5e-7, 5e-1)
+plt.ylim(1e-2, 5e-1)
 
 plt.xscale('log')
 plt.yscale('log')
