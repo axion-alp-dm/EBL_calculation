@@ -237,6 +237,16 @@ for ni, model in enumerate(list_working_models.keys()):
         zorder=1,
         label=model_full['label'],
         extent=(axion_mac2[0], axion_mac2[-1], None, None))
+
+ax2.contourf(
+        axion_mac2, axion_gay,
+        (values_gay_array.T - np.min(values_gay_array)),
+        levels=[4.61, 1e20], origin='lower',
+        colors='blue', alpha=0.6,
+        zorder=0,
+        label=model_full['label'],
+        extent=(axion_mac2[0], axion_mac2[-1], None, None))
+
 # The COB models plotting
 for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]

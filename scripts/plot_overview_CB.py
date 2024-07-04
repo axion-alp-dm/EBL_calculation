@@ -63,7 +63,7 @@ plt.rc('xtick', labelsize=all_size)
 plt.rc('ytick', labelsize=all_size)
 plt.rc('legend', fontsize=12)
 plt.rc('figure', titlesize=all_size)
-plt.rc('xtick', top=True, direction='in')
+plt.rc('xtick', top=False, direction='in')
 plt.rc('ytick', right=True, direction='in')
 plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
 plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
@@ -124,8 +124,8 @@ list_working_models = {
 }
 
 # Beginning of figure specifications
-plt.figure(figsize=(16, 10))  # figsize=(16, 10))
-ax1 = plt.gca()
+fig, ax1 = plt.subplots(figsize=(16, 10))  # figsize=(16, 10))
+
 
 handlers, labels = [], []
 for ni, working_model_name in enumerate(list_working_models.keys()):
@@ -162,8 +162,8 @@ upper_lims_all, _ = import_cb_data(
     lambda_max_total=5.,
     ax1=ax1, plot_measurs=True)
 
-plt.xlim(5e-6, 1e1)
-plt.ylim(5e-3, 120)
+ax1.set_xlim(5e-6, 1e1)
+ax1.set_ylim(5e-3, 120)
 legend22 = plt.legend(handlers, labels,
                       loc=7, bbox_to_anchor=(1., 0.3),
                       title=r'Models', fontsize=16)
@@ -203,7 +203,23 @@ plt.annotate(text='CXB', xy=(1e-4, 7.5e-3), alpha=0.7, color='grey')
 plt.annotate(text='CUB', xy=(0.035, 7.5e-3), alpha=0.7, color='grey')
 plt.annotate(text='COB', xy=(1, 7.5e-3), alpha=0.7, color='grey')
 
-plt.xlabel(r'Wavelength ($\mu$m)')
+ax1.set_xlabel(r'Wavelength ($\mu$m)')
+
+ax1.set_xscale('log')
+ax1.set_yscale('log')
+def tick_function(X):
+    # return 17.5/X
+    return (h_plank * c / X / u.micron).to(u.eV).value
+def tick_function_2(X):
+    # return 2.48/X
+    return (h_plank * c / X / u.eV).to(u.micron).value
+aaa = tick_function(2.48)
+print(aaa)
+print(tick_function_2(aaa))
+ax3 = ax1.secondary_xaxis('top',
+                         functions=(tick_function, tick_function_2))
+ax3.tick_params(axis='x', direction='in', pad=0)
+ax3.set_xlabel('Photon energy (eV)', labelpad=12)
 
 plt.savefig('outputs/figures_paper/cb.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
