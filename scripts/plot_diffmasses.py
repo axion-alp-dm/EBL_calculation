@@ -310,7 +310,8 @@ lg2 = plt.legend([plt.Line2D([], [], linestyle='-', lw=2,
                               marker='.', markersize=8)
                    )
                   ],
-                 ['Spectrum', 'Mean wavelength', 'Integrated intensity'],
+                 ['Total axion decay', 'Mean wavelength',
+                  'Integrated intensity'],
                  handler_map={tuple: HandlerTuple(ndivide=1)},
                  fontsize=18, loc=1)
 
@@ -378,6 +379,9 @@ plt.xlim(0.25, 1.)
 ax4.set_ylim(0., 0.7)
 ax3.set_ylim(2., 3000)
 ax3.axvline(0.608, c='k', alpha=0.7, lw=2, ls='-')
+ax3.text(x=0.599, y=1100, s='pivot\nwavelength', fontsize=18,
+         horizontalalignment='right',
+         bbox=dict(facecolor='white', alpha=0.8, edgecolor='w'))
 ax3.set_xticks(ticks=[0.3, 0.4, 0.6, 0.8, 1.],
                labels=['0.3', '0.4', '0.6', '0.8', '1.'])
 axtop.set_xticks(ticks=axion_mass_array,
@@ -398,7 +402,7 @@ plt.savefig('outputs/figures_paper/axiondecay_v2.pdf',
             bbox_inches='tight')
 plt.savefig('outputs/figures_paper/axiondecay_v2.png',
             bbox_inches='tight')
-# plt.show()
+plt.show()
 # ----------------------------------------------------------------------
 fig2, ax2 = plt.subplots(figsize=(11, 8))
 plt.tight_layout()

@@ -116,7 +116,7 @@ plt.yscale('log')
 plt.xlim(0, 10)
 
 plt.xlabel('redshift z')
-plt.ylabel(r'sfr (M$_{\odot}$ / yr / Mpc$^{3}$)')
+plt.ylabel(r'$\rho_{\star}$ (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
 
 fig_Z, ax_met = plt.subplots(figsize=(8, 8))
@@ -240,15 +240,15 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                   linestyle='-',
                                   color=colors[nkey]))
 
-    y, y_cov = propagate(lambda pars:
-                         fit_igl(waves_ebl, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
-                          facecolor=f_color[nkey], alpha=0.5)
-    print(y)
-    print(yerr_prop)
-    print()
+    # y, y_cov = propagate(lambda pars:
+    #                      fit_igl(waves_ebl, pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
+    #                       facecolor=f_color[nkey], alpha=0.5)
+    # print(y)
+    # print(yerr_prop)
+    # print()
 
     # FIGURE: SFR
     plt.figure(fig_sfr)
@@ -273,43 +273,43 @@ for nkey, key in enumerate(config_data['ssp_models']):
     plt.figure(fig_Z)
     plt.plot(x_sfr, metall(x_sfr, params=values_sfr))
 
-    y, y_cov = propagate(lambda pars:
-                         metall(x_sfr, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
-                     facecolor=f_color[nkey], alpha=0.5)
-    print(y)
-    print(yerr_prop)
+    # y, y_cov = propagate(lambda pars:
+    #                      metall(x_sfr, pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+    #                  facecolor=f_color[nkey], alpha=0.5)
+    # print(y)
+    # print(yerr_prop)
 
     # FIGURE: emissivities fit
-    plt.figure(fig_emiss_z)
-    for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
-                                   0.44, 0.55, 0.79,
-                                   1.22, 2.2, 3.6]):
-        plt.subplot(3, 3, n_lambda + 1)
-
-        plt.plot(z_array,
-                 (c.value / (ll * 1e-6))
-                 * 10 ** ebl_class.emiss_ssp_spline(
-                     np.log10(c.value / ll * 1e6) * np.ones(
-                         len(z_array)),
-                     z_array)
-                 * 1e-7,
-                 linestyle='-', color=colors[nkey], lw=2)
-
-    labels_emiss.append(config_data['ssp_models'][key]['name'])
-    handles_emiss.append(plt.Line2D([], [], linewidth=2,
-                                    linestyle='-',
-                                    color=colors[nkey]))
-
-    y, y_cov = propagate(lambda pars:
-                         fit_emiss((ll * np.ones(len(z_array)), z_array),
-                                   pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
-                     facecolor=f_color[nkey], alpha=0.5)
+    # plt.figure(fig_emiss_z)
+    # for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
+    #                                0.44, 0.55, 0.79,
+    #                                1.22, 2.2, 3.6]):
+    #     plt.subplot(3, 3, n_lambda + 1)
+    #
+    #     plt.plot(z_array,
+    #              (c.value / (ll * 1e-6))
+    #              * 10 ** ebl_class.emiss_ssp_spline(
+    #                  np.log10(c.value / ll * 1e6) * np.ones(
+    #                      len(z_array)),
+    #                  z_array)
+    #              * 1e-7,
+    #              linestyle='-', color=colors[nkey], lw=2)
+    #
+    # labels_emiss.append(config_data['ssp_models'][key]['name'])
+    # handles_emiss.append(plt.Line2D([], [], linewidth=2,
+    #                                 linestyle='-',
+    #                                 color=colors[nkey]))
+    #
+    # y, y_cov = propagate(lambda pars:
+    #                      fit_emiss((ll * np.ones(len(z_array)), z_array),
+    #                                pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
+    #                  facecolor=f_color[nkey], alpha=0.5)
 
     # print(yerr_prop)
 
@@ -347,7 +347,7 @@ handles_sfr.append(plt.Line2D([], [], linewidth=2,
 
 legend2 = plt.legend(handles_sfr, labels_sfr,
                      loc=3, bbox_to_anchor=(0.01, 0.),
-                     fontsize=26
+                     fontsize=26, title='Models',title_fontsize=28
                      )
 axes_sfr.add_artist(legend2)
 
@@ -358,27 +358,27 @@ plt.legend(handles_emiss, labels_emiss,
            loc=1, fontsize=24)
 
 # Save the figures
-fig_ebl.savefig(direct_name + '/ebl' + '.png',
-                bbox_inches='tight')
-fig_ebl.savefig(direct_name + '/ebl' + '.pdf',
-                bbox_inches='tight')
-
+# fig_ebl.savefig(direct_name + '/ebl' + '.png',
+#                 bbox_inches='tight')
+# fig_ebl.savefig(direct_name + '/ebl' + '.pdf',
+#                 bbox_inches='tight')
+#
 fig_sfr.savefig(direct_name + '/sfr' + '.png',
                 bbox_inches='tight')
 fig_sfr.savefig(direct_name + '/sfr' + '.pdf',
                 bbox_inches='tight')
+#
+# fig_Z.savefig(direct_name + '/Zev' + '.png',
+#                 bbox_inches='tight')
+# fig_Z.savefig(direct_name + '/Zev' + '.pdf',
+#                 bbox_inches='tight')
 
-fig_Z.savefig(direct_name + '/Zev' + '.png',
-                bbox_inches='tight')
-fig_Z.savefig(direct_name + '/Zev' + '.pdf',
-                bbox_inches='tight')
-
-fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
-fig_emiss_z.savefig(
-    direct_name + '/emiss_redshift' + '.png',
-    bbox_inches='tight')
-fig_emiss_z.savefig(
-    direct_name + '/emiss_redshift' + '.pdf',
-    bbox_inches='tight')
-# plt.show()
+# fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
+# fig_emiss_z.savefig(
+#     direct_name + '/emiss_redshift' + '.png',
+#     bbox_inches='tight')
+# fig_emiss_z.savefig(
+#     direct_name + '/emiss_redshift' + '.pdf',
+#     bbox_inches='tight')
+plt.show()
 

@@ -10,7 +10,7 @@ from matplotlib.legend_handler import HandlerTuple
 from scipy.interpolate import UnivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
-from data.cb_measurs.import_cb_measurs import import_cb_data
+from data.cb_measurs.import_cb_measurs import import_cb_data, dictionary_datatype
 
 from astropy import units as u
 from astropy.constants import c
@@ -88,11 +88,12 @@ config_data = read_config_file('outputs/final_outputs_Zevol_fixezZsolar '
                        '2024-04-11 13:41:34/' + 'input_data.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
-ebl_class.ebl_ssp_calculation(
-    config_data['ssp_models']['SB99_dustFinke'])
+# ebl_class.ebl_ssp_calculation(
+#     config_data['ssp_models']['SB99_dustFinke'])
 
 
-waves_ebl = np.geomspace(5e-6, 1e4, num=int(1e6))
+# waves_ebl = np.geomspace(5e-6, 1e4, num=int(1e6))
+waves_ebl = np.geomspace(0.08, 1e4, num=int(1e6))
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 
 # We introduce the Finke22 and CUBA splines
@@ -115,12 +116,12 @@ def spline_starburst(lambda_array):
 
 
 list_working_models = {
-    'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
-               'color': 'b', 'linewidth': 3},
+    # 'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
+    #            'color': 'b', 'linewidth': 3},
     'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
-                'color': 'magenta', 'linewidth': 2},
-    'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-             'color': 'k', 'linewidth': 2}
+                'color': 'k', 'linewidth': 2},
+    # 'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
+    #          'color': 'k', 'linewidth': 2}
 }
 
 # Beginning of figure specifications
@@ -140,32 +141,123 @@ for ni, working_model_name in enumerate(list_working_models.keys()):
                                linestyle='-',
                                color=model['color']))
     labels.append(model['label'])
+#
+# ebl_class.change_axion_contribution(1e2, 1e-13)
+# plt.loglog(waves_ebl,
+#            (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
+#                                              grid=False)
+#             + spline_cuba(waves_ebl)), c='green', zorder=1)
 
-ebl_class.change_axion_contribution(1e2, 1e-13)
-plt.loglog(waves_ebl,
-           (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
-                                             grid=False)
-            + spline_cuba(waves_ebl)), c='green', zorder=1)
-
-handlers.append(plt.Line2D([], [],
-                           linewidth=2,
-                           linestyle='-',
-                           color='green'))
-labels.append(r'CUBA + cosmic axion''\n '
-              r'decay (example)''\n'
-              r'    m$_a = 10^2$ eV''\n'
-              r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$')
+# handlers.append(plt.Line2D([], [],
+#                            linewidth=2,
+#                            linestyle='-',
+#                            color='green'))
+# labels.append(r'CUBA + cosmic axion''\n '
+#               r'decay (example)''\n'
+#               r'    m$_a = 10^2$ eV''\n'
+#               r'    g$_{a\gamma} = 10^{-13}$ GeV$^{-1}$')
 
 # We introduce all the EBL measurements
 upper_lims_all, _ = import_cb_data(
-    lambda_min_total=0.,
-    lambda_max_total=5.,
+    lambda_min_total=0.08,
+    lambda_max_total=5000.,
     ax1=ax1, plot_measurs=True)
+#
+# aaa = dictionary_datatype(
+#         obs_type='M',
+#         lambda_max=1300.,
+#         plot_measurs=False)
+# markers = ['>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
+# colors_nh = ['lime', '#00A2FF']
+# i = 0
+# i_nh = 0
+# print(aaa)
+# names_all_upper, index = np.unique(aaa['ref'],
+#                                        return_index=True)
+# names_all_upper = names_all_upper[np.argsort(index)]
+#
+# for ni, name in enumerate(names_all_upper):
+#     print(name)
+#     data_total = aaa[aaa['ref'] == name]
+#     type_i = np.unique(data_total['type'])
+#     color_i = next(ax1._get_lines.prop_cycler)['color']
+#
+#     for datatype in type_i:
+#         data = data_total[data_total['type'] == datatype]
+#         if datatype == 1:
+#             # continue
+#             ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+#                          yerr=[data['nuInu_errn'],
+#                                data['nuInu_errp']],
+#                          linestyle='', color=color_i,
+#                          label=name,
+#                          marker=markers[i % len(markers)],
+#                          mfc='white',
+#                          zorder=1e5
+#                          )
+#
+#         elif datatype == 3:
+#             ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+#                          yerr=[data['nuInu_errn'],
+#                                data['nuInu_errp']],
+#                          linestyle='', color=color_i,
+#                          label=name,
+#                          marker=markers[i % len(markers)]
+#                          )
+#
+#         elif datatype == 2:
+#             ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+#                          linestyle='', color='w',
+#                          marker='*',
+#                          markerfacecolor='w',
+#                          markersize=28, markeredgewidth=2,
+#                          zorder=1e5, alpha=0.8
+#                          )
+#             ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+#                          linestyle='', color=colors_nh[i_nh],
+#                          label=name,
+#                          marker='*',
+#                          markerfacecolor='none',
+#                          markersize=28, markeredgewidth=2,
+#                          zorder=1e5
+#                          )
+#             ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+#                          yerr=[data['nuInu_errn'],
+#                                data['nuInu_errp']],
+#                          linestyle='', color='k',
+#                          marker='.',
+#                          mfc='k',
+#                          markersize=8, zorder=5e5
+#                          )
+#             i_nh += 1
+#
+#         elif datatype == 0:
+#             # continue
+#             if type_i.__contains__(1):
+#                 label_i = ''
+#             else:
+#                 label_i = name
+#             ax1.errorbar(x=data['lambda'],
+#                          y=data['nuInu_errn'],
+#                          yerr=data['nuInu_errn'] * 0.4,
+#                          linestyle='', color=color_i,
+#                          label=label_i,
+#                          marker=markers[i % len(markers)],
+#                          mfc='white',
+#                          uplims=True
+#                          )
+#     i += 1
 
-ax1.set_xlim(5e-6, 1e1)
-ax1.set_ylim(5e-3, 120)
+
+# ax1.set_xlim(5e-6, 1e1)
+# ax1.set_ylim(5e-3, 120)
+ax1.set_xlim(0.08, 1235)
+ax1.set_ylim(0.13, 120)
+# legend22 = plt.legend(handlers, labels,
+#                       loc=7, bbox_to_anchor=(1., 0.3),
+#                       title=r'Models', fontsize=16)
 legend22 = plt.legend(handlers, labels,
-                      loc=7, bbox_to_anchor=(1., 0.3),
+                      loc=1,# bbox_to_anchor=(1., 0.3),
                       title=r'Models', fontsize=16)
 
 
@@ -181,27 +273,32 @@ for i in range(len(labels)):
                                  color='k', markerfacecolor='k',
                                  marker='.', markersize=6)
                       )
+# legend11 = plt.legend(handles, labels,
+#                       handler_map={tuple: HandlerTuple(ndivide=1)},
+#                       title='Measurements', ncol=2, loc=2,
+#                       fontsize=11.5,
+#                       title_fontsize=20)  # , bbox_to_anchor=(1.001, 0.99))
 legend11 = plt.legend(handles, labels,
                       handler_map={tuple: HandlerTuple(ndivide=1)},
-                      title='Measurements', ncol=2, loc=2,
-                      fontsize=11.5,
-                      title_fontsize=20)  # , bbox_to_anchor=(1.001, 0.99))
+                      title='Measurements', ncol=1, loc=2,
+                      fontsize=10,
+                      title_fontsize=15, bbox_to_anchor=(1.01, 1.05))
 
 ax1.add_artist(legend11)
 ax1.add_artist(legend22)
 
-plt.annotate(text='', xy=(3e-3, 7e-3), xytext=(5e-6, 7e-3),
-             arrowprops=dict(arrowstyle='<->', color='grey'),
-             alpha=0.7, zorder=-10)
-plt.annotate(text='', xy=(0.1, 7e-3), xytext=(3e-3, 7e-3),
-             arrowprops=dict(arrowstyle='<->', color='grey'),
-             alpha=0.7, zorder=-10)
-plt.annotate(text='', xy=(10, 7e-3), xytext=(0.1, 7e-3),
-             arrowprops=dict(arrowstyle='<->', color='grey'),
-             alpha=0.7, zorder=-10)
-plt.annotate(text='CXB', xy=(1e-4, 7.5e-3), alpha=0.7, color='grey')
-plt.annotate(text='CUB', xy=(0.035, 7.5e-3), alpha=0.7, color='grey')
-plt.annotate(text='COB', xy=(1, 7.5e-3), alpha=0.7, color='grey')
+# plt.annotate(text='', xy=(3e-3, 7e-3), xytext=(5e-6, 7e-3),
+#              arrowprops=dict(arrowstyle='<->', color='grey'),
+#              alpha=0.7, zorder=-10)
+# plt.annotate(text='', xy=(0.1, 7e-3), xytext=(3e-3, 7e-3),
+#              arrowprops=dict(arrowstyle='<->', color='grey'),
+#              alpha=0.7, zorder=-10)
+# plt.annotate(text='', xy=(10, 7e-3), xytext=(0.1, 7e-3),
+#              arrowprops=dict(arrowstyle='<->', color='grey'),
+#              alpha=0.7, zorder=-10)
+# plt.annotate(text='CXB', xy=(1e-4, 7.5e-3), alpha=0.7, color='grey')
+# plt.annotate(text='CUB', xy=(0.035, 7.5e-3), alpha=0.7, color='grey')
+# plt.annotate(text='COB', xy=(1, 7.5e-3), alpha=0.7, color='grey')
 
 ax1.set_xlabel(r'Wavelength ($\mu$m)')
 
@@ -223,7 +320,7 @@ ax3.set_xlabel('Photon energy (eV)', labelpad=12)
 
 plt.savefig('outputs/figures_paper/cb.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
-
+plt.show()
 
 
 fig, ax = plt.subplots(figsize=(8.75, 7))
