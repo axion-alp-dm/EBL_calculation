@@ -11,6 +11,7 @@ import astropy.constants as c
 
 from ebl_codes.EBL_class import EBL_model
 from ebltable.ebl_from_model import EBL
+from data.cb_measurs.import_cb_measurs import import_cb_data
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -77,14 +78,33 @@ ebl_our = EBL.readascii('outputs/final_outputs_Zevol_fixezZsolar '
 ebl_our2 = np.loadtxt('outputs/final_outputs_Zevol_fixezZsolar '
                       '2024-06-05 09:10:05/table_data.txt',
                       )
-sigma = 0.005
+sigma = 0.01
+# waves = np.zeros(np.shape(ebl_our2[1:, 1:]))
+waves = ebl_our2[1:, 0][:, np.newaxis]
+print(min(waves), max(waves))
+print(min(ebl_our2[0, 1:]), max(ebl_our2[0, 1:]))
+waves = waves[np.newaxis, :]
+
 ebl_our2[1:, 1:] = (
         ebl_our2[1:, 1:]
-        + (21.98
+        + (((21.98
            # * 1 / np.sqrt(2. * np.pi) / sigma
            * np.exp(
-            -0.5 * ((ebl_our2[1:, 0] - 0.608) / sigma) ** 2.)
-           )[:, np.newaxis])
+            -0.5 * ((waves - 0.608) #*((1 + ebl_our2[0, 1:]))[np.newaxis,:])
+                    / sigma) ** 2.)
+           ))
+           )
+)
+
+# sigma = 0.05
+# ebl_our2[1:, 1:] = (
+#         ebl_our2[1:, 1:]
+#         + (21.98
+#            * (ebl_our2[1:, 0] < 0.64)
+#            # * 1 / np.sqrt(2. * np.pi) / sigma
+#            * np.exp(
+#             -0.5 * ((ebl_our2[1:, 0] - 0.608) / sigma) ** 2.)
+#            )[:, np.newaxis])
 
 np.savetxt('outputs/final_outputs_Zevol_fixezZsolar '
            '2024-06-05 09:10:05/table_data_gaussian.txt',
@@ -92,7 +112,7 @@ np.savetxt('outputs/final_outputs_Zevol_fixezZsolar '
 ebl_our2 = EBL.readascii('outputs/final_outputs_Zevol_fixezZsolar '
                          '2024-06-05 09:10:05/table_data_gaussian.txt',
                          model_name='Our_withGaussian')
-z = np.arange(0., 1.2, 0.2)
+z = np.arange(0., 1.2, .2)
 lmu = np.logspace(-1, 1.5, 10000)
 ETeV = np.logspace(-1, 2, 50)
 
@@ -100,9 +120,9 @@ nuInu_finke = ebl_finke.ebl_array(z, lmu)
 nuInu_our = ebl_our.ebl_array(z, lmu)
 nuInu_our2 = ebl_our2.ebl_array(z, lmu)
 
-tau_finke = ebl_finke.optical_depth(z, ETeV)
 
-plt.figure()
+fig, (ax, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+plt.subplot(121)
 
 for i, zz in enumerate(z):
     plt.loglog(lmu, nuInu_finke[i],
@@ -122,6 +142,9 @@ for i, zz in enumerate(z):
                # label='$z = {0:.2f}$'.format(zz),
                zorder=-1 * i)
 
+    plt.axvline(lmu[np.argmax(nuInu_our2[i])],
+                color=plt.cm.CMRmap(i / float(len(z))))
+
 plt.gca().set_xlabel('Wavelength ($\mu$m)', size='x-large')
 plt.gca().set_ylabel(
     r'$\nu I_\nu (\mathrm{nW}\,\mathrm{sr}^{-1}\mathrm{m}^{-2})$',
@@ -130,14 +153,24 @@ aaa = plt.legend(loc='lower center', ncol=2)
 
 markers = ['-', '--', 'dotted']
 bbb = plt.legend([plt.Line2D([], [], linestyle=markers[i],
-                                 color='k')
-                      for i in range(3)],
-                     ['Finke22', 'Our model', 'Ours + gaussian'],
-                     loc=2, fontsize=16, framealpha=0.4)
+                             color='k')
+                  for i in range(3)],
+                 ['Finke22', 'Our model', 'Ours + gaussian'],
+                 loc=2, fontsize=16, framealpha=0.4)
 plt.gca().add_artist(aaa)
 plt.gca().add_artist(bbb)
 
-plt.figure()
+import_cb_data(
+    lambda_min_total=0.,
+    lambda_max_total=5.,
+    ax1=ax, plot_measurs=True)
+
+plt.xlim(0.2, 2.)
+plt.ylim(1.3, 150.)
+
+
+# plt.figure()
+plt.subplot(122)
 for i, zz in enumerate(z):
     plt.loglog(ETeV, ebl_finke.optical_depth(zz, ETeV),
                ls='-', color=plt.cm.CMRmap(i / float(len(z))),
@@ -156,12 +189,12 @@ plt.gca().set_ylim((1e-2, 15.))
 plt.gca().set_xlim((1e-1, 1e1))
 plt.gca().set_xlabel('Energy (TeV)', size='x-large')
 plt.gca().set_ylabel(r'Attenuation $\exp(-\tau)$', size='x-large')
-aaa = plt.legend(loc=2)
+aaa = plt.legend(loc=5)
 bbb = plt.legend([plt.Line2D([], [], linestyle=markers[i],
-                                 color='k')
-                      for i in range(3)],
-                     ['Finke22', 'Our model', 'Ours + gaussian'],
-                     loc=4, fontsize=16, framealpha=0.4)
+                             color='k')
+                  for i in range(3)],
+                 ['Finke22', 'Our model', 'Ours + gaussian'],
+                 loc=4, fontsize=16, framealpha=0.4)
 plt.gca().add_artist(aaa)
 plt.gca().add_artist(bbb)
 
