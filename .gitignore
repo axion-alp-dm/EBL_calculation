@@ -22,6 +22,7 @@ __pycache__/*
 *.xml
 *.iml
 *.ecsv
+*.pdf
 
 # Byte-compiled / optimized / DLL files
 tests/__pycache__/
