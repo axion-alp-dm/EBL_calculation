@@ -37,7 +37,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('lorri_smeared_new_total_220_value11_zoom/')
+direct_name = str('lorri_smeared_new_total_220_value1116_zoom/')
 print(direct_name)
 
 # If the directory for outputs is not present, create it.
@@ -153,6 +153,8 @@ print('avg flux of cuba: ',
 
 axion_mass_array = np.linspace(2, 9, num=10000)
 axion_gayy_array = np.geomspace(1.e-11, 1e-7, num=500)
+# axion_mass_array = np.geomspace(8, 1e7, num=600)
+# axion_gayy_array = np.geomspace(2.e-12, 2e-10, num=200)
 
 values_gay_array_NH = np.zeros(
     (len(axion_mass_array), len(axion_gayy_array)))
@@ -195,7 +197,7 @@ for na, aa in enumerate(axion_mass_array):
                              ) * c.value / mean_lambda * 1e6
 
         values_gay_array_NH[na, nb] += (
-                ((11.08 * pivot_vw / mean_lambda
+                ((11.16 * pivot_vw / mean_lambda
                   - mean_flux
                   ) / (1.65 * pivot_vw / mean_lambda)
                  ) ** 2.)

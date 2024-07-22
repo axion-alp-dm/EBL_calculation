@@ -119,10 +119,11 @@ plt.xlabel('redshift z')
 plt.ylabel(r'$\rho_{\star}$ (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
 
-fig_Z, ax_met = plt.subplots(figsize=(8, 8))
+fig_Z, ax_met = plt.subplots(figsize=(9, 9))
 plt.yscale('log')
 aa = import_met_data(ax=ax_met)
-plt.xlim(0, 10)
+plt.xlim(0, 5)
+plt.ylim(1e-3, 2.5e-2)
 
 plt.xlabel('redshift z')
 plt.ylabel('Z')
@@ -260,27 +261,27 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                   linestyle='-',
                                   color=colors[nkey]))
 
-    y, y_cov = propagate(lambda pars:
-                         sfr(x_sfr, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
-                     facecolor=f_color[nkey], alpha=0.5)
-    print(y)
-    print(yerr_prop)
-
-    # Fig Z
-    plt.figure(fig_Z)
-    plt.plot(x_sfr, metall(x_sfr, params=values_sfr))
-
     # y, y_cov = propagate(lambda pars:
-    #                      metall(x_sfr, pars),
+    #                      sfr(x_sfr, pars),
     #                      values_sfr, values_cov)
     # yerr_prop = np.diag(y_cov) ** 0.5
     # plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
     #                  facecolor=f_color[nkey], alpha=0.5)
     # print(y)
     # print(yerr_prop)
+
+    # Fig Z
+    plt.figure(fig_Z)
+    plt.plot(x_sfr, metall(x_sfr, params=values_sfr))
+
+    y, y_cov = propagate(lambda pars:
+                         metall(x_sfr, pars),
+                         values_sfr, values_cov)
+    yerr_prop = np.diag(y_cov) ** 0.5
+    plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+                     facecolor=f_color[nkey], alpha=0.5)
+    print(y)
+    print(yerr_prop)
 
     # FIGURE: emissivities fit
     # plt.figure(fig_emiss_z)
@@ -367,11 +368,11 @@ fig_sfr.savefig(direct_name + '/sfr' + '.png',
                 bbox_inches='tight')
 fig_sfr.savefig(direct_name + '/sfr' + '.pdf',
                 bbox_inches='tight')
-#
-# fig_Z.savefig(direct_name + '/Zev' + '.png',
-#                 bbox_inches='tight')
-# fig_Z.savefig(direct_name + '/Zev' + '.pdf',
-#                 bbox_inches='tight')
+
+fig_Z.savefig(direct_name + '/Zev' + '.png',
+                bbox_inches='tight')
+fig_Z.savefig(direct_name + '/Zev' + '.pdf',
+                bbox_inches='tight')
 
 # fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
 # fig_emiss_z.savefig(

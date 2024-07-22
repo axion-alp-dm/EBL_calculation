@@ -55,8 +55,8 @@ ssp_models:
 #    # DUST ABSORPTION MODELS
 #    dust_abs_models: [ 'kneiske2002', 'aaaa' ]
 
-  pegase0.0001_Finke:
-    name: 'Model B'
+  pegase_Finke:
+    name: 'Model Finkedust and metall'
 
     # SFR INPUTS
     sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
@@ -66,11 +66,42 @@ ssp_models:
     # SSP DATA
     ssp_type: 'pegase3'
     path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
-    file_name: '0.0001'
+    file_name: '/kroupa_'
     cut_popstar: True
 
     # Metallicity evolution arguments
     args_metall: [-0.7, 0.2, 1.2, 0.02]
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
 
     # DUST ABSORPTION MODELS
     dust_abs_models: [ 'finke2022_2' ]
+
+    dust_abs_params:
+      params_ab18:
+      - 1.52
+      - 0.35
+      - 4.12
+      - 5.89
+
+  pegase_Kneiske:
+    name: 'Model Kneiskedust and metall'
+
+    # SFR INPUTS
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params: [0.0078, 2.7, 3.4, 6.4]
+    sfr_params: [0.01955168966137473, 1.6196536322550075, 4.527472241869829, 6.616330135889802]
+
+    # SSP DATA
+    ssp_type: 'pegase3'
+    path_SSP: 'data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/'
+    file_name: '/kroupa_'
+    cut_popstar: True
+
+    # Metallicity evolution arguments
+    args_metall: [-0.7, 0.2, 1.2, 0.02]
+    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+
+    # DUST ABSORPTION MODELS
+    dust_abs_models: [ 'kneiske2002' , '']
+
+    dust_abs_params: None

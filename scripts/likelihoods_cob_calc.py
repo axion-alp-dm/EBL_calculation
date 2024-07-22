@@ -2,8 +2,11 @@
 import os
 import yaml
 import time
+import sys
 import numpy as np
 
+print(sys.path)
+sys.path.append('/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/')
 from ebl_codes.EBL_class import EBL_model
 
 from data.emissivity_measurs.emissivity_read_data import emissivity_data
@@ -17,11 +20,10 @@ from astropy.constants import c
 
 from iminuit import Minuit
 from iminuit.cost import LeastSquares
-
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('final_outputs_Zevol_fixezZsolar'
+direct_name = str('final_outputs_Zevol_fixezZsolar_end'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -52,7 +54,7 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 
 config_data = read_config_file(
-    'scripts/input_files/input_our_model.yml')
+    'scripts/input_files/input_data_paper.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use

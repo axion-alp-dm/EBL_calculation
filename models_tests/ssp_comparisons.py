@@ -357,7 +357,7 @@ legend22 = plt.legend(
     [0.0004, 0.004, 0.008, 0.02, 0.05],
     loc=8, bbox_to_anchor=(0.47, 0.005),
     fontsize=20,
-    title='   Metallicity\n(transparency)', title_fontsize=22)
+    title='Metallicity', title_fontsize=22)
 
 axes.add_artist(legend22)
 

@@ -267,7 +267,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
     upper_lims_all['type'][upper_lims_all['ref']
                            == r'NH/LORRI (Symons+ ‘23)'] = 2
     upper_lims_all['type'][upper_lims_all['ref']
-                           == r'NH/LORRI (Postman+, in prep)'] = 2
+                           == r'NH/LORRI (Postman+ ‘24)'] = 2
 
     upper_lims_all['ref'][upper_lims_all['ref']
                           == r'COBE/DIRBE (Arendt \& Dwek ‘03)'] = \
