@@ -32,8 +32,7 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('outputs/final_outputs_Zevol_fixezZsolar '
-                  '2024-04-23 14:34:55/')
+input_file_dir = ('scripts/input_files/')
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -78,7 +77,7 @@ waves_ebl = np.logspace(-1, 3, num=50)
 freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
 
 # We initialize the class with the input file
-config_data = read_config_file(input_file_dir + 'input_data.yml')
+config_data = read_config_file(input_file_dir + 'input_dust_reem.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 

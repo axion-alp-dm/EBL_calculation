@@ -9,8 +9,9 @@ from scipy.interpolate import UnivariateSpline, RectBivariateSpline, \
     interpn, RegularGridInterpolator
 from fast_interp import interp2d, interp3d
 
+from astropy.io import fits
 from astropy import units as u
-from astropy.constants import c
+from astropy.constants import c, L_sun
 from astropy.constants import h as h_plank
 from astropy.cosmology import FlatLambdaCDM
 
@@ -322,7 +323,7 @@ class EBL_model(object):
 
             dd_total = np.zeros((l_total.shape[0],
                                  t_total.shape[0],
-                                 len(self._ssp_metall)+1))
+                                 len(self._ssp_metall) + 1))
 
             for n_met, met in enumerate(self._ssp_metall):
                 data = np.loadtxt(
@@ -331,7 +332,7 @@ class EBL_model(object):
                     + '.spectrum1',
                     skiprows=cut_popstar)
 
-                dd_total[:, :, n_met+1] = data[:, 2].reshape(
+                dd_total[:, :, n_met + 1] = data[:, 2].reshape(
                     t_total.shape[0],
                     l_total.shape[0]).T
 
@@ -462,7 +463,7 @@ class EBL_model(object):
 
             dd_pegase = np.zeros((l_pegase.shape[0],
                                   t_pegase.shape[0],
-                                  len(self._ssp_metall)+1))
+                                  len(self._ssp_metall) + 1))
 
             for n_met, met in enumerate(self._ssp_metall):
                 data_pegase = np.loadtxt(
@@ -543,7 +544,7 @@ class EBL_model(object):
                     np.log10(self._ssp_metall)),
             values=ssp_log_emis,
             method='linear',
-            bounds_error=False, fill_value=np.nan
+            bounds_error=False, fill_value=-43.
         )
 
         del ssp_log_emis
@@ -708,11 +709,179 @@ class EBL_model(object):
             self.logging_info('SSP emissivity: set the initial kernel')
 
         kernel_emiss = self._cube * 1e-43
-        kernel_emiss[self._s] = (
-                self._kernel_emiss[self._s]  # sfr(z(t))
-                * (self.sfr_function(sfr_formula,
-                                     self._shifted_times_emiss[self._s],
-                                     sfr_params)))
+
+        # Dust absorption (applied in log10)
+        fract_dust_Notabs = 10 ** dust_abs.calculate_dust(
+            wv_array=self._lambda_array,
+            models=yaml_data['dust_abs_models'],
+            z_array=self._z_array,
+            dust_params=yaml_data['dust_abs_params'])[:, :, np.newaxis]
+        esto esta mal porque ahora la fraccion no esta en todas partes??
+        kernel_emiss[self._s] = (self._kernel_emiss
+                                 * fract_dust_Notabs)[self._s]
+
+        # Dust reemission loading ------------------------------------
+        data = fits.open('outputs/dust_reem/Z.fits')
+        aaa = data[1].data
+
+        yyy = np.column_stack((
+            aaa['nuLnu[Z=6.99103]'],
+            aaa['nuLnu[Z=6.99103]'], aaa['nuLnu[Z=7.99103]'],
+            aaa['nuLnu[Z=8.29205999]'], aaa['nuLnu[Z=8.69]'],
+            aaa['nuLnu[Z=9.08794001]']))
+        yyy = (yyy * (L_sun.to(u.erg / u.s)).value
+               / (aaa['wavelength'] * 10.)[:, np.newaxis])
+
+        yyy *= ((aaa['wavelength'] * 1e-9) ** 2. / c.value)[:, np.newaxis]
+
+        yyy = np.log10(yyy)
+        yyy[np.isnan(yyy)] = -43.
+        yyy[np.invert(np.isfinite(yyy))] = -43.
+
+        dust_reem_spline = RectBivariateSpline(
+            x=np.log10(aaa['wavelength'] * 1e-3),
+            y=np.log10([1e-43, 0.0004, 0.004, 0.008, 0.02, 0.05]),
+            z=yyy,
+            kx=1, ky=1, s=0
+        )
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots()
+        # lambda_array = np.logspace(-4, 8., num=1000)
+        # freq = np.log10(c.value / lambda_array * 1e6)
+
+        # plt.xscale('log')
+        # plt.yscale('log')
+
+        frac_notDust = (1. - 10 ** dust_abs.calculate_dust(
+            wv_array=self._lambda_array,
+            models=yaml_data['dust_abs_models'],
+            z_array=self._z_array,
+            dust_params=yaml_data['dust_abs_params']))
+
+
+
+        for ni, age in enumerate(self._log_t_ssp_intcube[0, 0, :]):
+            if ni%25==0:
+                print(ni)
+            for nmetall, zz in enumerate(self._z_array):
+                metall = np.log10(self.metall_mean(
+                            function_input=yaml_data['metall_formula'],
+                            zz_array=zz,
+                            args=yaml_data['args_metall']))
+                lumin = 10 ** self._ssp_lumin_spline(
+                    (self._freq_array, age, metall)) \
+                        * frac_notDust[:, nmetall]
+                yyy = lumin * np.log(10.) * self._lambda_array
+                dust_emitted = simpson(y=yyy, x=np.log10(self._lambda_array))
+                yyy = (10 ** dust_reem_spline(
+                    x=np.log10(self._lambda_array),
+                    y=metall, grid=False
+                ).reshape(len(self._lambda_array))
+                       * np.log(10.) * self._lambda_array)
+                dust_reem = simpson(y=yyy,
+                                    x=np.log10(
+                                        self._lambda_array),
+                                    axis=0)
+
+                f_tir = dust_emitted / dust_reem
+
+                kernel_emiss[:, nmetall, ni] += (
+                        (f_tir * 10**(dust_reem_spline(
+                                 x=np.log10(self._lambda_array),
+                                 y=metall, grid=False
+                        ).reshape(len(self._lambda_array))))
+                                 * (self._lambda_array > 1)
+                                 * (self._lambda_array < 1e4))
+
+                if ni==0 and nmetall%10==0:
+                # plt.figure()
+                # print(kernel_emiss[:, nmetall, ni])
+                    plt.plot(self._lambda_array, kernel_emiss[:, nmetall, ni],
+                         )
+                # plt.show()
+            # print('aaa')
+
+                # if nmetall == 4:
+                #     plt.plot(lambda_array,
+                #              self._ssp_lumin_spline((freq, age, np.log10(metall))),
+                #              linestyle='-', lw=2,
+                #              label='%.0f Myr' % ((10 ** age) * 1e-6),
+                #              color=color,
+                #              alpha=0.3 + nmetall / 6.)
+                #     plt.plot(lambda_array,
+                #              self._ssp_lumin_spline((freq, age, np.log10(metall)))
+                #              * frac_notDust[:, nmetall],
+                #              linestyle='--', lw=2,
+                #              # label='%.0f Myr' % ((10 ** age) * 1e-6),
+                #              color=color,
+                #              alpha=0.3 + nmetall / 6.)
+                #     print()
+                #
+                #     print(metall, age, dust_emitted)
+
+                    # key = aaa.dtype.names[5 - nmetall]
+                    # print(key)
+                    # lumin = (aaa[key] * (const.L_sun.to(u.erg / u.s)).value
+                    #          / (aaa['wavelength'] * 10.))
+                    # plt.loglog(aaa['wavelength'], lumin)
+
+                    # plt.plot(lambda_array,
+                    #          # sb99_spline((freq, age, np.log10(metall)))
+                    #          # * (1 - frac_notDust[:, nmetall])
+                    #          np.log10(f_tir) + dust_reem_spline(
+                    #              x=np.log10(lambda_array),
+                    #              y=np.log10(metall)),
+                    #          linestyle='dotted', lw=2,
+                    #          color=color,
+                    #          alpha=0.3 + nmetall / 6.)
+                    #
+                    # print('compar', simpson(y=f_tir*10**(
+                    #                             dust_reem_spline(
+                    #              x=np.log10(lambda_array),
+                    #              y=np.log10(metall)).reshape(len(lambda_array)))
+                    #                           * np.log(10.) *  lambda_array,
+                    #                     x=np.log10(
+                    #                         lambda_array),
+                    #                     axis=0))
+
+                    # print()
+
+                # else:
+                #     plt.plot(lambda_array,
+                #              self._ssp_lumin_spline((freq, age, np.log10(metall))),
+                #              linestyle='-', lw=2,
+                #              color=color,
+                #              alpha=0.3 + nmetall / 6.)
+                #     plt.plot(lambda_array,
+                #              self._ssp_lumin_spline((freq, age, np.log10(metall)))
+                #              * frac_notDust[:, nmetall],
+                #              linestyle='--', lw=2,
+                #              # label='%.0f Myr' % ((10 ** age) * 1e-6),
+                #              color=color,
+                #              alpha=0.3 + nmetall / 6.)
+                #     print()
+                #     lumin = 10 ** self._ssp_lumin_spline((freq, age, np.log10(metall))) \
+                #             * frac_notDust[:, nmetall]
+                #     yyy = lumin * np.log(10.) * lambda_array
+                #     dust_emitted = simpson(y=yyy, x=np.log10(lambda_array))
+                #     print(metall, age, dust_emitted)
+                #
+                #     key = aaa.dtype.names[5 - nmetall]
+                #     print(key)
+                #     lumin = (aaa[key] * (L_sun.to(u.erg / u.s)).value
+                #              / (aaa['wavelength'] * 10.))
+                #     # plt.loglog(aaa['wavelength'], lumin)
+                #     yyy = lumin * np.log(10.) * (aaa['wavelength'] * 10.)
+                #     dust_reem = simpson(y=yyy,
+                #                         x=np.log10((aaa['wavelength'] * 10.)))
+                #     print(dust_reem / dust_emitted)
+        # plt.show()
+
+        # SFR multiplication
+        kernel_emiss[self._s] *= (
+            self.sfr_function(sfr_formula,
+                              self._shifted_times_emiss[self._s],
+                              sfr_params))
 
         self.logging_info('SSP emissivity: calculate ssp kernel')
 
@@ -723,13 +892,6 @@ class EBL_model(object):
                                        axis=-1)
 
         self.logging_info('SSP emissivity: integrate emissivity')
-
-        # Dust absorption (applied in log10)
-        self._emiss_ssp_cube *= 10 ** dust_abs.calculate_dust(
-            wv_array=self._lambda_array,
-            models=yaml_data['dust_abs_models'],
-            z_array=self._z_array,
-            dust_params=yaml_data['dust_abs_params'])
 
         # import matplotlib.pyplot as plt
         # plt.figure()
