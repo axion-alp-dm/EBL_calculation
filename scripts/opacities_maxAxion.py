@@ -65,8 +65,9 @@ def cosmic_axion_contr(lmbd, zz, mass, gayy):
 #     return nuInu_values
 
 
-ebl_finke = EBL.readmodel('finke2022')
-ebl_cuba1 = EBL.readmodel('cuba')
+ebl_finke = EBL.readmodel('finke2022',
+              axion_mass=20., axion_gayy=2e-10)
+ebl_cuba1 = EBL.readmodel('finke2022')
 
 z = np.array([0.3, 0.4, 0.5, 0.65, 0.9])
 lmu = np.logspace(-2, 1.5, int(1e3))
@@ -84,21 +85,35 @@ for ni, ii in enumerate(ebl_cuba1.y):
 ebl_cuba = EBL(z=ebl_cuba1.y, lmu=lmu,
                nuInu=10 ** cuba_new, model='cuba')
 
-mass_1 = 20.
-gayy_1 = cosmic_max_axion(mass_1)
+mass_1 = 10.
+gayy_1 = 1e-10 #cosmic_max_axion(mass_1)
 
 yyy = 10 ** ebl_cuba.Z + (
     cosmic_axion_contr(
         lmbd=10 ** ebl_cuba.x, zz=ebl_cuba.y,
         mass=mass_1, gayy=gayy_1)
 )
+#
+# ebl_our = EBL(z=ebl_cuba.y, lmu=10 ** ebl_cuba.x,
+#               nuInu=yyy, model='cuba+gaussian')
 
-ebl_our = EBL(z=ebl_cuba.y, lmu=10 ** ebl_cuba.x,
-              nuInu=yyy, model='cuba+gaussian')
+ebl_our_inside = EBL(z=ebl_cuba.y, lmu=10 ** ebl_cuba.x,
+              nuInu=10 ** cuba_new,
+              model='cuba+gaussian',
+              axion_mass=10., axion_gayy=1e-10
+              )
+ebl_our_inside = EBL.readmodel(model='cuba',
+              axion_mass=10., axion_gayy=1e-10
+              )
 
+ebl_our2 = EBL(z=ebl_cuba.y, lmu=10 ** ebl_cuba.x,
+              nuInu=yyy,
+              model='cuba+gaussian22'
+              )
 nuInu_finke = ebl_finke.ebl_array(z, lmu)
 nuInu_cuba = ebl_cuba.ebl_array(z, lmu)
-nuInu_our = ebl_our.ebl_array(z, lmu)
+nuInu_our_inside = ebl_our_inside.ebl_array(z, lmu)
+nuInu_our2 = ebl_our2.ebl_array(z, lmu)
 
 # --------------------------------------------------------------------
 plt.figure()
@@ -121,10 +136,16 @@ for i, zz in enumerate(z):
                lw=2.,
                zorder=-1 * i)
 
-    plt.loglog(lmu, nuInu_our[i],
+    plt.loglog(lmu, nuInu_our_inside[i],
                ls='--', color=plt.cm.CMRmap(i / float(len(z))),
                lw=2.,
                marker='x',
+               zorder=-1 * i)
+
+    plt.loglog(lmu, nuInu_our2[i],
+               ls='--', color=plt.cm.CMRmap(i / float(len(z))),
+               lw=2.,
+               marker='o',
                zorder=-1 * i)
 
 plt.gca().set_ylim((2e-5, 15.))
@@ -146,7 +167,6 @@ plt.gca().add_artist(bbb)
 # plt.show()
 
 # --------------------------------------------------------------------
-# plt.figure()
 
 fig, (ax0, ax1, ax2) = plt.subplots(1,3, figsize=(26, 8))
 plt.subplot(131)
@@ -166,17 +186,26 @@ for mi, mass_ii in enumerate(mass_array):
 
     ebl_our = EBL(z=ebl_cuba.y, lmu=10 ** ebl_cuba.x,
                   nuInu=yyy, model='cuba+gaussian')
+    ebl_inside = EBL(z=ebl_cuba.y, lmu=10 ** ebl_cuba.x,
+                         nuInu=10 ** cuba_new,
+                         model='cuba+gaussian',
+                         axion_mass=mass_1, axion_gayy=gayy_1
+                         )
 
     if mi == 0:
         for i, zz in enumerate(z):
             plt.plot(ETeV,
-                     (np.exp(ebl_cuba.optical_depth(zz,
-                                                    ETeV)-ebl_our.optical_depth(zz, ETeV)))
-                      # / np.exp(-))
-                     ,
+                     (np.exp(ebl_cuba.optical_depth(zz, ETeV)
+                             - ebl_our.optical_depth(zz, ETeV))),
                      ls=linesss[mi],
                      color=plt.cm.CMRmap(i / float(len(z))),
                      label='$z = {0:.2f}$'.format(zz),
+                     lw=2)
+            plt.plot(ETeV,
+                     (np.exp(ebl_cuba.optical_depth(zz, ETeV)
+                             - ebl_inside.optical_depth(zz, ETeV))),
+                     ls=linesss[mi], marker='+',
+                     color=plt.cm.CMRmap(i / float(len(z))),
                      lw=2)
             print(ebl_cuba.optical_depth(zz, ETeV[-2:])
                   , ebl_our.optical_depth(zz, ETeV[-2:]))
@@ -189,11 +218,15 @@ for mi, mass_ii in enumerate(mass_array):
     else:
         for i, zz in enumerate(z):
             plt.plot(ETeV,
-                     (np.exp(ebl_cuba.optical_depth(zz,
-                                                    ETeV)-ebl_our.optical_depth(zz, ETeV)))
-                      # / np.exp(-))
-                     ,
+                     (np.exp(ebl_cuba.optical_depth(zz, ETeV)
+                             - ebl_our.optical_depth(zz, ETeV))),
                      ls=linesss[mi],
+                     color=plt.cm.CMRmap(i / float(len(z))),
+                     lw=2)
+            plt.plot(ETeV,
+                     (np.exp(ebl_cuba.optical_depth(zz, ETeV)
+                             - ebl_inside.optical_depth(zz, ETeV))),
+                     ls=linesss[mi], marker='+',
                      color=plt.cm.CMRmap(i / float(len(z))),
                      lw=2)
 
@@ -226,11 +259,9 @@ for i, zz in enumerate(z):
     plt.loglog(ETeV,
                np.exp(-ebl_cuba.optical_depth(zz, ETeV)),
                ls='-', color=plt.cm.CMRmap(i / float(len(z))),
-               # label = '$z = {0:.2f}$'.format(zz),
                lw=2)
-    plt.loglog(ETeV, np.exp(-ebl_our.optical_depth(zz, ETeV)),
+    plt.loglog(ETeV, np.exp(-ebl_inside.optical_depth(zz, ETeV)),
                ls='--', color=plt.cm.CMRmap(i / float(len(z))),
-               # label = '$z = {0:.2f}$'.format(zz),
                lw=2)
     # plt.axvline(Etau1GeV[i] / 1e3, ls=':', color = plt.cm.CMRmap(i / float(len(z))) )
 
@@ -260,7 +291,7 @@ for i, zz in enumerate(z):
                ls='-', color=plt.cm.CMRmap(i / float(len(z))),
                # label = '$z = {0:.2f}$'.format(zz),
                lw=2)
-    plt.loglog(ETeV, ebl_our.optical_depth(zz, ETeV),
+    plt.loglog(ETeV, ebl_inside.optical_depth(zz, ETeV),
                ls='--', color=plt.cm.CMRmap(i / float(len(z))),
                # label = '$z = {0:.2f}$'.format(zz),
                lw=2)
