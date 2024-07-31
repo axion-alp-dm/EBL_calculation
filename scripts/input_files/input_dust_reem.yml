@@ -18,13 +18,42 @@ redshift_array:
 ssp_models:
   SB99_dustFinke:
     args_metall:
+      - -0.542121168976453
+      - 0.008154222671585984
+      - 2.266468189061395
+      - 0.02
+    cut_popstar: 6
+    dust_abs_models:
+      ['kneiske2002', '']
+#      - finke2022_2
+    dust_abs_params:
+      params_ab18:
+        - 1.52
+        - 0.35
+        - 4.12
+        - 5.89
+    file_name: /kroupa_
+    metall_formula: 'lambda zz, args : np.ones(np.shape(zz)) * args[3]'#'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    name: 'Our model'
+    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
+    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_params:
+      - 0.013107341038317264
+      - 2.420045114675467
+      - 3.2990898078661317
+      - 6.658375996690348
+    ssp_type: SB99
+  SB99_Raue:
+    args_metall:
     - -0.542121168976453
     - 0.008154222671585984
     - 2.266468189061395
     - 0.02
     cut_popstar: 6
     dust_abs_models:
-    - finke2022_2
+    - ''
+    - ''
+#    - finke2022_2
     dust_abs_params:
       params_ab18:
       - 1.52
@@ -32,19 +61,15 @@ ssp_models:
       - 4.12
       - 5.89
     file_name: /kroupa_
-    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-    name: 'Our model'
-    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-    sfr_params:
-    - 0.013107341038317264
-    - 2.420045114675467
-    - 3.2990898078661317
-    - 6.658375996690348
-    ssp_type: SB99
+    metall_formula: 'lambda zz, args : np.ones(np.shape(zz)) * args[3]' #'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    name: 'Raue'
+    path_SSP: data/ssp_synthetic_spectra/spectra_with_dust_reem.txt
+    sfr: 'lambda x, ci : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))'
+    sfr_params: [0.15, 1.1, 3.4, 0.]
+    ssp_type: generic
 t_intsteps: 201
 wavelength_array:
   lfsteps: 1000
-  lmax: 1000.0
+  lmax: 1e5
   lmin: 1e-2
 z_intmax: 40.0

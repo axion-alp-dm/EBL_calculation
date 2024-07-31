@@ -3,7 +3,7 @@ import os
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, RegularGridInterpolator
 
 from ebl_codes.EBL_class import EBL_model
 from astropy.constants import c
@@ -61,6 +61,12 @@ linstyles_ssp = ['solid', '--', 'dotted', '-.']
 
 markers = ['.', 'x', '+', '*', '^', '>', '<']
 
+
+# We initialize the class with the input file
+config_data = read_config_file(input_file_dir + 'input_dust_reem.yml')
+ebl_class = EBL_model.input_yaml_data_into_class(config_data,
+                                                 log_prints=True)
+
 # FIGURE: METALLICITIES FOR DIFFERENT MODELS ---------------------------
 fig_met, ax_met = plt.subplots(figsize=(8, 8))
 plt.yscale('log')
@@ -73,13 +79,9 @@ plt.ylabel('Z')
 # FIGURE: COB FOR DIFFERENT MODELS -------------------------------------
 fig_cob, ax_cob = plt.subplots(figsize=(10, 8))
 
-waves_ebl = np.logspace(-1, 3, num=50)
+waves_ebl = np.logspace(-1, 3, num=500)
 freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
 
-# We initialize the class with the input file
-config_data = read_config_file(input_file_dir + 'input_dust_reem.yml')
-ebl_class = EBL_model.input_yaml_data_into_class(config_data,
-                                                 log_prints=True)
 
 # Axion component calculation
 # ebl_class.ebl_axion_calculation(
@@ -171,9 +173,9 @@ fig_ssp, ax_ssp = plt.subplots(figsize=(10, 8))
 plt.xscale('log')
 plt.title('More transparency, less metallicity')
 # plt.yscale('log')
-plt.ylim(0., 30.)
+# plt.ylim(0., 30.)
 
-xx_amstrongs = np.logspace(1, 7, 2000)
+xx_amstrongs = np.logspace(2, 6, 2000)
 
 ax_ssp.set_xlabel('Wavelength [A]')
 plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '  # /Lsun '
@@ -185,10 +187,23 @@ handles_ssp1 = []
 labels_ssp2 = []
 handles_ssp2 = []
 
+dict_kernels = {}
+
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
+
+    kernel_emiss = ebl_class.emiss_ssp_calculation(config_data['ssp_models'][
+                                                       key])
+    kernel_spline = RegularGridInterpolator(
+        points=(np.log10(ebl_class._lambda_array),
+                ebl_class._log_t_ssp_intcube[0, 0, :]),
+        values=kernel_emiss[:, 0, :],
+        method='linear',
+        bounds_error=False, fill_value=None
+    )
+    dict_kernels[key] = kernel_spline
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     print(10 ** ebl_class.ebl_ssp_spline(
@@ -199,7 +214,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
     ax_cob.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
         freq_array_ebl, 0., grid=False),
                 linestyle='-', color=colors[nkey % len(colors)],
-                lw=3, markersize=16, marker=markers[nkey])
+                lw=3,
+                # markersize=16, marker=markers[nkey]
+                )
 
     ebl_class.logging_prints = True
 
@@ -275,7 +292,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                    color=color_ssp[i]))
 
 plt.figure(fig_cob)
-import_cb_data(plot_measurs=True, ax1=ax_cob)
+import_cb_data(plot_measurs=True, ax1=ax_cob, lambda_max_total=1000)
 
 # We introduce the Finke22 and CUBA splines
 ebl = {}
@@ -321,7 +338,7 @@ legend33 = ax_cob.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
 # axes.add_artist(legend22)
 ax_cob.add_artist(legend33)
 
-plt.xlim([.1, 200])
+plt.xlim([.1, 1000])
 plt.ylim(1e-2, 100)
 
 ax_sfr.legend()
@@ -372,4 +389,34 @@ fig_emiss_z.savefig(
 fig_emiss_z.savefig(
     input_file_dir + '/emiss_redshift_bare' + '.pdf',
     bbox_inches='tight')
+fig_mean, ax_mean = plt.subplots()
+plt.xscale('log')
+plt.yscale('log')
+i = 0
+
+for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+    plt.loglog(
+        ebl_class._lambda_array,
+        (dict_kernels['SB99_Raue']((np.log10(ebl_class._lambda_array), age))),
+                       ls='--', c=colors[i], marker=markers[0])
+    plt.loglog(
+        ebl_class._lambda_array,
+         dict_kernels['SB99_dustFinke'](
+                    (np.log10(ebl_class._lambda_array), age)),
+        ls='-', c=colors[i], alpha=0.5, marker=markers[1])
+    i += 1
+
+
+plt.figure()
+i = 0
+
+for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+    plt.loglog(
+        ebl_class._lambda_array,
+        (dict_kernels['SB99_Raue']((np.log10(ebl_class._lambda_array), age))
+         / dict_kernels['SB99_dustFinke'](
+                    (np.log10(ebl_class._lambda_array), age))),
+        ls='--', c=colors[i])
+    i += 1
+
 plt.show()
