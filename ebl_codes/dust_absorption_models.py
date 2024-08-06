@@ -89,8 +89,8 @@ def calculate_dust(wv_array, z_array=0.,
             dust_att += abdollahi2018(z_array[np.newaxis, :],
                                       dust_params)
 
-        # else:
-            # print('   -> No dust absorption dependency with redshift.')
+        else:
+            print('   -> No dust absorption dependency with redshift.')
             # continue
 
     else:

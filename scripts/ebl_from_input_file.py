@@ -201,7 +201,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
                 ebl_class._log_t_ssp_intcube[0, 0, :]),
         values=kernel_emiss[:, 0, :],
         method='linear',
-        bounds_error=False, fill_value=None
+        bounds_error=False, fill_value=1e-43
     )
     dict_kernels[key] = kernel_spline
 
@@ -398,14 +398,14 @@ for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
     plt.loglog(
         ebl_class._lambda_array,
         (dict_kernels['SB99_Raue']((np.log10(ebl_class._lambda_array), age))),
-                       ls='--', c=colors[i], marker=markers[0])
+                       ls='--', c=colors[i], marker=markers[0], label=age)
     plt.loglog(
         ebl_class._lambda_array,
          dict_kernels['SB99_dustFinke'](
                     (np.log10(ebl_class._lambda_array), age)),
         ls='-', c=colors[i], alpha=0.5, marker=markers[1])
     i += 1
-
+plt.legend()
 
 plt.figure()
 i = 0
@@ -416,7 +416,8 @@ for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
         (dict_kernels['SB99_Raue']((np.log10(ebl_class._lambda_array), age))
          / dict_kernels['SB99_dustFinke'](
                     (np.log10(ebl_class._lambda_array), age))),
-        ls='--', c=colors[i])
+        ls='--', c=colors[i], label=age)
     i += 1
+plt.legend()
 
 plt.show()

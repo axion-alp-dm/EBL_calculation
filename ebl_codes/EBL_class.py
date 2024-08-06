@@ -571,7 +571,7 @@ class EBL_model(object):
                     np.log10(self._ssp_metall)),
             values=ssp_log_emis,
             method='linear',
-            bounds_error=False, fill_value=None
+            bounds_error=False, fill_value=-43
         )
         # import matplotlib.pyplot as plt
         # fig, axes = plt.subplots()
@@ -785,25 +785,48 @@ class EBL_model(object):
             ir_l = chary[1].data.field('LAMBDA')[0]
             ir_lnu = c.value / ir_l / 1E-6
 
-            ir_lf = (chary[1].data.field('NULNUINLSUN')[0])
-            ir_lf *= (L_sun.to(u.erg / u.s).value
-                      / ir_lnu[:, np.newaxis] / f_tir)
-
-            data = fits.open('outputs/dust_reem/Z.fits')
-            aaa = data[1].data
-
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.plot(ir_l, ir_lf)
-            plt.xscale('log')
+            ir_lf = (chary[1].data.field('NULNUINLSUN')[0]
+                     * (L_sun.to(u.erg / u.s).value / f_tir))
 
             # Cap the dust reemisison to the wavelength where there is
             # proper reemission, not the whole possible spectrum
             # (check how this affects later)
-            m = (ir_l > 5.5) * (ir_l < 160.)
+            m = ir_l > 3.5
             ir_lf[~m, :] = 1e-43
 
-            lumin_abs = (self._lambda_array[::-1][:, np.newaxis, np.newaxis]
+            l_tir = - simpson(ir_lf * np.log(10),
+                              x=np.log10(ir_lnu),
+                              axis=0)
+
+            import matplotlib.pyplot as plt
+            fig, ax1 = plt.subplots()
+            plt.plot(np.log10(ir_lnu), ir_lf, ls='--')
+
+            def tick_function(X):
+                return (c / 10**X / u.Hz).to(u.micron).value
+
+            def tick_function_2(X):
+                return (c / X / u.micron).to(u.Hz).value
+
+            ax3 = ax1.secondary_xaxis('top',
+                                      functions=(
+                                      tick_function, tick_function_2))
+
+            ir_lf *= (1 / ir_lnu[:, np.newaxis])
+            ir_lf[ir_lf < 1e-43] = 1e-43
+
+            dust_reem_spline = RegularGridInterpolator(
+                points=(np.log10(ir_l), np.log10(l_tir)),
+                values=np.log10(ir_lf),
+                method='linear',
+                bounds_error=False, fill_value=-43
+            )
+
+
+            data = fits.open('outputs/dust_reem/Z.fits')
+            aaa = data[1].data
+
+            lumin_abs = (10**self._log_freq_cube
                          * np.log(10.)  # integration over y=log10(x)
                          * 10. **  # L(t)
                          self.ssp_lumin_spline(xi=(
@@ -815,13 +838,16 @@ class EBL_model(object):
                                  args=yaml_data['args_metall']))))
                          * (1. - fract_dust_Notabs))
 
+
+            plt.plot(self._freq_array, lumin_abs[:, :, 0])
+            plt.yscale('log')
+            # plt.show()
+
             l_int_abs = simpson(lumin_abs,
-                                x=np.log10(self._lambda_array[::-1]),
+                                x=self._freq_array,
                                 axis=0)
 
-            l_tir = simpson(ir_lf * np.log(10) * ir_l[:, np.newaxis],
-                            x=np.log10(ir_l),
-                            axis=0)
+
 
             import matplotlib.pyplot as plt
             plt.figure()
@@ -846,24 +872,13 @@ class EBL_model(object):
             plt.yscale('log')
             # plt.show()
 
-            sort_order = np.argsort(l_tir)
-
-            dust_reem_spline = RegularGridInterpolator(
-                points=(np.log10(ir_l),
-                        np.log10(l_tir[sort_order])),
-                values=np.log10(ir_lf[:, sort_order]),
-                method='linear',
-                bounds_error=False, fill_value=None
-            )
-
 
             print('we have sb99 in generic, add to kerner_emiss')
             kernel_emiss[self._s] += (
                     10. ** self._log_t_ssp_intcube  # Variable change,
                     * np.log(10.)
-*10
                     * 10 ** (dust_reem_spline(
-                (np.log10(self._lambda_array)[:, np.newaxis, np.newaxis]
+                (np.log10(self._lambda_array[::-1])[:, np.newaxis, np.newaxis]
                  * self._cube,
                  np.log10(l_int_abs)[np.newaxis, :, :] * self._cube
                  )))
