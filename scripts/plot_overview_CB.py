@@ -116,12 +116,12 @@ def spline_starburst(lambda_array):
 
 
 list_working_models = {
-    'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
-               'color': 'b', 'linewidth': 3},
-    'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
-                'color': 'fuchsia', 'linewidth': 2},
+    # 'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
+    #            'color': 'b', 'linewidth': 3, 'ls': '-'},
+    # 'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
+    #             'color': 'fuchsia', 'linewidth': 2, 'ls': '--'},
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-             'color': 'k', 'linewidth': 2}
+             'color': 'k', 'linewidth': 2.5, 'ls': 'dotted'}
 }
 
 # Beginning of figure specifications
@@ -133,12 +133,13 @@ for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
 
     plt.loglog(waves_ebl, model['callable_func'](waves_ebl),
+               ls=model['ls'],
                c=model['color'], lw=model['linewidth'], zorder=2/(ni+1)
                )
 
     handlers.append(plt.Line2D([], [],
                                linewidth=model['linewidth'],
-                               linestyle='-',
+                               linestyle=model['ls'],
                                color=model['color']))
     labels.append(model['label'])
 
@@ -146,7 +147,7 @@ ebl_class.change_axion_contribution(1e2, 1e-13)
 plt.loglog(waves_ebl,
            (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
                                              grid=False)
-            + spline_cuba(waves_ebl)), c='green', zorder=1)
+            + spline_cuba(waves_ebl)), c='green', zorder=0.5, ls='-')
 
 handlers.append(plt.Line2D([], [],
                            linewidth=2,

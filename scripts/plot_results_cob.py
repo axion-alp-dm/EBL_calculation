@@ -113,11 +113,11 @@ def spline_starburst(lambda_array):
 
 list_working_models = {
     'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
-               'color': 'b', 'linewidth': 3},
+               'color': 'b', 'linewidth': 3, 'ls': '-'},
     'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
-                'color': 'magenta', 'linewidth': 2},
+                'color': 'magenta', 'linewidth': 2, 'ls': '--'},
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-             'color': 'k', 'linewidth': 2}
+             'color': 'k', 'linewidth': 2, 'ls': 'dotted'}
 }
 
 ihl_spline = np.loadtxt('outputs/ihl_spline.txt')
@@ -210,11 +210,14 @@ linestyles = ['-', '--', 'dotted']
 linewidths = [5, 4, 4]
 list_working_models = {
     'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
-               'color2': 'dodgerblue', 'color': 'b', 'linewidth': 3},
+               'color2': 'dodgerblue', 'color': 'b', 'linewidth': 4,
+               'ls': '-'},
     'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
-                'color': 'magenta', 'color2': 'magenta', 'linewidth': 2},
+                'color': 'magenta', 'color2': 'magenta', 'linewidth': 3,
+                'ls': '--'},
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-             'color': 'k', 'color2': 'k', 'linewidth': 2}
+             'color': 'k', 'color2': 'k', 'linewidth': 3,
+             'ls': 'dotted'}
 }
 direct_name_axionparams = 'outputs/COB_zoom_Zev'
 # params = np.load(direct_name_axionparams + '/axion_params.npy')
@@ -252,7 +255,7 @@ for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
     ax.plot(waves_ebl, model['callable_func'](waves_ebl),
             c=model['color'], lw=model['linewidth'],
-            label=model['label'])
+            label=model['label'], ls=model['ls'])
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=lambda_min_total,
     lambda_max_total=lambda_max_total,
@@ -268,27 +271,27 @@ linewidths = [3, 2, 2]
 for ni, model in enumerate(list_working_models.keys()):
     labels.append(list_working_models[model]['label'])
     handles.append(plt.Line2D([], [],
-                              linestyle='-',
+                              linestyle=list_working_models[model]['ls'],
                               color=list_working_models[model]['color'],
-                              linewidth=linewidths[ni]))
-    if labels[ni].__contains__('Finke'):
-        handles[ni] = (plt.Line2D([], [], linestyle='-',
-                                  color='magenta', linewidth=linewidths[ni]),
-                       plt.Line2D([], [], linestyle='--',
-                                  color='magenta', linewidth=linewidths[ni])
-                       )
-    if labels[ni].__contains__('model'):
-        handles[ni] = (plt.Line2D([], [], linestyle='-',
-                                  color='b', linewidth=linewidths[ni]),
-                       plt.Line2D([], [], linestyle='-',
-                                  color='dodgerblue', linewidth=linewidths[ni])
-                       )
-    if labels[ni].__contains__('CUBA'):
-        handles[ni] = (plt.Line2D([], [], linestyle='-',
-                                  color='k', linewidth=linewidths[ni]),
-                       plt.Line2D([], [], linestyle='dotted',
-                                  color='k', linewidth=linewidths[ni])
-                       )
+                              linewidth=3))  # linewidths[ni]))
+    # if labels[ni].__contains__('Finke'):
+    #     handles[ni] = (plt.Line2D([], [], linestyle='-',
+    #                               color='magenta', linewidth=linewidths[ni]),
+    #                    plt.Line2D([], [], linestyle='--',
+    #                               color='magenta', linewidth=linewidths[ni])
+    #                    )
+    # if labels[ni].__contains__('model'):
+    #     handles[ni] = (plt.Line2D([], [], linestyle='-',
+    #                               color='b', linewidth=linewidths[ni]),
+    #                    plt.Line2D([], [], linestyle='-',
+    #                               color='dodgerblue', linewidth=linewidths[ni])
+    #                    )
+    # if labels[ni].__contains__('CUBA'):
+    #     handles[ni] = (plt.Line2D([], [], linestyle='-',
+    #                               color='k', linewidth=linewidths[ni]),
+    #                    plt.Line2D([], [], linestyle='dotted',
+    #                               color='k', linewidth=linewidths[ni])
+    #                    )
 print(handles, labels)
 legend11 = ax2.legend(handles, labels,
                       handler_map={tuple: HandlerTuple(ndivide=2)},

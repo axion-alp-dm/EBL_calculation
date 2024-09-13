@@ -878,7 +878,7 @@ class EBL_model(object):
                     10. ** self._log_t_ssp_intcube  # Variable change,
                     * np.log(10.)
                     * 10 ** (dust_reem_spline(
-                (np.log10(self._lambda_array[::-1])[:, np.newaxis, np.newaxis]
+                (np.log10(self._lambda_array)[:, np.newaxis, np.newaxis]
                  * self._cube,
                  np.log10(l_int_abs)[np.newaxis, :, :] * self._cube
                  )))
