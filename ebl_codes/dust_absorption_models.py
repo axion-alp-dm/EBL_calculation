@@ -117,8 +117,8 @@ def kneiske2002(wv, dust_params):
         Ebv_Kn02 = dust_params['Ebv_Kn02']
     except:
         Ebv_Kn02 = 0.15
-        # print('   -> Default parameter for Ebv_Kn02 chosen: ',
-        #       Ebv_Kn02)
+        print('   -> Default parameter for Ebv_Kn02 chosen: ',
+              Ebv_Kn02)
 
     try:
         R_Kn02 = dust_params['R_Kn02']

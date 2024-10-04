@@ -187,23 +187,11 @@ handles_ssp1 = []
 labels_ssp2 = []
 handles_ssp2 = []
 
-dict_kernels = {}
 
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
-
-    kernel_emiss = ebl_class.emiss_ssp_calculation(config_data['ssp_models'][
-                                                       key])
-    kernel_spline = RegularGridInterpolator(
-        points=(np.log10(ebl_class._lambda_array),
-                ebl_class._log_t_ssp_intcube[0, 0, :]),
-        values=kernel_emiss[:, 0, :],
-        method='linear',
-        bounds_error=False, fill_value=1e-43
-    )
-    dict_kernels[key] = kernel_spline
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     print(10 ** ebl_class.ebl_ssp_spline(
@@ -260,7 +248,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
                  'purple', 'brown']
-
+#
     if config_data['ssp_models'][key]['path_SSP'] not in previous_ssp:
         previous_ssp.append(config_data['ssp_models'][key]['path_SSP'])
         labels_ssp2.append(
@@ -332,7 +320,7 @@ legend33 = ax_cob.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
                          [config_data['ssp_models'][key]['name']
                           for key in config_data['ssp_models']],
                          title=r'SSP models',  # bbox_to_anchor=(1.04, 0.1),
-                         loc=1
+                         loc=3
                          )
 # axes.add_artist(legend11)
 # axes.add_artist(legend22)
@@ -389,35 +377,5 @@ fig_emiss_z.savefig(
 fig_emiss_z.savefig(
     input_file_dir + '/emiss_redshift_bare' + '.pdf',
     bbox_inches='tight')
-fig_mean, ax_mean = plt.subplots()
-plt.xscale('log')
-plt.yscale('log')
-i = 0
-
-for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-    plt.loglog(
-        ebl_class._lambda_array,
-        (dict_kernels['SB99_Raue']((np.log10(ebl_class._lambda_array), age))),
-                       ls='--', c=colors[i], marker=markers[0], label=age)
-    plt.loglog(
-        ebl_class._lambda_array,
-         dict_kernels['SB99_dustFinke'](
-                    (np.log10(ebl_class._lambda_array), age)),
-        ls='-', c=colors[i], alpha=0.5, marker=markers[1])
-    i += 1
-plt.legend()
-
-plt.figure()
-i = 0
-
-for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-    plt.loglog(
-        ebl_class._lambda_array,
-        (dict_kernels['SB99_Raue']((np.log10(ebl_class._lambda_array), age))
-         / dict_kernels['SB99_dustFinke'](
-                    (np.log10(ebl_class._lambda_array), age))),
-        ls='--', c=colors[i], label=age)
-    i += 1
-plt.legend()
 
 plt.show()
