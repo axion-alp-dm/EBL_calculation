@@ -694,7 +694,7 @@ class EBL_model(object):
             ir_lum_expanded[:, :, 0] = ir_lum
             ir_lum_expanded[:, :, 1] = ir_lum
 
-            print(np.log10(l_tir[sort_order]))
+            # print(np.log10(l_tir[sort_order]))
 
 
             # m = l_int_abs < l_tir[0]
@@ -702,10 +702,10 @@ class EBL_model(object):
             #     kernel_emiss[:, m] *= (l_int_abs[m] / l_tir[0])[
             #         np.newaxis, :]
 
-            print('chary')
-            print(np.min(np.log10(ir_wv)), np.max(np.log10(ir_wv)))
-            print(np.log10(np.min(l_tir)), np.log10(np.max(l_tir)))
-            print(np.log10(np.min(ir_lum_expanded)), np.log10(np.max(ir_lum_expanded)))
+            # print('chary')
+            # print(np.min(np.log10(ir_wv)), np.max(np.log10(ir_wv)))
+            # print(np.log10(np.min(l_tir)), np.log10(np.max(l_tir)))
+            # print(np.log10(np.min(ir_lum_expanded)), np.log10(np.max(ir_lum_expanded)))
 
             dust_reem_spline = RegularGridInterpolator(
                 points=(np.log10(ir_wv),
@@ -732,22 +732,23 @@ class EBL_model(object):
             yyy = np.log10(yyy)
 
             yyy_whole = np.zeros((np.shape(yyy)[0], 2, np.shape(yyy)[1]))
-            yyy_whole[:, 0, :] = yyy + 15.
-            yyy_whole[:, 1, :] = yyy + 20.
-            print((np.min(yyy_whole)),(np.max(yyy_whole)))
+            yyy_whole[:, 0, :] = yyy# - np.log10(-5.)
+            yyy_whole[:, 1, :] = yyy# + np.log10(50.)
+            # print((np.min(yyy_whole)),(np.max(yyy_whole)))
 
             yyy_whole[np.isnan(yyy_whole)] = -43.
             yyy_whole[np.invert(np.isfinite(yyy_whole))] = -43.
 
 
-            print('bosa')
-            print(np.min(np.log10(aaa['wavelength'] * 1e-3)), np.max(np.log10(aaa['wavelength'] * 1e-3)))
-            print(np.min(yyy_whole), np.max(yyy_whole))
+            # print('bosa')
+            # print(np.min(np.log10(aaa['wavelength'] * 1e-3)),
+            #       np.max(np.log10(aaa['wavelength'] * 1e-3)))
+            # print(np.min(yyy_whole), np.max(yyy_whole))
             # print(np.min(mean_metall_cube), np.max(mean_metall_cube))
 
             dust_reem_spline = RegularGridInterpolator(
                 points=(np.log10(aaa['wavelength'] * 1e-3),
-                        [15, 20],
+                        [1, 50],
                         np.log10([1e-43, 0.0004, 0.004, 0.008, 0.02, 0.05])),
                 values=yyy_whole,
                 method='linear',
@@ -858,7 +859,7 @@ class EBL_model(object):
         kernel_emiss = self._kernel_emiss * fract_dust_Notabs
 
         self.logging_info('SSP emissivity: set dust absorption')
-        print(np.min(fract_dust_Notabs), np.max(fract_dust_Notabs))
+        # print(np.min(fract_dust_Notabs), np.max(fract_dust_Notabs))
 
         # Dust reemission loading ------------------------------------
         if yaml_data['dust_reem']:
@@ -879,20 +880,32 @@ class EBL_model(object):
 
             l_int_abs = simpson(lumin_abs, x=self._freq_array, axis=0)
 
-            print()
-            print(np.min(np.log10(self._lambda_array)), np.max(np.log10(self._lambda_array)))
-            print(np.log10(np.min(l_int_abs)), np.log10(np.max(l_int_abs)))
-            print(np.min(mean_metall_cube), np.max(mean_metall_cube))
+            # print()
+            # print(np.min(np.log10(self._lambda_array)), np.max(np.log10(self._lambda_array)))
+            # print(np.log10(np.min(l_int_abs)), np.log10(np.max(l_int_abs)))
+            # print(np.min(mean_metall_cube), np.max(mean_metall_cube))
 
             dust_reem_spline = self.spline_dust_reemission(
                 yaml_data['dust_reem_params'])
 
-            print(dust_reem_spline(
+            dust_emiss = (
+                    10. ** self._log_t_ssp_intcube  # Variable change,
+                    * np.log(10.)
+                    * 10 ** dust_reem_spline(
                 (np.log10(self._lambda_array)[:, np.newaxis, np.newaxis]
                  * self._cube,
                  np.log10(l_int_abs)[np.newaxis, :, :] * self._cube,
                  mean_metall_cube
                  )))
+
+            # import matplotlib.pyplot as plt
+            # plt.figure()
+            # plt.title(yaml_data['dust_reem_params']['library'])
+            # plt.xscale('log')
+            # plt.yscale('log')
+            # for i in range(0, 200, 20):
+            #     plt.plot(self._lambda_array, kernel_emiss[:, 0, i])
+            #     plt.plot(self._lambda_array, dust_emiss[:, 0, i], ':')
 
             kernel_emiss += (
                     10. ** self._log_t_ssp_intcube  # Variable change,
@@ -904,6 +917,15 @@ class EBL_model(object):
                  mean_metall_cube
                  )))
             )
+
+
+            # for i in range(0, 200, 20):
+            #     plt.plot(
+            #         self._lambda_array,
+            #         kernel_emiss[:, 0, i],
+            #         linestyle='--')
+
+            # plt.show()
 
         # SFR multiplication
         kernel_emiss *= (
