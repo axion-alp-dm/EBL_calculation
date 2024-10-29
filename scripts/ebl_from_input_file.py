@@ -1,6 +1,7 @@
 # IMPORTS --------------------------------------------#
 import os
 import yaml
+import psutil
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline, RegularGridInterpolator
@@ -42,6 +43,11 @@ if os.path.basename(os.getcwd()) == 'scripts':
 if not os.path.exists("outputs/"):
     os.makedirs("outputs/")
 
+def memory_usage_psutil():
+    # return the memory usage in MB
+    process = psutil.Process(os.getpid())
+    mem = process.memory_info()[0] / float(10 ** 6)
+    return mem
 
 # Configuration file reading and data input/output ---------#
 def read_config_file(ConfigFile):
@@ -187,6 +193,7 @@ handles_ssp1 = []
 labels_ssp2 = []
 handles_ssp2 = []
 
+print('%.3f' %(memory_usage_psutil()))
 
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
@@ -198,6 +205,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
         np.log10(c.value/0.608*1e6), 0., grid=False),
           21.98 - 10 ** ebl_class.ebl_ssp_spline(
         np.log10(c.value/0.608*1e6), 0., grid=False))
+    print('%.3f' % (memory_usage_psutil()))
 
     ax_cob.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
         freq_array_ebl, 0., grid=False),
@@ -278,7 +286,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     handles_ssp1.append(
                         plt.Line2D([], [], linewidth=2, linestyle='-',
                                    color=color_ssp[i]))
-
+print('%.3f' %(memory_usage_psutil()))
 plt.figure(fig_cob)
 import_cb_data(plot_measurs=True, ax1=ax_cob, lambda_max_total=1000)
 

@@ -42,23 +42,31 @@ chary = fits.open('data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits')
 ir_wv = chary[1].data.field('LAMBDA')[0]
 ir_freq = c.value / ir_wv * 1e6
 
-ir_lum = (chary[1].data.field('NULNUINLSUN')[0]
-          * (L_sun.to(u.erg / u.s).value / f_tir))
+ir_lum = (np.log10(chary[1].data.field('NULNUINLSUN')[0])
+          - np.log10(f_tir))
+
+aaa = np.zeros((np.shape(ir_lum)[0], np.shape(ir_lum)[1] + 2))
+aaa[:, 1:-1] = ir_lum
+aaa[:, 0] = ir_lum[:, 0] - 3.
+aaa[:, -1] = ir_lum[:, -1] + 3.
+
+ir_lum = aaa
 
 # Cap the dust reemisison to the wavelength where there is
 # proper reemission, not the whole possible spectrum
 # ir_lum[ir_wv < 3.5, :] = 1e-43
 
 l_tir = np.log(10) * simpson(
-    ir_lum[::-1], x=np.log10(ir_freq)[::-1], axis=0)
+    10**ir_lum[::-1], x=np.log10(ir_freq)[::-1], axis=0)
+l_tir *= L_sun.to(u.erg / u.s).value
 
 sort_order = np.argsort(l_tir)
 
-ir_lum *= (1 / ir_freq[:, np.newaxis])
+ir_lum -= np.log10(ir_freq[:, np.newaxis])
+ir_lum += np.log10(L_sun.to(u.erg / u.s).value)
 ir_lum[ir_lum < 1e-43] = 1e-43
 
-l_tir = np.log10(np.log(10) * simpson(
-                ir_lum[::-1], x=np.log10(ir_freq)[::-1], axis=0))
+l_tir = np.log10(l_tir)
 # ----------------------------------------------------
 
 data = fits.open('outputs/dust_reem/Z.fits')
@@ -108,27 +116,31 @@ plt.savefig('outputs/dust_reem/bosaZ_plot.png',
 
 plt.figure(figsize=(10, 8))
 
-plt.plot(ir_wv, np.log10(ir_lum[:, 0]),
-         label=r'$\leq$%.2f' % l_tir[0], c=plt.cm.CMRmap(0/8.))
-for ni, i in enumerate(range(15, np.shape(ir_lum)[1]-1, 15)):
-    plt.plot(ir_wv, np.log10(ir_lum[:, i]),
-             label='%.2f' % l_tir[i],
+plt.plot(ir_wv, ir_lum[:, 0],
+         label=r'%.5f' % l_tir[0], c=plt.cm.CMRmap(0/8.))
+for ni, i in enumerate(range(1, np.shape(ir_lum)[1]-1, 15)):
+    plt.plot(ir_wv, ir_lum[:, i],
+             label='%.5f' % l_tir[i],
              c=plt.cm.CMRmap((ni+1) / 8.)
              )
-plt.plot(ir_wv, np.log10(ir_lum[:, -1]),
-         label=r'$\geq$%.2f' % l_tir[-1], c=plt.cm.CMRmap(7/8.))
+plt.plot(ir_wv, ir_lum[:, -3],
+         label=r'%.5f' % l_tir[-3], c=plt.cm.CMRmap(7/8.))
+plt.plot(ir_wv, ir_lum[:, -2],
+         label=r'%.5f' % l_tir[-2], c=plt.cm.CMRmap(7/8.))
+plt.plot(ir_wv, ir_lum[:, -1],
+         label=r'%.5f' % l_tir[-1], c=plt.cm.CMRmap(7/8.))
 
 plt.xlabel('Wavelength ($\mu$m)')
 plt.ylabel(r'log$_{10}(L_{\nu}$ '  # /Lsun '
            r'[erg s$^{-1}$ $\mathrm{Hz}^{-1}$ M$_{\odot}^{-1}$])')
 
-plt.legend(ncols=1, loc=1, title=r'log$_{10}\left(L_{\nu}\right)$',
+plt.legend(ncol=1, loc=1, title=r'log$_{10}\left(L_\mathrm{TIR}\right)$',
            framealpha=1)
 
 plt.xscale('log')
 
 plt.xlim(0.1, 3e5)
-plt.ylim(16, 25.5)
+# plt.ylim(16, 25.5)
 
 plt.savefig('outputs/dust_reem/chary2001_plot.pdf',
             bbox_inches='tight')

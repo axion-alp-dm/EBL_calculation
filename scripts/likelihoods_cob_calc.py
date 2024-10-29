@@ -73,7 +73,7 @@ sfr_data = sfr_data_dict()
 print(np.shape(sfr_data))
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
 
-emiss_data = emissivity_data()
+emiss_data = emissivity_data(lambda_max=1e4)
 freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
 print(np.shape(emiss_data))
 # MINIMIZATION OF CHI2 OF SSPs
@@ -88,7 +88,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
         config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
             params[8].copy()
         )
-
+        # print(params)
         return ebl_class.ebl_ssp_individualData(
             yaml_data=config_data['ssp_models'][key],
             x_data=lambda_igl)
@@ -103,7 +103,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
         config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
             params[8].copy()
         )
-
+        # print(params)
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
 
         return 10 ** (freq_emissions
@@ -113,11 +113,13 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
 
     def sfr(x, params):
+        # print(params)
         return ebl_class.sfr_function(
             config_data['ssp_models'][key]['sfr'], x, params[0:4])
 
 
     def metall(x, params):
+        # print(params)
         return ebl_class.metall_mean(
             config_data['ssp_models'][key]['metall_formula'],
             x, params[4:8])
@@ -154,9 +156,18 @@ for nkey, key in enumerate(config_data['ssp_models']):
     print(aaa)
 
     m = Minuit(combined_likelihood, aaa)
-    # m.limits = [[None, None], [None, None], [None, None], [None, None],
-    #             [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25]]
+    m.limits = [[None, None], [None, None], [None, None], [None, None],
+                [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25],
+                [7, 11]]
+    # m.fixed[0] = True
+    # m.fixed[1] = True
+    # m.fixed[2] = True
+    # m.fixed[3] = True
+    # m.fixed[4] = True
+    # m.fixed[5] = True
+    # m.fixed[6] = True
     m.fixed[7] = True
+    # m.fixed[8] = True
     m.values[7] = 0.02
     print(m.params)
 
