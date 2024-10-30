@@ -60,9 +60,9 @@ fig, ax1 = plt.subplots(figsize=(10, 8))
 upper_lims, lower_lims = import_cb_data(plot_measurs=False, ax1=ax1,
                               lambda_max_total=1e20)
 
-# lower_lims = lower_lims[lower_lims['ref'] != 'ISO/ISOCAM (Clements+ ‘99)']
-# lower_lims = lower_lims[lower_lims['ref'] != 'SCUBA-2 (Hsu+ ‘16)']
-# lower_lims = lower_lims[lower_lims['ref'] != 'ALMA (Fujimoto+ ‘16)']
+lower_lims = lower_lims[lower_lims['ref'] != 'ISO/ISOCAM (Clements+ ‘99)']
+lower_lims = lower_lims[lower_lims['ref'] != 'SCUBA-2 (Hsu+ ‘16)']
+lower_lims = lower_lims[lower_lims['ref'] != 'ALMA (Fujimoto+ ‘16)']
 
 markers = ['>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
 names_all_lower, index = np.unique(lower_lims['ref'], return_index=True)

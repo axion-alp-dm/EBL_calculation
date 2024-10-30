@@ -24,7 +24,7 @@ from iminuit.cost import LeastSquares
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('outputs_dust_reem'
+direct_name = str('outputs_dust_reem_wto_LOWdatapoints'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -63,6 +63,10 @@ upper_lims_ebldata, igl_ebldata = import_cb_data(
     lambda_min_total=0.1, lambda_max_total=1.e4,
     plot_measurs=False)
 
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ISO/ISOCAM (Clements+ ‘99)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'SCUBA-2 (Hsu+ ‘16)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ALMA (Fujimoto+ ‘16)']
+
 print(np.shape(igl_ebldata))
 
 # Metallicity evolution data
@@ -85,10 +89,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
     def fit_igl(lambda_igl, params):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
-            params[8].copy()
-        )
-        # print(params)
+        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+            params[8]
+
         return ebl_class.ebl_ssp_individualData(
             yaml_data=config_data['ssp_models'][key],
             x_data=lambda_igl)
@@ -100,10 +103,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
-            params[8].copy()
-        )
-        # print(params)
+        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+            params[8]
+
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
 
         return 10 ** (freq_emissions
@@ -113,13 +115,11 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
 
     def sfr(x, params):
-        # print(params)
         return ebl_class.sfr_function(
             config_data['ssp_models'][key]['sfr'], x, params[0:4])
 
 
     def metall(x, params):
-        # print(params)
         return ebl_class.metall_mean(
             config_data['ssp_models'][key]['metall_formula'],
             x, params[4:8])
@@ -166,7 +166,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     # m.fixed[4] = True
     # m.fixed[5] = True
     # m.fixed[6] = True
-    m.fixed[7] = True
+    # m.fixed[7] = True
     # m.fixed[8] = True
     m.values[7] = 0.02
     print(m.params)

@@ -148,43 +148,43 @@ ssp_models:
     dust_reem: True
     dust_reem_params:
       library: chary2001
-      f_tir: 10.45
+      f_tir: 10.415
       library_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
       wv_reem_min: 3.5  #[microns]
 #
-  SB99_dustFinke3e8:
-    args_metall:
-      - -0.542121168976453
-      - 0.008154222671585984
-      - 2.266468189061395
-      - 0.02
-    cut_popstar: 6
-    dust_abs_models:
-      - finke2022_2
-    dust_abs_params:
-      params_ab18:
-        - 1.52
-        - 0.35
-        - 4.12
-        - 5.89
-    file_name: /kroupa_
-    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-    name: 'Our model'
-    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-    sfr_params:
-      - 0.013107341038317264
-      - 2.420045114675467
-      - 3.2990898078661317
-      - 6.658375996690348
-    ssp_type: SB99
-
-    dust_reem: True
-    dust_reem_params:
-      library: chary2001
-      f_tir: 8.3
-      library_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
-      wv_reem_min: 3.5  #[microns]
+#  SB99_dustFinke3e8:
+#    args_metall:
+#      - -0.542121168976453
+#      - 0.008154222671585984
+#      - 2.266468189061395
+#      - 0.02
+#    cut_popstar: 6
+#    dust_abs_models:
+#      - finke2022_2
+#    dust_abs_params:
+#      params_ab18:
+#        - 1.52
+#        - 0.35
+#        - 4.12
+#        - 5.89
+#    file_name: /kroupa_
+#    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+#    name: 'Our model'
+#    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
+#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+#    sfr_params:
+#      - 0.013107341038317264
+#      - 2.420045114675467
+#      - 3.2990898078661317
+#      - 6.658375996690348
+#    ssp_type: SB99
+#
+#    dust_reem: True
+#    dust_reem_params:
+#      library: chary2001
+#      f_tir: 8.3
+#      library_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
+#      wv_reem_min: 3.5  #[microns]
 
 #  SB99_dustKneiske3e8:
 #    args_metall:

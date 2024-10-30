@@ -638,8 +638,8 @@ class EBL_model(object):
 
             aaa = np.zeros((np.shape(ir_lum)[0], np.shape(ir_lum)[1] + 2))
             aaa[:, 1:-1] = ir_lum
-            aaa[:, 0] = ir_lum[:, 0] - 5.
-            aaa[:, -1] = ir_lum[:, -1] + 5.
+            aaa[:, 0] = ir_lum[:, 0] - 10.
+            aaa[:, -1] = ir_lum[:, -1] + 10.
             ir_lum = aaa
 
             # Cap the dust reemisison to the wavelength where there is
@@ -660,15 +660,10 @@ class EBL_model(object):
             ir_lum = ir_lum[:, sort_order]
 
             ir_lum_expanded = np.zeros(
-                (np.shape(ir_lum)[0], np.shape(ir_lum)[1] + 2, 2))
-            ir_lum_expanded[:, 1:-1, 0] = ir_lum
-            ir_lum_expanded[:, 1:-1, 1] = ir_lum
+                (np.shape(ir_lum)[0], np.shape(ir_lum)[1], 2))
+            ir_lum_expanded[:, :, 0] = ir_lum
+            ir_lum_expanded[:, :, 1] = ir_lum
 
-            # Fill for low and high Ltir
-            l_tir = np.concatenate(([1], l_tir, [1e50]))
-
-            ir_lum_expanded[:, 0, :] = -43  #ir_lum_expanded[:, 1, :]
-            ir_lum_expanded[:, -1, :] = -43 #ir_lum_expanded[:, -2, :]
             self.logging_info('Dust reem: creation of big array')
 
 
@@ -829,14 +824,14 @@ class EBL_model(object):
             self.logging_info('Dust reem: mean metall calc')
 
             lumin_abs = (
-                    # 10 ** self._log_freq_cube
-                    # * np.log(10.)  # integration over y=log10(x)
-                    # * 10. **  # L(t)
+                    10 ** self._log_freq_cube
+                    * np.log(10.)  # integration over y=log10(x)
+                    * 10. **  # L(t)
                     self.ssp_lumin_spline(xi=(
                         self._log_freq_cube,
                         self._log_t_ssp_intcube,
                         mean_metall_cube))
-                    # * (1. - fract_dust_Notabs)
+                    * (1. - fract_dust_Notabs)
             )
             self.logging_info('Dust reem: lumin_abs calc')
 
