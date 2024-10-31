@@ -235,6 +235,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     np.save('outputs/' + direct_name + '/' + key + 'spline',
             ebl_class.ebl_ssp_spline)
+    ebl_class.write_ebl_to_ascii(output_path='outputs/' + direct_name,
+                                 name=key)
 
     ccc = []
     for i in range(len(aaa) ** 2):

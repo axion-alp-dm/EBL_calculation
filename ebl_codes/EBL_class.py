@@ -1327,3 +1327,14 @@ class EBL_model(object):
         self.ebl_sum_contributions()
 
         return
+
+    def write_ebl_to_ascii(self, output_path='', name='ebl'):
+        aaa = np.zeros((len(self._z_array) + 1,
+                        len(self._lambda_array) + 1))
+        aaa[1:, 0] = self._z_array
+        aaa[0, 1:] = self._lambda_array
+        aaa[1:, 1:] = self._ebl_ssp_cube.T
+
+        np.savetxt(output_path + '/' + name + '.txt', aaa)
+
+        return

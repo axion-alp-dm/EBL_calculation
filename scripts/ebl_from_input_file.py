@@ -33,7 +33,8 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('scripts/input_files/')
+input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints '
+                  '2024-10-30 10:04:08/')
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -69,7 +70,7 @@ markers = ['.', 'x', '+', '*', '^', '>', '<']
 
 
 # We initialize the class with the input file
-config_data = read_config_file(input_file_dir + 'input_dust_reem.yml')
+config_data = read_config_file(input_file_dir + 'input_data.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 
@@ -201,11 +202,13 @@ for nkey, key in enumerate(config_data['ssp_models']):
     print('SSP model: ', config_data['ssp_models'][key]['name'])
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+    ebl_class.write_ebl_to_ascii(output_path=input_file_dir, name=key)
     print(10 ** ebl_class.ebl_ssp_spline(
         np.log10(c.value/0.608*1e6), 0., grid=False),
           21.98 - 10 ** ebl_class.ebl_ssp_spline(
         np.log10(c.value/0.608*1e6), 0., grid=False))
     print('%.3f' % (memory_usage_psutil()))
+
 
     ax_cob.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
         freq_array_ebl, 0., grid=False),
