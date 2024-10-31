@@ -273,21 +273,6 @@ class EBL_model(object):
         self.ebl_sum_contributions()
         return
 
-    def change_H0(self, new_H0):
-        """
-        Reinitialize the class with a new value of H0.
-        new_H0: float
-            New value for H0.
-        """
-        self._cosmo = FlatLambdaCDM(H0=new_H0, Om0=self._omegaM,
-                                    Ob0=self._omegaB0, Tcmb0=2.7255)
-
-        self._ebl_ssp_spline = None
-        self._ebl_axion_spline = None
-        self._ebl_ihl_spline = None
-
-        return
-
     def read_SSP_file(self, path_ssp, ssp_type,
                       pop_filename='', cut_popstar=False):
         """
@@ -348,51 +333,6 @@ class EBL_model(object):
                             + np.log10(1E10 * c.value)
                             - 2. * self._ssp_log_freq[:, np.newaxis,
                                    np.newaxis])
-
-        elif ssp_type == 'SB99_before':
-            if cut_popstar is False:
-                d = np.loadtxt(path_ssp, skiprows=6)
-
-                # Get unique time steps and frequencies, and spectral data
-                t_total = np.unique(d[:, 0])
-                l_total = np.unique(d[:, 1])
-                dd_total = d[:, 3].reshape(t_total.shape[0],
-                                           l_total.shape[0]).T
-
-            else:
-                data_starburst_old = np.loadtxt(
-                    'ssp/final_run_spectrum', skiprows=6)
-                t_old = np.unique(data_starburst_old[:, 0])
-                l_old = np.unique(data_starburst_old[:, 1])
-                dd_old = data_starburst_old[:, 3].reshape(t_old.shape[0],
-                                                          l_old.shape[0]).T
-
-                data_starburst = np.loadtxt(
-                    'ssp/low_res_for_real.spectrum1', skiprows=6)
-                t = np.unique(data_starburst[:, 0])
-                l_total = np.unique(data_starburst[:, 1])
-                dd = data_starburst[:, 3].reshape(t.shape[0],
-                                                  l_total.shape[0]).T
-
-                dd_total = np.zeros((len(l_total),
-                                     len(t) + sum(t_old > t[-1])))
-                t_total = np.zeros(len(t) + sum(t_old > t[-1]))
-                aaa = np.where((t_old - t[-1]) > 0)[0][0]
-
-                t_total[:len(t)] = t
-                t_total[len(t):] = t_old[aaa:]
-
-                dd_total[:, :len(t)] = dd
-                dd_total[:, len(t):] = dd_old[:, aaa:]
-
-            # Define the quantities we will work with
-            self._ssp_log_time = np.log10(t_total)  # log(time/yrs)
-            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l_total[::-1] / 1E-10)
-            ssp_log_emis = (dd_total[::-1]  # log(em[erg/s/Hz/M_solar])
-                            - 6.
-                            + np.log10(1E10 * c.value)
-                            - 2. * self._ssp_log_freq[:, np.newaxis])
 
         elif ssp_type == 'Popstar09':
             list_files = os.listdir(path_ssp)
@@ -1001,7 +941,10 @@ class EBL_model(object):
     def ebl_ssp_individualData(self, yaml_data, x_data, sfr=None):
         """
         Calculate the EBL SSP contribution. for the specific wavelength
-        data that we have available (and redshift z=0). Useful to avoid
+        data that we have available (and redshift z=0).
+        ONLY WORKS FOR REDSHIFT 0!!! (because of intcubes, the redshift
+        dependency is not implemented. It does not seem useful.)
+        Useful for fittings, because it allows to avoid
         big calculations with a wide grid on wavelengths and redshifts.
 
         EBL units:
@@ -1012,6 +955,8 @@ class EBL_model(object):
         ----------
         yaml_data: dictionary
             Data necessary to reconstruct the EBL component from an SSP.
+        x_data: 1D array
+            Wavelength array
         sfr: string or callable (spline, function...)
             Formula of the sfr used to calculate the emissivity.
         """
@@ -1030,14 +975,13 @@ class EBL_model(object):
         self.logging_info('SSP EBL: calculation of z cube')
 
         # Calculate integration values
-        ebl_intcube = (self._ebl_intcube
-                       * 10. ** self._emiss_ssp_spline(
+        ebl_intcube = (
+                self._ebl_intcube * 10. ** self._emiss_ssp_spline(
                     self._shifted_freq,
                     self._ebl_z_intcube))
         self.logging_info('SSP EBL: calculation of kernel interpolation')
 
-        return simpson(ebl_intcube,
-                       x=self._ebl_z_intcube,
+        return simpson(ebl_intcube, x=self._ebl_z_intcube,
                        axis=-1)[::-1]
 
     def emiss_intrahalo_calculation(self, log10_Aihl, alpha):
@@ -1081,13 +1025,12 @@ class EBL_model(object):
                                       s=0, k=1, ext=1)
 
         # S_lambda = F_lambda * lambda
-        old_spectrum[:, 1] *= (old_spectrum[:, 0]
-                               / old_spline(22000)
-                               / 22000.)
+        old_spectrum[:, 1] *= (
+                old_spectrum[:, 0] / old_spline(22000) / 22000.)
         old_spectrum[:, 0] *= 1e-4
-        old_spectrum_spline = UnivariateSpline(np.log10(old_spectrum[:, 0]),
-                                               np.log10(old_spectrum[:, 1]),
-                                               s=0, k=1)
+        old_spectrum_spline = UnivariateSpline(
+            np.log10(old_spectrum[:, 0]), np.log10(old_spectrum[:, 1]),
+            s=0, k=1)
 
         # Initialize an object to calculate dn/dM
         mf = MassFunction(cosmo_model=self._cosmo, Mmin=m_min, Mmax=m_max)
@@ -1101,6 +1044,7 @@ class EBL_model(object):
         kernel_intrahalo = np.zeros(
             (len(self._freq_array), len(self._z_array)))
 
+        # Calculate the kernel for different redshifts
         for nzi, zi in enumerate(self._z_array):
             mf.update(z=zi)
             lambda_luminosity = (
@@ -1113,9 +1057,8 @@ class EBL_model(object):
                       * lambda_luminosity
                       * mf.dndm[:, np.newaxis]
                       )
-            kernel_intrahalo[:, nzi] = simpson(kernel,
-                                               x=np.log10(mf.m),
-                                               axis=0)
+            kernel_intrahalo[:, nzi] = simpson(
+                kernel, x=np.log10(mf.m), axis=0)
 
         self._emiss_ihl_cube = kernel_intrahalo * c / (
                 10 ** self._freq_array[:, np.newaxis]) ** 2. * u.s ** 2
@@ -1318,7 +1261,7 @@ class EBL_model(object):
                         'sfr_params': [0.15, 1.1, 3.4, 0.0],
                         'ssp_type': 'SB99',
                         'path_ssp': 'ssp/final_run_spectrum',
-                        'dust_abs_models': ['kneiske2002', 'aaaa']}
+                        'dust_abs_models': ['kneiske2002', '']}
 
         self.ebl_ssp_calculation(ssp_yaml)
         self.ebl_intrahalo_calculation(log10_Aihl, alpha)
@@ -1329,11 +1272,11 @@ class EBL_model(object):
         return
 
     def write_ebl_to_ascii(self, output_path='', name='ebl'):
-        aaa = np.zeros((len(self._z_array) + 1,
-                        len(self._lambda_array) + 1))
-        aaa[1:, 0] = self._z_array
-        aaa[0, 1:] = self._lambda_array
-        aaa[1:, 1:] = self._ebl_ssp_cube.T
+        aaa = np.zeros((len(self._lambda_array) + 1,
+                        len(self._z_array) + 1))
+        aaa[1:, 0] = self._lambda_array[::-1]
+        aaa[0, 1:] = self._z_array
+        aaa[1:, 1:] = (self._ebl_ssp_cube[::-1])
 
         np.savetxt(output_path + '/' + name + '.txt', aaa)
 

@@ -11,7 +11,8 @@ def cosmic_axion_contr(lmu, zz, mass, gayy):
 
     freq = (c.c.value / lmu * 1e6 * u.s ** -1)
 
-    z_star = axion_mass / (2. * c.h.to(u.eV * u.s) * freq) - 1.
+    z_star = (axion_mass / (2. * c.h.to(u.eV * u.s) * freq) * (1. + zz)
+              - 1.)
 
     ebl_axion_cube = ((cosmo.Odm(0.) * cosmo.critical_density0
                        * c.c ** 3. / (64. * np.pi * u.sr)
