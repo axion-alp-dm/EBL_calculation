@@ -84,12 +84,12 @@ def read_config_file(ConfigFile):
 
 
 # We initialize the class with the input file
-config_data = read_config_file('outputs/final_outputs_Zevol_fixezZsolar '
-                       '2024-04-11 13:41:34/' + 'input_data.yml')
-ebl_class = EBL_model.input_yaml_data_into_class(config_data,
-                                                 log_prints=True)
-ebl_class.ebl_ssp_calculation(
-    config_data['ssp_models']['SB99_dustFinke'])
+# config_data = read_config_file('outputs/final_outputs_Zevol_fixezZsolar '
+#                        '2024-04-11 13:41:34/' + 'input_data.yml')
+# ebl_class = EBL_model.input_yaml_data_into_class(config_data,
+#                                                  log_prints=True)
+# ebl_class.ebl_ssp_calculation(
+#     config_data['ssp_models']['SB99_dustFinke'])
 
 
 waves_ebl = np.geomspace(5e-6, 1e4, num=int(1e6))
@@ -109,19 +109,19 @@ spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
 
 
-def spline_starburst(lambda_array):
-    return 10 ** ebl_class.ebl_ssp_spline(
-        np.log10(c.value * 1e6 / lambda_array), 0.,
-                          grid=False)
+# def spline_starburst(lambda_array):
+#     return 10 ** ebl_class.ebl_ssp_spline(
+#         np.log10(c.value * 1e6 / lambda_array), 0.,
+#                           grid=False)
 
 
 list_working_models = {
-    'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
-               'color': 'b', 'linewidth': 3},
-    'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
-                'color': 'fuchsia', 'linewidth': 2},
+    # 'ModelA': {'label': 'Our model', 'callable_func': spline_starburst,
+    #            'color': 'b', 'linewidth': 3, 'ls': '-'},
+    # 'Finke22': {'label': 'Finke22', 'callable_func': spline_finke,
+    #             'color': 'fuchsia', 'linewidth': 2, 'ls': '--'},
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
-             'color': 'k', 'linewidth': 2}
+             'color': 'k', 'linewidth': 2.5, 'ls': 'dotted'}
 }
 
 # Beginning of figure specifications
@@ -133,20 +133,21 @@ for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
 
     plt.loglog(waves_ebl, model['callable_func'](waves_ebl),
+               ls=model['ls'],
                c=model['color'], lw=model['linewidth'], zorder=2/(ni+1)
                )
 
     handlers.append(plt.Line2D([], [],
                                linewidth=model['linewidth'],
-                               linestyle='-',
+                               linestyle=model['ls'],
                                color=model['color']))
     labels.append(model['label'])
 
-ebl_class.change_axion_contribution(1e2, 1e-13)
-plt.loglog(waves_ebl,
-           (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
-                                             grid=False)
-            + spline_cuba(waves_ebl)), c='green', zorder=1)
+# ebl_class.change_axion_contribution(1e2, 1e-13)
+# plt.loglog(waves_ebl,
+#            (10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0.,
+#                                              grid=False)
+#             + spline_cuba(waves_ebl)), c='green', zorder=0.5, ls='-')
 
 handlers.append(plt.Line2D([], [],
                            linewidth=2,
@@ -160,12 +161,12 @@ labels.append(r'CUBA + cosmic axion''\n '
 # We introduce all the EBL measurements
 upper_lims_all, _ = import_cb_data(
     lambda_min_total=0,
-    lambda_max_total=5.,
+    lambda_max_total=1e4,
     ax1=ax1, plot_measurs=True)
 
 
 
-ax1.set_xlim(5e-6, 1e1)
+# ax1.set_xlim(5e-6, 1e1)
 ax1.set_ylim(5e-3, 120)
 # ax1.set_xlim(0.08, 1235)
 # ax1.set_ylim(0.13, 120)

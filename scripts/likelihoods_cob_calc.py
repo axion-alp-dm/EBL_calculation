@@ -20,10 +20,11 @@ from astropy.constants import c
 
 from iminuit import Minuit
 from iminuit.cost import LeastSquares
+
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('final_outputs_Zevol_fixezZsolar_end'
+direct_name = str('outputs_dust_reem_wto_LOWdatapoints'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -54,13 +55,17 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 
 config_data = read_config_file(
-    'scripts/input_files/input_data_paper.yml')
+    'scripts/input_files/input_dust_reem.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use
 upper_lims_ebldata, igl_ebldata = import_cb_data(
-    lambda_min_total=0.1, lambda_max_total=5.,
+    lambda_min_total=0.1, lambda_max_total=1.e4,
     plot_measurs=False)
+
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ISO/ISOCAM (Clements+ ‘99)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'SCUBA-2 (Hsu+ ‘16)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ALMA (Fujimoto+ ‘16)']
 
 print(np.shape(igl_ebldata))
 
@@ -72,7 +77,7 @@ sfr_data = sfr_data_dict()
 print(np.shape(sfr_data))
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
 
-emiss_data = emissivity_data()
+emiss_data = emissivity_data(lambda_max=1e4)
 freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
 print(np.shape(emiss_data))
 # MINIMIZATION OF CHI2 OF SSPs
@@ -83,7 +88,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     def fit_igl(lambda_igl, params):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
-        config_data['ssp_models'][key]['args_metall'] = params[4:].copy()
+        config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
+        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+            params[8]
+
         return ebl_class.ebl_ssp_individualData(
             yaml_data=config_data['ssp_models'][key],
             x_data=lambda_igl)
@@ -94,7 +102,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
         freq_emissions = np.log10(c.value / lambda_emiss * 1e6)
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
-        config_data['ssp_models'][key]['args_metall'] = params[4:].copy()
+        config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
+        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+            params[8]
 
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
 
@@ -108,10 +118,11 @@ for nkey, key in enumerate(config_data['ssp_models']):
         return ebl_class.sfr_function(
             config_data['ssp_models'][key]['sfr'], x, params[0:4])
 
+
     def metall(x, params):
         return ebl_class.metall_mean(
             config_data['ssp_models'][key]['metall_formula'],
-            x, params[4:])
+            x, params[4:8])
 
 
     combined_likelihood = (LeastSquares(igl_ebldata['lambda'],
@@ -138,15 +149,25 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     init_time = time.process_time()
 
-
-    aaa = np.concatenate((config_data['ssp_models'][key]['sfr_params'],
-                          config_data['ssp_models'][key]['args_metall']))
+    aaa = np.concatenate((
+        config_data['ssp_models'][key]['sfr_params'],
+        config_data['ssp_models'][key]['args_metall'],
+        [float(config_data['ssp_models'][key]['dust_reem_params']['f_tir'])]))
     print(aaa)
 
     m = Minuit(combined_likelihood, aaa)
-    # m.limits = [[None, None], [None, None], [None, None], [None, None],
-    #             [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25]]
-    m.fixed[7] = True
+    m.limits = [[None, None], [None, None], [None, None], [None, None],
+                [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25],
+                [7, 11]]
+    # m.fixed[0] = True
+    # m.fixed[1] = True
+    # m.fixed[2] = True
+    # m.fixed[3] = True
+    # m.fixed[4] = True
+    # m.fixed[5] = True
+    # m.fixed[6] = True
+    # m.fixed[7] = True
+    # m.fixed[8] = True
     m.values[7] = 0.02
     print(m.params)
 
@@ -156,13 +177,13 @@ for nkey, key in enumerate(config_data['ssp_models']):
     outputs = open('outputs/' + direct_name + '/z_fits_info.txt', 'a+')
     outputs.write(str(key) + '\n')
     outputs.write('SSP model: '
-                       + str(config_data['ssp_models'][key]['name'])
-                       + '\n')
+                  + str(config_data['ssp_models'][key]['name'])
+                  + '\n')
     outputs.write(str(m.params) + '\n')
     outputs.write(str(m.values) + '\n')
     outputs.write(str(m.covariance) + '\n')
     outputs.write(f"$\\chi^2$/$n_\\mathrm{{dof}}$ "
-                       f"= {m.fval:.1f} / {m.ndof:.0f} "
+                  f"= {m.fval:.1f} / {m.ndof:.0f} "
                   f"= {m.fmin.reduced_chi2:.1f}" + '\n')
 
     outputs.write('Individual chi2 values:\n')
@@ -207,13 +228,15 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                                     m.params[3].value]
 
     config_data['ssp_models'][key]['args_metall'] = [m.params[4].value,
-                                                    m.params[5].value,
-                                                    m.params[6].value,
-                                                    m.params[7].value]
+                                                     m.params[5].value,
+                                                     m.params[6].value,
+                                                     m.params[7].value]
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 
     np.save('outputs/' + direct_name + '/' + key + 'spline',
             ebl_class.ebl_ssp_spline)
+    ebl_class.write_ebl_to_ascii(output_path='outputs/' + direct_name,
+                                 name=key)
 
     ccc = []
     for i in range(len(aaa) ** 2):

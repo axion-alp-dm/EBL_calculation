@@ -9,8 +9,9 @@ from scipy.interpolate import UnivariateSpline, RectBivariateSpline, \
     interpn, RegularGridInterpolator
 from fast_interp import interp2d, interp3d
 
+from astropy.io import fits
 from astropy import units as u
-from astropy.constants import c
+from astropy.constants import c, L_sun
 from astropy.constants import h as h_plank
 from astropy.cosmology import FlatLambdaCDM
 
@@ -106,7 +107,6 @@ class EBL_model(object):
         """
 
         self._shifted_times_emiss = None
-        self._s = None
         self._log_t_ssp_intcube = None
         self._process_time = time.process_time()
         logging.basicConfig(level='INFO',
@@ -322,7 +322,7 @@ class EBL_model(object):
 
             dd_total = np.zeros((l_total.shape[0],
                                  t_total.shape[0],
-                                 len(self._ssp_metall)+1))
+                                 len(self._ssp_metall) + 1))
 
             for n_met, met in enumerate(self._ssp_metall):
                 data = np.loadtxt(
@@ -331,7 +331,7 @@ class EBL_model(object):
                     + '.spectrum1',
                     skiprows=cut_popstar)
 
-                dd_total[:, :, n_met+1] = data[:, 2].reshape(
+                dd_total[:, :, n_met + 1] = data[:, 2].reshape(
                     t_total.shape[0],
                     l_total.shape[0]).T
 
@@ -462,7 +462,7 @@ class EBL_model(object):
 
             dd_pegase = np.zeros((l_pegase.shape[0],
                                   t_pegase.shape[0],
-                                  len(self._ssp_metall)+1))
+                                  len(self._ssp_metall) + 1))
 
             for n_met, met in enumerate(self._ssp_metall):
                 data_pegase = np.loadtxt(
@@ -505,7 +505,7 @@ class EBL_model(object):
             dd_generic = data_generic[:, 2].reshape(
                 t_generic.shape[0], l_generic.shape[0]).T[::-1]
 
-            self._ssp_log_time = np.log10(t_generic * 1e6)  # log(time/yrs)
+            self._ssp_log_time = np.log10(t_generic)  # log(time/yrs)
             self._ssp_log_time[np.isnan(self._ssp_log_time)] = -43.
             self._ssp_log_time[
                 np.invert(np.isfinite(self._ssp_log_time))] = -43.
@@ -513,26 +513,33 @@ class EBL_model(object):
             self._ssp_log_freq = np.log10(  # log(frequency/Hz)
                 c.value / l_generic[::-1] / 1E-10)
 
-            ssp_log_emis = np.log10(dd_generic)
+            ssp_log_emis = (dd_generic)
             ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
             ssp_log_emis[
                 np.invert(np.isfinite(ssp_log_emis))] = -43.
 
-            ssp_log_emis += (np.log10(1E10 * c.value)
-                             - 2. * self._ssp_log_freq
-                             [:, np.newaxis])
+            # ssp_log_emis += (np.log10(1E10 * c.value)
+            #                  - 2. * self._ssp_log_freq
+            #                  [:, np.newaxis])
+
+            if 'starburst' in path_ssp:
+                print('we have sb99 in generic')
+                ssp_log_emis += (- 6.
+                                 + np.log10(1E10 * c.value)
+                                 - 2. * self._ssp_log_freq[:, np.newaxis])
+
+            self._ssp_metall = [1e-43, 0.1]
+            aaa = np.zeros((len(self._ssp_log_freq),
+                            len(self._ssp_log_time),
+                            len(self._ssp_metall)))
+            aaa[:, :, 0] = ssp_log_emis
+            aaa[:, :, 1] = ssp_log_emis
+            ssp_log_emis = aaa
+
         else:
             print('SSP type not recognized')
             exit()
 
-        # Sanity check and log info
-        # print(np.where(self._ssp_log_time[1:]<self._ssp_log_time[:-1]))
-        # print(np.where(self._ssp_log_freq[1:]<self._ssp_log_freq[:-1]))
-        # print(sum(self._ssp_log_time[1:]>self._ssp_log_time[:-1]),
-        #       len(self._ssp_log_time))
-        # print(sum(self._ssp_log_freq[1:]>self._ssp_log_freq[:-1]),
-        #       len(self._ssp_log_freq))
-        # print()
         ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
         ssp_log_emis[
             np.invert(np.isfinite(ssp_log_emis))] = -43.
@@ -543,7 +550,7 @@ class EBL_model(object):
                     np.log10(self._ssp_metall)),
             values=ssp_log_emis,
             method='linear',
-            bounds_error=False, fill_value=np.nan
+            bounds_error=False, fill_value=-43
         )
 
         del ssp_log_emis
@@ -612,6 +619,102 @@ class EBL_model(object):
                 '(required string or callable)')
             return 0.
 
+    def spline_dust_reemission(self, yaml_data):
+        # print('%e' %10**float(yaml_data['f_tir']))
+        # print(yaml_data['f_tir'], type(yaml_data['f_tir']))
+        if yaml_data['library'] == 'chary2001':
+
+            f_tir = 10**float(yaml_data['f_tir'])
+            chary = fits.open(yaml_data['library_path'])
+            self.logging_info('Dust reem: reading of template file')
+
+            ir_wv = chary[1].data.field('LAMBDA')[0]
+            ir_freq = c.value / ir_wv * 1e6
+
+            ir_lum = (np.log10(chary[1].data.field('NULNUINLSUN')[0])
+                      - np.log10(f_tir))
+
+            self.logging_info('Dust reem: calculation of luminosities')
+
+            aaa = np.zeros((np.shape(ir_lum)[0], np.shape(ir_lum)[1] + 2))
+            aaa[:, 1:-1] = ir_lum
+            aaa[:, 0] = ir_lum[:, 0] - 10.
+            aaa[:, -1] = ir_lum[:, -1] + 10.
+            ir_lum = aaa
+
+            # Cap the dust reemisison to the wavelength where there is
+            # proper reemission, not the whole possible spectrum
+            ir_lum[ir_wv < yaml_data['wv_reem_min'], :] = -43
+
+            l_tir = np.log(10) * simpson(
+                10**ir_lum[::-1], x=np.log10(ir_freq)[::-1], axis=0)
+            self.logging_info('Dust reem: integration of Ltir')
+
+            sort_order = np.argsort(l_tir)
+            l_tir = l_tir[sort_order]
+            l_tir *= L_sun.to(u.erg / u.s).value
+
+            ir_lum -= np.log10(ir_freq[:, np.newaxis])
+            ir_lum += np.log10(L_sun.to(u.erg / u.s).value)
+            ir_lum[ir_lum < -43] = -43
+            ir_lum = ir_lum[:, sort_order]
+
+            ir_lum_expanded = np.zeros(
+                (np.shape(ir_lum)[0], np.shape(ir_lum)[1], 2))
+            ir_lum_expanded[:, :, 0] = ir_lum
+            ir_lum_expanded[:, :, 1] = ir_lum
+
+            self.logging_info('Dust reem: creation of big array')
+
+
+            # 3D spline creation
+            dust_reem_spline = RegularGridInterpolator(
+                points=(np.log10(ir_wv),
+                        np.log10(l_tir),
+                        [-43, 1.]),
+                values=ir_lum_expanded,
+                method='linear',
+                bounds_error=False, fill_value=-43
+            )
+
+        elif yaml_data['library'] == 'bosa':
+
+            data = fits.open(yaml_data['library_path'])
+            aaa = data[1].data
+
+            yyy = np.column_stack((
+                aaa['nuLnu[Z=6.99103]'],
+                aaa['nuLnu[Z=6.99103]'], aaa['nuLnu[Z=7.99103]'],
+                aaa['nuLnu[Z=8.29205999]'], aaa['nuLnu[Z=8.69]'],
+                aaa['nuLnu[Z=9.08794001]']))
+            yyy = (yyy * (L_sun.to(u.erg / u.s)).value
+                   * (aaa['wavelength'] * 1e-9 / c.value)[:, np.newaxis])
+
+            yyy = np.log10(yyy)
+
+            yyy_whole = np.zeros((np.shape(yyy)[0], 2, np.shape(yyy)[1]))
+            yyy_whole[:, 0, :] = yyy# - np.log10(-5.)
+            yyy_whole[:, 1, :] = yyy# + np.log10(50.)
+
+            yyy_whole[np.isnan(yyy_whole)] = -43.
+            yyy_whole[np.invert(np.isfinite(yyy_whole))] = -43.
+
+            dust_reem_spline = RegularGridInterpolator(
+                points=(np.log10(aaa['wavelength'] * 1e-3),
+                        [1, 50],
+                        np.log10([1e-43, 0.0004, 0.004, 0.008, 0.02, 0.05])),
+                values=yyy_whole,
+                method='linear',
+                bounds_error=False, fill_value=-43.
+            )
+        else:
+            print(
+                'Unrecognized name of dust reemission type.'
+                '\nListed libraries: chary2001, bosa .')
+            return 0.
+
+        return dust_reem_spline
+
     def emiss_ssp_calculation(self, yaml_data, sfr=None):
         """
         Calculation of SSP emissivity from the parameters given in
@@ -666,27 +769,19 @@ class EBL_model(object):
 
             self.logging_info('SSP emissivity: set time integration cube')
 
-            # Initialise mask to limit integration range to SSP data (in
-            # wavelength/frequency)
-            self._s = ((self._log_freq_cube >= self._ssp_log_freq[0])
-                       * (self._log_freq_cube <= self._ssp_log_freq[-1]))
-
-            self.logging_info('SSP emissivity: set frequency mask')
-
             # Two interpolations, transforming t->z (using log10 for both of
             # them) and a bi spline with the SSP data
 
             self._shifted_times_emiss = self._cube * 1e-43
 
-            self._shifted_times_emiss[self._s] = self.t2z(np.log10(
-                lookback_time_cube[self._s].value
-                + 10. ** self._log_t_ssp_intcube[self._s]))
+            self._shifted_times_emiss = self.t2z(np.log10(
+                lookback_time_cube.value
+                + 10. ** self._log_t_ssp_intcube))
 
             self.logging_info('SSP emissivity: set splines')
 
             # Interior of emissivity integral:
             # L{t(z)-t(z')} * dens(z') * |d(log10(t'))/dt'|
-
             self._kernel_emiss = self._cube * 1E-43
 
             self._kernel_emiss = (
@@ -707,61 +802,79 @@ class EBL_model(object):
                 np.invert(np.isfinite(self._kernel_emiss))] = -43.
             self.logging_info('SSP emissivity: set the initial kernel')
 
-        kernel_emiss = self._cube * 1e-43
-        kernel_emiss[self._s] = (
-                self._kernel_emiss[self._s]  # sfr(z(t))
-                * (self.sfr_function(sfr_formula,
-                                     self._shifted_times_emiss[self._s],
-                                     sfr_params)))
+        # Dust absorption (applied in log10)
+        fract_dust_Notabs = 10 ** dust_abs.calculate_dust(
+            wv_array=self._lambda_array,
+            models=yaml_data['dust_abs_models'],
+            z_array=self._z_array,
+            dust_params=yaml_data['dust_abs_params'])[:, :, np.newaxis]
+
+        kernel_emiss = self._kernel_emiss * fract_dust_Notabs
+
+        self.logging_info('SSP emissivity: set dust absorption')
+        # print(np.min(fract_dust_Notabs), np.max(fract_dust_Notabs))
+
+        # Dust reemission loading ------------------------------------
+        if yaml_data['dust_reem']:
+            self.logging_info('Dust reem: enter')
+            mean_metall_cube = np.log10(self.metall_mean(
+                            function_input=yaml_data['metall_formula'],
+                            zz_array=self._shifted_times_emiss,
+                            args=yaml_data['args_metall']))
+            self.logging_info('Dust reem: mean metall calc')
+
+            lumin_abs = (
+                    10 ** self._log_freq_cube
+                    * np.log(10.)  # integration over y=log10(x)
+                    * 10. **  # L(t)
+                    self.ssp_lumin_spline(xi=(
+                        self._log_freq_cube,
+                        self._log_t_ssp_intcube,
+                        mean_metall_cube))
+                    * (1. - fract_dust_Notabs)
+            )
+            self.logging_info('Dust reem: lumin_abs calc')
+
+            l_int_abs = simpson(lumin_abs, x=self._freq_array, axis=0)
+            self.logging_info('Dust reem: integration of Lssp')
+
+            dust_reem_spline = self.spline_dust_reemission(
+                yaml_data['dust_reem_params'])
+            self.logging_info('Dust reem: dust spline creation')
+
+            kernel_emiss += (
+                    10. ** self._log_t_ssp_intcube  # Variable change,
+                    * np.log(10.)
+                    * 10 ** (dust_reem_spline(
+                (np.log10(self._lambda_array)[:, np.newaxis, np.newaxis]
+                 * self._cube,
+                 np.log10(l_int_abs)[np.newaxis, :, :] * self._cube,
+                 mean_metall_cube
+                 )))
+            )
+            self.logging_info('Dust reem: sum to kernel_emiss')
+
+
+        # SFR multiplication
+        kernel_emiss *= (
+            self.sfr_function(sfr_formula,
+                              self._shifted_times_emiss,
+                              sfr_params))
 
         self.logging_info('SSP emissivity: calculate ssp kernel')
 
         # Calculate emissivity in units
         # [erg s^-1 Hz^-1 Mpc^-3] == [erg Mpc^-3]
-        self._emiss_ssp_cube = simpson(kernel_emiss,
-                                       x=self._log_t_ssp_intcube,
-                                       axis=-1)
+        self._emiss_ssp_cube = simpson(
+            kernel_emiss, x=self._log_t_ssp_intcube, axis=-1)
 
         self.logging_info('SSP emissivity: integrate emissivity')
-
-        # Dust absorption (applied in log10)
-        self._emiss_ssp_cube *= 10 ** dust_abs.calculate_dust(
-            wv_array=self._lambda_array,
-            models=yaml_data['dust_abs_models'],
-            z_array=self._z_array,
-            dust_params=yaml_data['dust_abs_params'])
-
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.title(yaml_data['name'])
-        # yyy = 10 ** dust_abs.calculate_dust(
-        #     self._lambda_array, models=yaml_data['dust_abs_models'],
-        #     z_array=self._z_array)
-        # print('Shape of dust abs', np.shape(yyy))
-        #
-        # alpha = 1.
-        # plt.plot(self._lambda_array, yyy[:, 0],
-        #          'k', alpha=alpha, label=r'z=%.2f' %
-        #                                  self._z_array[0])
-        # for i in [2, 4, 6]:
-        #     alpha -= 0.15
-        #     aaa = (np.abs(self._z_array - i)).argmin()
-        #     plt.plot(self._lambda_array, yyy[:, aaa],
-        #              'k', alpha=alpha, label='%.2f' % i)
-        #
-        # plt.ylabel('Escape fraction of photons')
-        # plt.xlabel('lambda (microns)')
-        # plt.legend()
-        # plt.xscale('log')
-        # plt.ylim(0., 1.2)
-        # plt.xlim(0.05, 10)
-
-        self.logging_info('SSP emissivity: set dust absorption')
 
         # Spline of the emissivity
         log10_emiss = np.log10(self._emiss_ssp_cube)
         log10_emiss[np.isnan(log10_emiss)] = -43.
         log10_emiss[np.invert(np.isfinite(log10_emiss))] = -43.
+
         # interp2d
         self._emiss_ssp_spline = interp2d(
             [self._freq_array[0], self._z_array[0]],
@@ -778,6 +891,7 @@ class EBL_model(object):
             yaml_data['path_SSP'], yaml_data['ssp_type'],
             yaml_data['file_name'], yaml_data['cut_popstar']]
         self._last_Zevol = yaml_data['args_metall']
+
         return
 
     def ebl_ssp_calculation(self, yaml_data, sfr=None):
@@ -1211,5 +1325,16 @@ class EBL_model(object):
         self.ebl_axion_calculation(axion_mass, axion_gayy)
 
         self.ebl_sum_contributions()
+
+        return
+
+    def write_ebl_to_ascii(self, output_path='', name='ebl'):
+        aaa = np.zeros((len(self._z_array) + 1,
+                        len(self._lambda_array) + 1))
+        aaa[1:, 0] = self._z_array
+        aaa[0, 1:] = self._lambda_array
+        aaa[1:, 1:] = self._ebl_ssp_cube.T
+
+        np.savetxt(output_path + '/' + name + '.txt', aaa)
 
         return

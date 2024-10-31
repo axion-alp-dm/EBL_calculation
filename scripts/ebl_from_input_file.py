@@ -1,9 +1,10 @@
 # IMPORTS --------------------------------------------#
 import os
 import yaml
+import psutil
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, RegularGridInterpolator
 
 from ebl_codes.EBL_class import EBL_model
 from astropy.constants import c
@@ -32,8 +33,8 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('outputs/final_outputs_Zevol_fixezZsolar '
-                  '2024-04-23 14:34:55/')
+input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints '
+                  '2024-10-30 10:04:08/')
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -43,6 +44,11 @@ if os.path.basename(os.getcwd()) == 'scripts':
 if not os.path.exists("outputs/"):
     os.makedirs("outputs/")
 
+def memory_usage_psutil():
+    # return the memory usage in MB
+    process = psutil.Process(os.getpid())
+    mem = process.memory_info()[0] / float(10 ** 6)
+    return mem
 
 # Configuration file reading and data input/output ---------#
 def read_config_file(ConfigFile):
@@ -62,6 +68,12 @@ linstyles_ssp = ['solid', '--', 'dotted', '-.']
 
 markers = ['.', 'x', '+', '*', '^', '>', '<']
 
+
+# We initialize the class with the input file
+config_data = read_config_file(input_file_dir + 'input_data.yml')
+ebl_class = EBL_model.input_yaml_data_into_class(config_data,
+                                                 log_prints=True)
+
 # FIGURE: METALLICITIES FOR DIFFERENT MODELS ---------------------------
 fig_met, ax_met = plt.subplots(figsize=(8, 8))
 plt.yscale('log')
@@ -74,13 +86,9 @@ plt.ylabel('Z')
 # FIGURE: COB FOR DIFFERENT MODELS -------------------------------------
 fig_cob, ax_cob = plt.subplots(figsize=(10, 8))
 
-waves_ebl = np.logspace(-1, 3, num=50)
+waves_ebl = np.logspace(-1, 3, num=500)
 freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
 
-# We initialize the class with the input file
-config_data = read_config_file(input_file_dir + 'input_data.yml')
-ebl_class = EBL_model.input_yaml_data_into_class(config_data,
-                                                 log_prints=True)
 
 # Axion component calculation
 # ebl_class.ebl_axion_calculation(
@@ -172,9 +180,9 @@ fig_ssp, ax_ssp = plt.subplots(figsize=(10, 8))
 plt.xscale('log')
 plt.title('More transparency, less metallicity')
 # plt.yscale('log')
-plt.ylim(0., 30.)
+# plt.ylim(0., 30.)
 
-xx_amstrongs = np.logspace(1, 7, 2000)
+xx_amstrongs = np.logspace(2, 6, 2000)
 
 ax_ssp.set_xlabel('Wavelength [A]')
 plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '  # /Lsun '
@@ -186,21 +194,28 @@ handles_ssp1 = []
 labels_ssp2 = []
 handles_ssp2 = []
 
+print('%.3f' %(memory_usage_psutil()))
+
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+    ebl_class.write_ebl_to_ascii(output_path=input_file_dir, name=key)
     print(10 ** ebl_class.ebl_ssp_spline(
         np.log10(c.value/0.608*1e6), 0., grid=False),
           21.98 - 10 ** ebl_class.ebl_ssp_spline(
         np.log10(c.value/0.608*1e6), 0., grid=False))
+    print('%.3f' % (memory_usage_psutil()))
+
 
     ax_cob.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
         freq_array_ebl, 0., grid=False),
                 linestyle='-', color=colors[nkey % len(colors)],
-                lw=3, markersize=16, marker=markers[nkey])
+                lw=3,
+                # markersize=16, marker=markers[nkey]
+                )
 
     ebl_class.logging_prints = True
 
@@ -244,7 +259,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
                  'purple', 'brown']
-
+#
     if config_data['ssp_models'][key]['path_SSP'] not in previous_ssp:
         previous_ssp.append(config_data['ssp_models'][key]['path_SSP'])
         labels_ssp2.append(
@@ -274,9 +289,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     handles_ssp1.append(
                         plt.Line2D([], [], linewidth=2, linestyle='-',
                                    color=color_ssp[i]))
-
+print('%.3f' %(memory_usage_psutil()))
 plt.figure(fig_cob)
-import_cb_data(plot_measurs=True, ax1=ax_cob)
+import_cb_data(plot_measurs=True, ax1=ax_cob, lambda_max_total=1000)
 
 # We introduce the Finke22 and CUBA splines
 ebl = {}
@@ -316,13 +331,13 @@ legend33 = ax_cob.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
                          [config_data['ssp_models'][key]['name']
                           for key in config_data['ssp_models']],
                          title=r'SSP models',  # bbox_to_anchor=(1.04, 0.1),
-                         loc=1
+                         loc=3
                          )
 # axes.add_artist(legend11)
 # axes.add_artist(legend22)
 ax_cob.add_artist(legend33)
 
-plt.xlim([.1, 200])
+plt.xlim([.1, 1000])
 plt.ylim(1e-2, 100)
 
 ax_sfr.legend()
@@ -373,4 +388,5 @@ fig_emiss_z.savefig(
 fig_emiss_z.savefig(
     input_file_dir + '/emiss_redshift_bare' + '.pdf',
     bbox_inches='tight')
+
 plt.show()
