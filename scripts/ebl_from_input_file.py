@@ -34,7 +34,8 @@ plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
 input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints '
-                  '2024-10-30 10:04:08/')
+                  '2024-11-04 13:42:49/')
+# input_file_dir = ('scripts/input_files/')
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -71,6 +72,7 @@ markers = ['.', 'x', '+', '*', '^', '>', '<']
 
 # We initialize the class with the input file
 config_data = read_config_file(input_file_dir + 'input_data.yml')
+# config_data = read_config_file(input_file_dir + 'input_dust_reem.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 
@@ -107,11 +109,39 @@ freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
 # plt.plot(waves_ebl, 10 ** ebl_class.ebl_ihl_spline(
 # freq_array_ebl, 0., grid=False),
 # linestyle=models[2], color='k')
+plt.figure()
 
+emiss_data = emissivity_data(z_min=None, z_max=None,
+                    lambda_min=0., lambda_max=3e3,
+                    take1ref=None, plot_fig=False)
+plt.scatter(x=emiss_data['lambda'], y=emiss_data['z'],
+            c=np.log10(emiss_data['eje']),
+            cmap='viridis')
+
+plt.xscale('log')
+plt.yscale('log')
+
+fig_emiss_lambda, (ax_emiss_lambda0, ax_emiss_lambda1) = plt.subplots(2, 1)
+plt.subplot(211)
+for nz, zz in enumerate(np.unique(emiss_data['z'])):
+    ax_emiss_lambda0.scatter(x=emiss_data['lambda'][emiss_data['z'] == zz],
+                y=emiss_data['eje'][emiss_data['z'] == zz],
+            color=plt.cm.CMRmap(nz / float(len(np.unique(emiss_data['z'])))),
+                )
+
+ax_emiss_lambda0.set_xscale('log')
+ax_emiss_lambda0.set_yscale('log')
+
+plt.subplot(212, sharex=ax_emiss_lambda0)
+
+ax_emiss_lambda1.set_xscale('log')
+# ax_emiss_lambda1.set_yscale('log')
+
+# plt.show()
 
 fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
 
-z_array = np.linspace(0., 10.)
+z_array = np.linspace(1e-9, 10.)
 
 for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                0.44, 0.55, 0.79,
@@ -219,6 +249,36 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ebl_class.logging_prints = True
 
+    plt.figure(fig_emiss_lambda)
+    for nz, zz in enumerate(np.unique(emiss_data['z'])):
+        print(nz, zz)
+        if nz == 0:
+            print(10 ** ebl_class.emiss_ssp_spline(
+                         (freq_array_ebl, 0.)))
+            print(10 ** ebl_class.emiss_ssp_spline(
+                         (freq_array_ebl, 0.1)))
+        plt.subplot(211)
+        ax_emiss_lambda0.plot(waves_ebl, 10 ** ebl_class.emiss_ssp_spline(
+                     (freq_array_ebl, zz)) * 10**freq_array_ebl * 1e-7,
+                    color=plt.cm.CMRmap(
+                        nz / float(len(np.unique(emiss_data['z'])))),
+                    zorder=0, alpha=0.75)
+        freq_arr_emiss = (3e8*1e6/emiss_data['lambda'][emiss_data['z'] == zz])
+
+        plt.subplot(212)
+        plt.plot(
+            emiss_data['lambda'][emiss_data['z'] == zz],
+            ((10 ** ebl_class.emiss_ssp_spline(
+                     (np.log10(freq_arr_emiss), zz))
+               * freq_arr_emiss * 1e-7
+               - emiss_data['eje'][emiss_data['z'] == zz])
+              / ((emiss_data['eje_n'][emiss_data['z'] == zz]
+                  + emiss_data['eje_p'][emiss_data['z'] == zz]) / 2.)),
+                    color=plt.cm.CMRmap(
+                        nz / float(len(np.unique(emiss_data['z'])))),
+            ls='', marker='.'
+                    )
+
     plt.figure(fig_emiss_z)
     for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                    0.44, 0.55, 0.79,
@@ -228,9 +288,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
         plt.plot(z_array,
                  (c.value / (ll * 1e-6))
                  * 10 ** ebl_class.emiss_ssp_spline(
-                     np.log10(c.value / ll * 1e6) * np.ones(
+                     (np.log10(c.value / ll * 1e6) * np.ones(
                          len(z_array)),
-                     z_array)
+                     z_array))
                  * 1e-7,
                  linestyle='-', marker=markers[nkey],
                  color=colors[nkey % len(colors)], lw=2)

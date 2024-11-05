@@ -71,6 +71,7 @@ print(np.shape(igl_ebldata))
 
 # Metallicity evolution data
 z_data = import_met_data()
+print(np.shape(z_data))
 
 # FIGURE: sfr fit ------------------------------------------------
 sfr_data = sfr_data_dict()
@@ -89,8 +90,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
     def fit_igl(lambda_igl, params):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-            params[8]
+        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+        #     params[8]
 
         return ebl_class.ebl_ssp_individualData(
             yaml_data=config_data['ssp_models'][key],
@@ -103,14 +104,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-            params[8]
+        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+        #     params[8]
 
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
 
         return 10 ** (freq_emissions
-                      + ebl_class.emiss_ssp_spline(freq_emissions,
-                                                   z_emiss)
+                      + ebl_class.emiss_ssp_spline((freq_emissions,
+                                                   z_emiss))
                       - 7)
 
 
@@ -152,13 +153,15 @@ for nkey, key in enumerate(config_data['ssp_models']):
     aaa = np.concatenate((
         config_data['ssp_models'][key]['sfr_params'],
         config_data['ssp_models'][key]['args_metall'],
-        [float(config_data['ssp_models'][key]['dust_reem_params']['f_tir'])]))
+        # [float(config_data['ssp_models'][key]['dust_reem_params']['f_tir'])]
+    ))
     print(aaa)
 
     m = Minuit(combined_likelihood, aaa)
     m.limits = [[None, None], [None, None], [None, None], [None, None],
                 [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25],
-                [7, 11]]
+                # [7, 11]
+                ]
     # m.fixed[0] = True
     # m.fixed[1] = True
     # m.fixed[2] = True
@@ -166,7 +169,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     # m.fixed[4] = True
     # m.fixed[5] = True
     # m.fixed[6] = True
-    # m.fixed[7] = True
+    m.fixed[7] = True
     # m.fixed[8] = True
     m.values[7] = 0.02
     print(m.params)

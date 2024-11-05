@@ -50,9 +50,14 @@ class EBL_model(object):
         :return: class
             The EBL calculation class.
         """
-        z_array = np.linspace(
+        z_array = np.geomspace(
             float(yaml_data['redshift_array']['zmin']),
             float(yaml_data['redshift_array']['zmax']),
+            yaml_data['redshift_array']['zsteps'])
+        z_array = np.insert(z_array, 0, 0.)
+        z_array = np.linspace(
+            0.,
+            10.,
             yaml_data['redshift_array']['zsteps'])
         lamb_array = np.geomspace(
             float(yaml_data['wavelength_array']['lmin']),
@@ -152,9 +157,13 @@ class EBL_model(object):
         self._lambda_array = lambda_array[::-1]
         self._freq_array = np.log10(c.value / lambda_array[::-1] * 1e6)
         self._t_intsteps = t_intsteps
+        tt = np.log10(self._cosmo.lookback_time(
+                self._z_array).to(u.yr).value)
+        tt[np.isnan(tt)] = -43.
+        tt[np.invert(np.isfinite(tt))] = -43.
+
         self._t2z = UnivariateSpline(
-            np.log10(self._cosmo.lookback_time(
-                self._z_array).to(u.yr).value),
+            tt,
             np.log10(self._z_array),
             s=0, k=1)
 
@@ -633,15 +642,17 @@ class EBL_model(object):
             yyy = np.log10(yyy)
 
             yyy_whole = np.zeros((np.shape(yyy)[0], 2, np.shape(yyy)[1]))
-            yyy_whole[:, 0, :] = yyy# - np.log10(-5.)
-            yyy_whole[:, 1, :] = yyy# + np.log10(50.)
+            yyy_whole[:, 0, :] = yyy - np.log10(1e5)
+            yyy_whole[:, 1, :] = yyy + np.log10(1e8)
 
             yyy_whole[np.isnan(yyy_whole)] = -43.
             yyy_whole[np.invert(np.isfinite(yyy_whole))] = -43.
 
+            l_tir = np.array([1e-5, 1e8]) * L_sun.to(u.erg / u.s).value
+
             dust_reem_spline = RegularGridInterpolator(
                 points=(np.log10(aaa['wavelength'] * 1e-3),
-                        [1, 50],
+                        np.log10(l_tir),
                         np.log10([1e-43, 0.0004, 0.004, 0.008, 0.02, 0.05])),
                 values=yyy_whole,
                 method='linear',
@@ -816,13 +827,19 @@ class EBL_model(object):
         log10_emiss[np.invert(np.isfinite(log10_emiss))] = -43.
 
         # interp2d
-        self._emiss_ssp_spline = interp2d(
-            [self._freq_array[0], self._z_array[0]],
-            [self._freq_array[-1], self._z_array[-1]],
-            [self._freq_array[1] - self._freq_array[0],
-             self._z_array[1] - self._z_array[0]],
-            log10_emiss,
-            k=1, p=[False, False], e=[0, 0])
+        # self._emiss_ssp_spline = interp2d(
+        #     [self._freq_array[0], self._z_array[0]],
+        #     [self._freq_array[-1], self._z_array[-1]],
+        #     [self._freq_array[1] - self._freq_array[0],
+        #      self._z_array[1] - self._z_array[0]],
+        #     log10_emiss,
+        #     k=1, p=[False, False], e=[0, 0])
+        self._emiss_ssp_spline = RegularGridInterpolator(
+            points=(self._freq_array, self._z_array),
+            values=log10_emiss,
+            method='linear',
+            bounds_error=False, fill_value=-43
+        )
 
         # Free memory and log the time
         del kernel_emiss, log10_emiss
@@ -856,17 +873,15 @@ class EBL_model(object):
                 or np.shape(self._ebl_intcube) != np.shape(self._cube)):
             self.ebl_ssp_cubes()
 
-        # logging.info(
-        #     '%.2fs: %s' % (time.process_time()
-        #                    - self._process_time, yaml_data['sfr_params']))
-        # self._process_time = time.process_time()
-
         self.logging_info('SSP EBL: calculation of z cube')
 
         # Calculate integration values
+        # ebl_intcube = self._ebl_intcube * 10. ** self._emiss_ssp_spline(
+        #     self._shifted_freq,
+        #     self._ebl_z_intcube)
         ebl_intcube = self._ebl_intcube * 10. ** self._emiss_ssp_spline(
-            self._shifted_freq,
-            self._ebl_z_intcube)
+            (self._shifted_freq,
+            self._ebl_z_intcube))
         self.logging_info('SSP EBL: calculation of kernel interpolation')
 
         # Integration of EBL from SSP
@@ -977,8 +992,8 @@ class EBL_model(object):
         # Calculate integration values
         ebl_intcube = (
                 self._ebl_intcube * 10. ** self._emiss_ssp_spline(
-                    self._shifted_freq,
-                    self._ebl_z_intcube))
+                    (self._shifted_freq,
+                    self._ebl_z_intcube)))
         self.logging_info('SSP EBL: calculation of kernel interpolation')
 
         return simpson(ebl_intcube, x=self._ebl_z_intcube,
