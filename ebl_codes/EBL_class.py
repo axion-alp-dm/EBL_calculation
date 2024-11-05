@@ -50,11 +50,11 @@ class EBL_model(object):
         :return: class
             The EBL calculation class.
         """
-        z_array = np.geomspace(
-            float(yaml_data['redshift_array']['zmin']),
-            float(yaml_data['redshift_array']['zmax']),
-            yaml_data['redshift_array']['zsteps'])
-        z_array = np.insert(z_array, 0, 0.)
+        # z_array = np.geomspace(
+        #     float(yaml_data['redshift_array']['zmin']),
+        #     float(yaml_data['redshift_array']['zmax']),
+        #     yaml_data['redshift_array']['zsteps'])
+        # z_array = np.insert(z_array, 0, 0.)
         z_array = np.linspace(
             0.,
             10.,
