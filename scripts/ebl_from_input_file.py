@@ -33,8 +33,7 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints '
-                  '2024-11-04 13:42:49/')
+input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints_2freeparamschary 2024-11-07 14:08:29/')
 # input_file_dir = ('scripts/input_files/')
 
 # Check that the working directory is correct for the paths
@@ -56,6 +55,7 @@ def read_config_file(ConfigFile):
     with open(ConfigFile, 'r') as stream:
         try:
             parsed_yaml = yaml.safe_load(stream)
+            # print(pa)
         except yaml.YAMLError as exc:
             print(exc)
     return parsed_yaml
@@ -89,7 +89,7 @@ plt.ylabel('Z')
 fig_cob, ax_cob = plt.subplots(figsize=(10, 8))
 
 waves_ebl = np.logspace(-1, 3, num=500)
-freq_array_ebl = np.log10(3e8 / (waves_ebl * 1e-6))
+freq_array_ebl = c.value / (waves_ebl * 1e-6)
 
 
 # Axion component calculation
@@ -132,16 +132,23 @@ for nz, zz in enumerate(np.unique(emiss_data['z'])):
 ax_emiss_lambda0.set_xscale('log')
 ax_emiss_lambda0.set_yscale('log')
 
+plt.ylabel(r'$\nu \varepsilon_{\nu}$ (W / Mpc**3)')
+
 plt.subplot(212, sharex=ax_emiss_lambda0)
 
 ax_emiss_lambda1.set_xscale('log')
 # ax_emiss_lambda1.set_yscale('log')
 
+plt.xlabel(r'Wavelength ($\mu$m)')
+plt.ylabel(
+    r'$\frac{\mathrm{model}(\lambda_\mathrm{i})- \nu \varepsilon_{\nu,'
+    r'\mathrm{i}}}'
+           r'{\sigma_\mathrm{i}}$')
 # plt.show()
 
 fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
 
-z_array = np.linspace(1e-9, 10.)
+z_array = np.linspace(1e-9, 10., num=100)
 
 for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                0.44, 0.55, 0.79,
@@ -231,17 +238,22 @@ for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
 
+    config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+    float(config_data['ssp_models'][key]['dust_reem_params']['f_tir'])
+    config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+    float(config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'])
+
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.write_ebl_to_ascii(output_path=input_file_dir, name=key)
-    print(10 ** ebl_class.ebl_ssp_spline(
-        np.log10(c.value/0.608*1e6), 0., grid=False),
-          21.98 - 10 ** ebl_class.ebl_ssp_spline(
-        np.log10(c.value/0.608*1e6), 0., grid=False))
+    print(ebl_class.ebl_ssp_spline(
+        np.log10(c.value/0.608*1e6), 0.),
+          21.98 - ebl_class.ebl_ssp_spline(
+        np.log10(c.value/0.608*1e6), 0.))
     print('%.3f' % (memory_usage_psutil()))
 
 
-    ax_cob.plot(waves_ebl, 10 ** ebl_class.ebl_ssp_spline(
-        freq_array_ebl, 0., grid=False),
+    ax_cob.plot(waves_ebl, ebl_class.ebl_ssp_spline(
+        waves_ebl, 0.),
                 linestyle='-', color=colors[nkey % len(colors)],
                 lw=3,
                 # markersize=16, marker=markers[nkey]
@@ -251,32 +263,26 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     plt.figure(fig_emiss_lambda)
     for nz, zz in enumerate(np.unique(emiss_data['z'])):
-        print(nz, zz)
-        if nz == 0:
-            print(10 ** ebl_class.emiss_ssp_spline(
-                         (freq_array_ebl, 0.)))
-            print(10 ** ebl_class.emiss_ssp_spline(
-                         (freq_array_ebl, 0.1)))
         plt.subplot(211)
-        ax_emiss_lambda0.plot(waves_ebl, 10 ** ebl_class.emiss_ssp_spline(
-                     (freq_array_ebl, zz)) * 10**freq_array_ebl * 1e-7,
+        ax_emiss_lambda0.plot(waves_ebl, ebl_class.emiss_ssp_spline(
+                     waves_ebl, zz) * freq_array_ebl * 1e-7,
                     color=plt.cm.CMRmap(
                         nz / float(len(np.unique(emiss_data['z'])))),
-                    zorder=0, alpha=0.75)
+                    zorder=0, alpha=0.75, ls=linstyles_ssp[nkey])
         freq_arr_emiss = (3e8*1e6/emiss_data['lambda'][emiss_data['z'] == zz])
 
         plt.subplot(212)
         plt.plot(
             emiss_data['lambda'][emiss_data['z'] == zz],
-            ((10 ** ebl_class.emiss_ssp_spline(
-                     (np.log10(freq_arr_emiss), zz))
+            (ebl_class.emiss_ssp_spline(
+                emiss_data['lambda'][emiss_data['z'] == zz], zz)
                * freq_arr_emiss * 1e-7
                - emiss_data['eje'][emiss_data['z'] == zz])
               / ((emiss_data['eje_n'][emiss_data['z'] == zz]
-                  + emiss_data['eje_p'][emiss_data['z'] == zz]) / 2.)),
+                  + emiss_data['eje_p'][emiss_data['z'] == zz]) / 2.),
                     color=plt.cm.CMRmap(
                         nz / float(len(np.unique(emiss_data['z'])))),
-            ls='', marker='.'
+            ls='', marker=markers[nkey]
                     )
 
     plt.figure(fig_emiss_z)
@@ -287,10 +293,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
         plt.plot(z_array,
                  (c.value / (ll * 1e-6))
-                 * 10 ** ebl_class.emiss_ssp_spline(
-                     (np.log10(c.value / ll * 1e6) * np.ones(
-                         len(z_array)),
-                     z_array))
+                 * ebl_class.emiss_ssp_spline(
+                     ll * np.ones(len(z_array)), z_array)
                  * 1e-7,
                  linestyle='-', marker=markers[nkey],
                  color=colors[nkey % len(colors)], lw=2)
@@ -312,7 +316,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ax_sfr.plot(z_data, ebl_class.sfr_function(
         function_input=config_data['ssp_models'][key]['sfr'],
-        xx_array=z_data,
+        zz_array=z_data,
         params=config_data['ssp_models'][key]['sfr_params']),
                 label=config_data['ssp_models'][key]['name'],
                 color=colors[nkey % len(colors)])
@@ -417,8 +421,7 @@ ax_ssp.add_artist(legend22)
 np.savetxt('outputs/data_pegasemetall.txt',
            np.column_stack((
                waves_ebl,
-               10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0.,
-                                              grid=False))))
+               ebl_class.ebl_ssp_spline(waves_ebl, 0.))))
 
 # Save the figures
 fig_cob.savefig(input_file_dir + '/ebl_bare' + '.png',

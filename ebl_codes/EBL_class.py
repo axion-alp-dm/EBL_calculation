@@ -6,8 +6,7 @@ import numpy as np
 
 from scipy.integrate import simpson
 from scipy.interpolate import UnivariateSpline, RectBivariateSpline, \
-    interpn, RegularGridInterpolator
-from fast_interp import interp2d, interp3d
+    RegularGridInterpolator
 
 from astropy.io import fits
 from astropy import units as u
@@ -57,7 +56,7 @@ class EBL_model(object):
         # z_array = np.insert(z_array, 0, 0.)
         z_array = np.linspace(
             0.,
-            10.,
+            yaml_data['redshift_array']['zmax'],
             yaml_data['redshift_array']['zsteps'])
         lamb_array = np.geomspace(
             float(yaml_data['wavelength_array']['lmin']),
@@ -177,25 +176,21 @@ class EBL_model(object):
 
         return
 
-    @property
-    def emiss_ssp_spline(self):
-        return self._emiss_ssp_spline
+    def emiss_ssp_spline(self, wv_array, zz_array):
+        ff_array = np.log10(c.value / wv_array * 1e6)
+        return 10**self._emiss_ssp_spline((ff_array, zz_array))
 
-    @property
-    def ebl_total_spline(self):
-        return self._ebl_total_spline
+    def ebl_total_spline(self, wv_array, zz_array):
+        ff_array = np.log10(c.value / wv_array * 1e6)
+        return 10**self._ebl_total_spline(ff_array, zz_array, grid=False)
 
-    @property
-    def ebl_ssp_spline(self):
-        return self._ebl_ssp_spline
+    def ebl_ssp_spline(self, wv_array, zz_array):
+        ff_array = np.log10(c.value / wv_array * 1e6)
+        return 10**self._ebl_ssp_spline(ff_array, zz_array, grid=False)
 
-    @property
-    def ebl_ihl_spline(self):
-        return self._ebl_ihl_spline
-
-    @property
-    def ebl_axion_spline(self):
-        return self._ebl_axion_spline
+    def ebl_ihl_spline(self, wv_array, zz_array):
+        ff_array = np.log10(c.value / wv_array * 1e6)
+        return 10**self._ebl_ihl_spline(ff_array, zz_array, grid=False)
 
     @property
     def ssp_lumin_spline(self):
@@ -540,14 +535,14 @@ class EBL_model(object):
                 '(required string or callable)')
             return 0.
 
-    def sfr_function(self, function_input, xx_array, params=None):
+    def sfr_function(self, function_input, zz_array, params=None):
         """
         Stellar Formation Rate (SFR) is the density of stars that are born
         as a function of time/redshift.
 
         function_input: string or callable
             Formula (analytical or numerical) of the SFR.
-        xx_array: 1D array
+        zz_array: 1D array
             Redshift values to input in the formula.
         params: 1D array or list
             Optional parameters that can enter the sfr formula.
@@ -559,9 +554,9 @@ class EBL_model(object):
             params = []
 
         if type(function_input) == str:
-            return (lambda x: eval(function_input)(x, params))(xx_array)
+            return (lambda x: eval(function_input)(x, params))(zz_array)
         elif callable(function_input):
-            return function_input(xx_array)
+            return function_input(zz_array)
         else:
             print(
                 'Unrecognized type of sfr '
@@ -617,14 +612,18 @@ class EBL_model(object):
 
 
             # 3D spline creation
-            dust_reem_spline = RegularGridInterpolator(
-                points=(np.log10(ir_wv),
-                        np.log10(l_tir),
-                        [-43, 1.]),
-                values=ir_lum_expanded,
-                method='linear',
-                bounds_error=False, fill_value=-43
-            )
+            try:
+                dust_reem_spline = RegularGridInterpolator(
+                    points=(np.log10(ir_wv),
+                            np.log10(l_tir),
+                            [-43, 1.]),
+                    values=ir_lum_expanded,
+                    method='linear',
+                    bounds_error=False, fill_value=-43
+                )
+            except:
+                print(l_tir)
+
 
         elif yaml_data['library'] == 'bosa':
 
@@ -669,7 +668,8 @@ class EBL_model(object):
     def emiss_ssp_calculation(self, yaml_data, sfr=None):
         """
         Calculation of SSP emissivity from the parameters given in
-        the dictionary.
+        the dictionary. If no sfr is given as an inout, the sfr data
+        specified in the yaml file will be used to calculate the emissivities.
 
         Emissivity units:
         ----------
@@ -763,7 +763,6 @@ class EBL_model(object):
         kernel_emiss = self._kernel_emiss * fract_dust_Notabs
 
         self.logging_info('SSP emissivity: set dust absorption')
-        # print(np.min(fract_dust_Notabs), np.max(fract_dust_Notabs))
 
         # Dust reemission loading ------------------------------------
         if yaml_data['dust_reem']:
@@ -826,14 +825,6 @@ class EBL_model(object):
         log10_emiss[np.isnan(log10_emiss)] = -43.
         log10_emiss[np.invert(np.isfinite(log10_emiss))] = -43.
 
-        # interp2d
-        # self._emiss_ssp_spline = interp2d(
-        #     [self._freq_array[0], self._z_array[0]],
-        #     [self._freq_array[-1], self._z_array[-1]],
-        #     [self._freq_array[1] - self._freq_array[0],
-        #      self._z_array[1] - self._z_array[0]],
-        #     log10_emiss,
-        #     k=1, p=[False, False], e=[0, 0])
         self._emiss_ssp_spline = RegularGridInterpolator(
             points=(self._freq_array, self._z_array),
             values=log10_emiss,
@@ -955,7 +946,7 @@ class EBL_model(object):
 
     def ebl_ssp_individualData(self, yaml_data, x_data, sfr=None):
         """
-        Calculate the EBL SSP contribution. for the specific wavelength
+        Calculate the EBL SSP contribution, for the specific wavelength
         data that we have available (and redshift z=0).
         ONLY WORKS FOR REDSHIFT 0!!! (because of intcubes, the redshift
         dependency is not implemented. It does not seem useful.)
@@ -1287,6 +1278,22 @@ class EBL_model(object):
         return
 
     def write_ebl_to_ascii(self, output_path='', name='ebl'):
+        """
+        Creates a file containing the values for wavelength, redshift and
+        EBL values, of dimensions (n+1) x (m+1).
+        The zeroth column [1:] contains the wavelength values in mu meters.
+        The first row [1:] contains the redshift values.
+        The remaining values (n x m) are the EBL photon density values
+        in nW / m^2 / sr.
+        The [0,0] entry is empty.
+
+        Parameters
+        ----------
+        output_path: str
+            Path where to create the txt file
+        name: str
+            name of the txt file
+        """
         aaa = np.zeros((len(self._lambda_array) + 1,
                         len(self._z_array) + 1))
         aaa[1:, 0] = self._lambda_array[::-1]
