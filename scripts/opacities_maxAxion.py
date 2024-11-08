@@ -64,33 +64,135 @@ def cosmic_axion_contr(lmu, zz, mass, gayy):
 
     return ebl_axion_cube
 
-input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints '
-              '2024-10-30 10:04:08/')
-ebl_finke = EBL.readmodel('finke2022')
-ebl_fit = EBL.readascii(
-    file_name='outputs/outputs_dust_reem_wto_LOWdatapoints '
-              '2024-10-30 10:04:08/SB99_dustFinke3e10.txt',
-    model_name='Fit')
 
-z = np.array([0., 0.15, 0.3, 0.65])
+input_file_dir = ('outputs/outputs_dust_final1/')
+ebl_finke = EBL.readmodel('finke2022')
+ebl_fit_chary = EBL.readascii(
+    file_name='outputs/outputs_dust_final1/SB99_dustFinke3e10.txt',
+    model_name='Chary')
+ebl_fit_bosa = EBL.readascii(
+    file_name='outputs/outputs_dust_final1/SB99_dustFinke_bosa.txt',
+    model_name='Bosa')
+
+z = np.array([0.03, 0.15, 0.65])
 lmu = np.logspace(-2, 3., int(1e4))
-ETeV = np.geomspace(1e-3, 30, int(100))
+ETeV = np.geomspace(0.1, 30, int(100))
 
 # --------------------------------------------------------------------
-plt.figure()
-freq = (c.c.value / lmu * 1e6 * u.s ** -1)
-z_array = np.arange(0., 20., 0.2)
-for ni, ii in enumerate(z_array):
-    z_star = (5. * u.eV / (2. * c.h.to(u.eV * u.s) * freq) * (1. + ii)
-              - 1.)
 
-    plt.loglog(lmu, ii*np.ones(len(lmu)),
-             label=ii, color=plt.cm.CMRmap(ni / float(len(z_array))),)
-    plt.loglog(lmu[z_star>ii], z_star[z_star>ii],
-             label=ii, color=plt.cm.CMRmap(ni / float(len(z_array))),)
-# plt.legend()
+plt.subplots(1, 3, figsize=(20, 8))
+plt.subplot(131)
+
+mass_1 = 10.
+gayy_1 = cosmic_max_axion(mass_1)
+
+for i, zz in enumerate(z):
+    plt.loglog(lmu, ebl_finke.ebl_array(zz, lmu),
+               ls=':', color=plt.cm.CMRmap(i / float(len(z))),
+               lw=2.,
+               label='$z = {0:.2f}$'.format(zz),
+               zorder=-1 * i)
+
+    plt.loglog(lmu, ebl_fit_chary.ebl_array(zz, lmu),
+               ls='-', color=plt.cm.CMRmap(i / float(len(z))),
+               lw=2.,
+               zorder=-1 * i)
+
+    plt.loglog(lmu, ebl_fit_bosa.ebl_array(zz, lmu),
+               ls='--', color=plt.cm.CMRmap(i / float(len(z))),
+               lw=2.,
+               zorder=-1 * i)
+
+plt.gca().set_ylim((0.5, 50.))
+plt.gca().set_xlim((1e-1, 3000))
+plt.gca().set_xlabel('Wavelength ($\mu$m)')
+plt.gca().set_ylabel(
+    r'$\nu I_\nu (\mathrm{nW}\,\mathrm{sr}^{-1}\mathrm{m}^{-2})$')
+aaa = plt.legend(loc=2, ncol=1)
+
+markers = [':', '-', '--']
+bbb = plt.legend([plt.Line2D([], [], linestyle=markers[i],
+                             color='k')
+                  for i in range(3)],
+                 ['Finke22', 'Chary', 'Bosa'],
+                 loc=1, fontsize=16, framealpha=0.4)
+
+plt.gca().add_artist(aaa)
+plt.gca().add_artist(bbb)
+# plt.show()
+plt.subplot(132)
+
+for i, zz in enumerate(z):
+    plt.loglog(ETeV, ebl_finke.optical_depth(zz, ETeV),
+               ls=':',
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
+               lw=2)
+    plt.loglog(ETeV,
+               ebl_fit_chary.optical_depth(zz, ETeV),
+               ls='-',
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
+               lw=2)
+    plt.loglog(ETeV,
+               ebl_fit_bosa.optical_depth(zz, ETeV),
+               ls='--',
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
+               label='$z = {0:.2f}$'.format(zz), lw=2)
+
+plt.gca().set_ylim((4e-3, 500.))
+plt.gca().set_xlim((0.1, 30.))
+plt.gca().set_xlabel('Energy (TeV)')
+plt.gca().set_ylabel(r'Optical depth $\tau$')
+aaa = plt.legend(loc=2)
+bbb = plt.legend([plt.Line2D([], [], linestyle=markers[i],
+                             color='k')
+                  for i in range(3)],
+                 ['Finke22', 'Chary', 'Bosa'],
+                 loc=4, fontsize=16, framealpha=0.4)
+plt.gca().add_artist(aaa)
+plt.gca().add_artist(bbb)
+
+plt.subplot(133)
+
+for i, zz in enumerate(z):
+    plt.loglog(ETeV,
+               np.exp(-ebl_fit_chary.optical_depth(zz, ETeV)
+                      + ebl_finke.optical_depth(zz, ETeV)),
+               ls='-',
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
+               lw=2)
+    plt.loglog(ETeV,
+               np.exp(-ebl_fit_bosa.optical_depth(zz, ETeV)
+                      + ebl_finke.optical_depth(zz, ETeV)),
+               ls='--',
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
+               label='$z = {0:.2f}$'.format(zz), lw=2)
+
+plt.gca().set_ylim((0.01, 300.))
+plt.gca().set_xlim((0.1, 30.))
+plt.gca().set_xlabel('Energy (TeV)')
+plt.gca().set_ylabel(r'$e ^ {-(\tau_\mathrm{fit} - \tau_\mathrm{Finke})}$')
+aaa = plt.legend(loc=2)
+bbb = plt.legend([plt.Line2D([], [], linestyle=markers[i + 1],
+                             color='k')
+                  for i in range(2)],
+                 ['Chary', 'Bosa'],
+                 loc=3, fontsize=16, framealpha=0.4)
+plt.gca().add_artist(aaa)
+plt.gca().add_artist(bbb)
+
+plt.savefig(input_file_dir + 'opt_depth.png',
+            bbox_inches='tight')
+plt.savefig(input_file_dir + 'opt_depth.pdf',
+            bbox_inches='tight')
+
 plt.show()
 
+# --------------------------------------------------------------------
 plt.subplots(1, 2, figsize=(20, 8))
 plt.subplot(121)
 
@@ -98,7 +200,6 @@ mass_1 = 10.
 gayy_1 = cosmic_max_axion(mass_1)
 
 for i, zz in enumerate(z):
-
     plt.loglog(lmu, ebl_finke.ebl_array(zz, lmu),
                ls='-', color=plt.cm.CMRmap(i / float(len(z))),
                lw=2.,
@@ -109,7 +210,6 @@ for i, zz in enumerate(z):
                ls=':', color=plt.cm.CMRmap(i / float(len(z))),
                lw=2.,
                zorder=-1 * i)
-
 
 plt.gca().set_ylim((0.5, 50.))
 plt.gca().set_xlim((1e-1, 3000))
@@ -133,13 +233,13 @@ plt.subplot(122)
 for i, zz in enumerate(z):
     plt.loglog(ETeV, ebl_fit.optical_depth(zz, ETeV),
                ls='dotted',
-                 color=plt.cm.CMRmap(i / float(len(z))),
-                 # color=colors[mi],
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
                lw=2)
     plt.loglog(ETeV, ebl_finke.optical_depth(zz, ETeV),
                ls='-',
-                 color=plt.cm.CMRmap(i / float(len(z))),
-                 # color=colors[mi],
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
                label='$z = {0:.2f}$'.format(zz), lw=2)
 
 plt.gca().set_ylim((4e-8, 800.))
@@ -155,10 +255,10 @@ bbb = plt.legend([plt.Line2D([], [], linestyle=markers[i],
 plt.gca().add_artist(aaa)
 plt.gca().add_artist(bbb)
 
-plt.savefig(input_file_dir + 'opt_depth.png',
-                bbox_inches='tight')
-plt.savefig(input_file_dir + 'opt_depth.pdf',
-                bbox_inches='tight')
+plt.savefig(input_file_dir + 'opt_depth1.png',
+            bbox_inches='tight')
+plt.savefig(input_file_dir + 'opt_depth1.pdf',
+            bbox_inches='tight')
 
 # plt.show()
 
@@ -251,18 +351,18 @@ for mi, mass_ii in enumerate(mass_array):
     # --------------------------------------------------------------------
 
 plt.subplot(132, sharex=ax0)
-plt.title(r'$m_ac^2 = $%i eV' %mass_ii)
+plt.title(r'$m_ac^2 = $%i eV' % mass_ii)
 for i, zz in enumerate(z):
     plt.loglog(ETeV, np.exp(-opt_depth_finke[i, :]),
                ls='-',
-                 color=plt.cm.CMRmap(i / float(len(z))),
-                 # color=colors[mi],
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
                label='$z = {0:.2f}$'.format(zz), lw=2)
 
     plt.loglog(ETeV, np.exp(-opt_depth_axion[i, :]),
                ls='--',
-                 color=plt.cm.CMRmap(i / float(len(z))),
-                 # color=colors[mi],
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
                lw=2)
     # plt.axvline(Etau1GeV[i] / 1e3, ls=':', color = plt.cm.CMRmap(i / float(len(z))) )
 
@@ -282,18 +382,18 @@ plt.gca().add_artist(bbb)
 # --------------------------------------------------------------------
 # plt.figure()
 plt.subplot(133, sharex=ax0)
-plt.title(r'$m_ac^2 = $%i eV' %mass_ii)
+plt.title(r'$m_ac^2 = $%i eV' % mass_ii)
 for i, zz in enumerate(z):
     plt.loglog(ETeV, opt_depth_finke[i, :],
                ls='-',
-                 color=plt.cm.CMRmap(i / float(len(z))),
-                 # color=colors[mi],
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
                label='$z = {0:.2f}$'.format(zz), lw=2)
 
     plt.loglog(ETeV, opt_depth_axion[i, :],
                ls='--',
-                 color=plt.cm.CMRmap(i / float(len(z))),
-                 # color=colors[mi],
+               color=plt.cm.CMRmap(i / float(len(z))),
+               # color=colors[mi],
                lw=2)
 
 plt.gca().set_ylim((4e-8, 800.))

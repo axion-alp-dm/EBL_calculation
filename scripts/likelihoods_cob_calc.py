@@ -24,7 +24,7 @@ from iminuit.cost import LeastSquares
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('outputs_dust_reem_wto_LOWdatapoints'
+direct_name = str('outputs_dust_reem_wto_LOWdatapoints_dustfree'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
@@ -55,7 +55,8 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 
 config_data = read_config_file(
-    'scripts/input_files/input_dust_reem.yml')
+    # 'scripts/input_files/input_dust_reem.yml')
+    'notebooks/input_example.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use
@@ -89,9 +90,13 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     def fit_igl(lambda_igl, params):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
-        config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-        #     params[8]
+        config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
+        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+            params[8]
+        config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+            params[9]
+        config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = \
+            params[10:15]
 
         return ebl_class.ebl_ssp_individualData(
             yaml_data=config_data['ssp_models'][key],
@@ -103,21 +108,24 @@ for nkey, key in enumerate(config_data['ssp_models']):
         freq_emissions = np.log10(c.value / lambda_emiss * 1e6)
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
-        config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-        #     params[8]
+        config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
+        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+            params[8]
+        config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+            params[9]
+        config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = \
+            params[10:15]
 
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
 
-        return 10 ** (freq_emissions
-                      + ebl_class.emiss_ssp_spline((freq_emissions,
-                                                   z_emiss))
-                      - 7)
+        return (lambda_emiss* ebl_class.emiss_ssp_spline(freq_emissions,
+                                                   z_emiss)
+                      *1e-7)
 
 
     def sfr(x, params):
         return ebl_class.sfr_function(
-            config_data['ssp_models'][key]['sfr'], x, params[0:4])
+            config_data['ssp_models'][key]['sfr_formula'], x, params[0:4])
 
 
     def metall(x, params):
@@ -152,15 +160,21 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     aaa = np.concatenate((
         config_data['ssp_models'][key]['sfr_params'],
-        config_data['ssp_models'][key]['args_metall'],
-        # [float(config_data['ssp_models'][key]['dust_reem_params']['f_tir'])]
+        config_data['ssp_models'][key]['metall_params'],
+        [float(config_data['ssp_models'][key]
+               ['dust_reem_params']['f_tir']),
+         float(config_data['ssp_models'][key]
+               ['dust_reem_params']['wv_reem_min']),
+         ],
+        config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22']
     ))
     print(aaa)
 
     m = Minuit(combined_likelihood, aaa)
-    m.limits = [[None, None], [None, None], [None, None], [None, None],
+    m.limits = [[0., 5.], [0., 10.], [0., 10.], [0., 10.],
                 [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25],
-                # [7, 11]
+                [7, 11], [3., 10.],
+                [0., 10.], [0., 10.], [0., 10.], [0., 10.], [0., 10.]
                 ]
     # m.fixed[0] = True
     # m.fixed[1] = True
@@ -192,7 +206,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     outputs.write('Individual chi2 values:\n')
     aaa = np.array(np.array(m.params.to_table()[0])[:, 2], dtype=float)
     outputs.write(
-        'cob data: ' + str(chi2_measurs(
+        'CB data: ' + str(chi2_measurs(
             fit_igl(igl_ebldata['lambda'], aaa),
             igl_ebldata['nuInu'], igl_ebldata['1 sigma'])) + '\n')
     outputs.write(
@@ -230,10 +244,18 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                                     m.params[2].value,
                                                     m.params[3].value]
 
-    config_data['ssp_models'][key]['args_metall'] = [m.params[4].value,
+    config_data['ssp_models'][key]['metall_params'] = [m.params[4].value,
                                                      m.params[5].value,
                                                      m.params[6].value,
                                                      m.params[7].value]
+
+    config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = m.params[8].value
+    config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+        m.params[9].value
+    config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] =\
+        [m.params[10].value, m.params[11].value,
+         m.params[12].value, m.params[13].value, m.params[14].value]
+
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 
     np.save('outputs/' + direct_name + '/' + key + 'spline',

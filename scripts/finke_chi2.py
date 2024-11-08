@@ -56,11 +56,23 @@ spline_finke = UnivariateSpline(waves_ebl, nuInu['finke2022'], s=0, k=1)
 spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
 
-data_fit = np.loadtxt('outputs/outputs_dust_reem_wto_LOWdatapoints '
-              '2024-10-30 10:04:08/SB99_dustFinke3e10.txt')
-wv = data_fit[1:, 0]
-ebl_fit = data_fit[1:, 1]
-spline_fit = UnivariateSpline(wv, ebl_fit, s=0, k=1)
+# data_fit = np.loadtxt('outputs/outputs_dust_reem_wto_LOWdatapoints '
+#               '2024-10-30 10:04:08/SB99_dustFinke3e10.txt')
+
+data_fit_chary = np.loadtxt('outputs/outputs_dust_final1/'
+                            'SB99_dustFinke3e10.txt')
+
+wv = data_fit_chary[1:, 0]
+ebl_fit = data_fit_chary[1:, 1]
+spline_fit_chary = UnivariateSpline(wv, ebl_fit, s=0, k=1)
+
+data_fit_bosa = np.loadtxt('outputs/outputs_dust_final1/'
+                           'SB99_dustFinke_bosa.txt')
+
+wv = data_fit_bosa[1:, 0]
+ebl_fit = data_fit_bosa[1:, 1]
+spline_fit_bosa = UnivariateSpline(wv, ebl_fit, s=0, k=1)
+
 plt.figure()
 plt.loglog(wv, ebl_fit)
 # plt.show()
@@ -93,7 +105,8 @@ for ni, name in enumerate(names_all_lower):
 
 plt.plot(waves_ebl, spline_finke(waves_ebl),
             c='orange', label='Finke')
-plt.plot(waves_ebl, spline_fit(waves_ebl), c='b', label='Our fit')
+plt.plot(waves_ebl, spline_fit_chary(waves_ebl), c='b', label='Our fit chary')
+plt.plot(waves_ebl, spline_fit_bosa(waves_ebl), c='r', label='Our fit bosa')
 
 xx_nu = (c / waves_ebl * 1e6 / u.m).to(u.s**-1)
 yyy = (2 * h_plank * xx_nu**4. / c**2.
@@ -111,10 +124,13 @@ yyy = yyy.to(u.nW/u.m**2)
 aaa = chi2_measurs(spline_finke(lower_lims['lambda']),
                    lower_lims['nuInu'],
                    lower_lims['1 sigma'])
-bbb = chi2_measurs(spline_fit(lower_lims['lambda']),
+bbb = chi2_measurs(spline_fit_chary(lower_lims['lambda']),
                    lower_lims['nuInu'],
                    lower_lims['1 sigma'])
-print(aaa, bbb)
+ccc = chi2_measurs(spline_fit_bosa(lower_lims['lambda']),
+                   lower_lims['nuInu'],
+                   lower_lims['1 sigma'])
+print(aaa, bbb, ccc)
 #
 # plt.text(x=100, y=30, s=r'$\chi^2 = $ %.2f''\n'r'$\chi^2/dof$ aka %i = %.2f'
 #                         % (aaa, len(lower_lims), aaa/len(lower_lims)))
@@ -148,10 +164,17 @@ plt.scatter(lower_lims['lambda'],
          / lower_lims['1 sigma'])**2.))
 
 plt.scatter(lower_lims['lambda'],
-         (spline_fit(lower_lims['lambda'])-lower_lims['nuInu'])
+         (spline_fit_chary(lower_lims['lambda'])-lower_lims['nuInu'])
          / lower_lims['1 sigma'], c='b',
-            label=r'Our fit $\chi^2 = $%.2f'
-                  % sum(((spline_fit(lower_lims['lambda'])-lower_lims['nuInu'])
+            label=r'Our fit chary $\chi^2 = $%.2f'
+                  % sum(((spline_fit_chary(lower_lims['lambda'])-lower_lims['nuInu'])
+         / lower_lims['1 sigma'])**2.))
+plt.scatter(lower_lims['lambda'],
+         (spline_fit_bosa(lower_lims['lambda'])-lower_lims['nuInu'])
+         / lower_lims['1 sigma'], c='r',
+            label=r'Our fit bosa $\chi^2 = $%.2f'
+                  % sum(((spline_fit_bosa(lower_lims['lambda'])-lower_lims[
+                'nuInu'])
          / lower_lims['1 sigma'])**2.))
 plt.legend()
 plt.xscale('log')

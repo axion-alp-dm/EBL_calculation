@@ -45,13 +45,12 @@ def calculate_dust(wv_array, z_array=0.,
 
 
     Outputs:
-    :return: 1D array with len(wv_array)
+    :return: 2D array with shape (wv_array x z_array)
         Result of the calculation in log10(absorption) since it is the
         variable output for EBL_class.
         For now, the function returns a 1D array. Redshift variability
         is implemented just as a float in the EBL class.
     """
-
     if np.shape(z_array) == ():
         dust_att = np.zeros([np.shape(wv_array)[0], 1])
     else:
@@ -95,6 +94,8 @@ def calculate_dust(wv_array, z_array=0.,
 
     else:
         print('   -> No dust absorption model chosen.')
+        print('   -> CAREFUL: has the model been correctly chosen?')
+        print('   -> Number of name inputs in the array: ', len(models))
 
     dust_att[np.isnan(dust_att)] = -43.
     dust_att[np.invert(np.isfinite(dust_att))] = -43.
@@ -143,22 +144,22 @@ def razzaque2009(lambda_array, dust_params):
         lambda_cuts_rz09 = dust_params['lambda_cuts_rz09']
     except:
         lambda_cuts_rz09 = [0.165, 0.220, 0.422]
-        print('   -> Default parameters for lambda_cuts_rz09 chosen: ',
-              lambda_cuts_rz09)
+        # print('   -> Default parameters for lambda_cuts_rz09 chosen: ',
+        #       lambda_cuts_rz09)
 
     try:
         initial_value_rz09 = dust_params['initial_value_rz09']
     except:
         initial_value_rz09 = [0.688, 0.151, 1.0, 0.728]
-        print('   -> Default parameters for initial_value_rz09 chosen: ',
-              initial_value_rz09)
+        # print('   -> Default parameters for initial_value_rz09 chosen: ',
+        #       initial_value_rz09)
 
     try:
         multipl_factor_rz09 = dust_params['multipl_factor_rz09']
     except:
         multipl_factor_rz09 = [0.556, -0.136, 1.148, 0.422]
-        print('   -> Default parameters for multipl_factor_rz09 chosen: ',
-              multipl_factor_rz09)
+        # print('   -> Default parameters for multipl_factor_rz09 chosen: ',
+        #       multipl_factor_rz09)
 
     yy = np.zeros(np.shape(lambda_array))
     yy += ((initial_value_rz09[0]
@@ -195,8 +196,8 @@ def abdollahi2018(z_array, params_dust=None):
         params_ab18 = params_dust['params_ab18']
     except:
         params_ab18 = [1.49, 0.64, 3.4, 3.54]
-        print('   -> Default parameters for params_ab18 chosen: ',
-              params_ab18)
+        # print('   -> Default parameters for params_ab18 chosen: ',
+        #       params_ab18)
 
     return (-0.4 * params_ab18[0] * (1. + z_array) ** params_ab18[1]
             / (1. + ((1. + z_array) / params_ab18[2]) ** params_ab18[3]))
@@ -294,130 +295,3 @@ def finke2022_2(lambda_array, z_array, dust_params):
            - dust_att_finke2(0.15, dust_params))
 
     return np.minimum(yy, 0)
-
-
-# TESTS FOR DIFFERENT DUST MODELS
-'''
-import matplotlib.pyplot as plt
-
-plt.rcParams['mathtext.fontset'] = 'stix'
-plt.rcParams['font.family'] = 'STIXGeneral'
-plt.rcParams['axes.labelsize'] = 20
-plt.rc('font', size=20)
-plt.rc('axes', titlesize=20)
-plt.rc('axes', labelsize=20)
-plt.rc('xtick', labelsize=18)
-plt.rc('ytick', labelsize=18)
-plt.rc('legend', fontsize=18)
-plt.rc('figure', titlesize=17)
-plt.rc('xtick', top=True, direction='in')
-plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=7, width=1.5, top=True)
-plt.rc('ytick.major', size=7, width=1.5, right=True)
-plt.rc('xtick.minor', size=4, width=1)
-plt.rc('ytick.minor', size=4, width=1)
-
-plt.figure()
-x_lambda = np.logspace(-2, 1, num=5000)
-# x_zetas = np.linspace(1e-6, 6, num=7)
-x_zetas = np.array([0, 2, 4, 6])
-
-print(dust_att_finke2(lambda_array=0.15,
-                      lambda_steps=[1.88, 2.18, 2.93, 3.93, 8.57]))
-print(dust_att_finke2(lambda_array=0.15,
-                      lambda_steps=np.array(
-                          [1.88, 2.18, 2.93, 3.93, 8.57]) * 0.1))
-print(dust_att_finke2(lambda_array=0.15,
-                      lambda_steps=[0.257, 0.287, 0.271, 0.628, 0.959]))
-
-plt.plot(x_lambda,
-         10 ** dust_att_finke2(x_lambda,
-                           fesc_steps=np.array(
-                               [1.88, 2.18, 2.93, 3.93, 8.57])),
-         '.', label='model A only 13')
-print(10 ** dust_att_finke2(x_lambda))
-plt.plot(x_lambda,
-         10 ** finke2022_2(x_lambda, z_array=0),
-         '+', label='params as model A A*0.1')
-plt.plot(x_lambda,
-         10 ** finke2022_2(x_lambda, z_array=0.,
-                           fesc_steps=np.array(
-                               [1.88, 2.18, 2.93, 3.93, 8.57])),
-         '.', label='params model A')
-plt.plot(x_lambda,
-         10 ** finke2022_2(x_lambda, z_array=0.,
-                           fesc_steps=np.array(
-                               [0.257, 0.287, 0.271, 0.628, 0.959])),
-         '.', label='params as model B (fixed)')
-
-x_finke = np.sort([0.08013941241504934, 0.16275654480267543,
-                   0.2202666354, 0.41705401612006, 1.4732255113])
-y_finke = np.sort([0.013964242228906798, 0.2719143926371579,
-                   0.3792727582008306, 0.5045838705056581,
-                   0.9982318077639305])
-
-plt.plot(x_finke, y_finke, '-', label='rough Fig 10 z=0')
-
-plt.ylabel('Escape fraction of photons')
-plt.xlabel('lambda (microns)')
-plt.legend()
-plt.xscale('log')
-# plt.show()
-
-plt.figure()
-
-alpha = 1.
-plt.plot(x_lambda, 10 ** calculate_dust(
-    x_lambda, z_array=x_zetas[0], models=['finke2022'], model_combined=True),
-         'k', alpha=alpha, label=r'Finke2022 z=%.2f' % x_zetas[0])
-
-plt.plot(x_lambda, 10**calculate_dust(
-    x_lambda, z_array=x_zetas[0], models=['finke2022_2'], model_combined=True),
-         'b', alpha=alpha, label=r'Finke2 z=%.2f' % x_zetas[0])
-
-for i in range(1, len(x_zetas) - 1):
-    alpha -= 0.15
-    plt.plot(x_lambda, 10 ** calculate_dust(
-        x_lambda, z_array=x_zetas[i], models=['finke2022'],
-        model_combined=True),
-             'k', alpha=alpha)
-    plt.plot(x_lambda, 10**calculate_dust(
-        x_lambda, z_array=x_zetas[i], models=['finke2022_2'],
-        model_combined=True),
-             'b', alpha=alpha)
-
-alpha -= 0.15
-plt.plot(x_lambda, 10 ** calculate_dust(
-    x_lambda, z_array=x_zetas[-1], models=['finke2022'], model_combined=True),
-         'k', alpha=alpha, label=r'Finke2022 z=%.2f' % x_zetas[-1])
-plt.plot(x_lambda, 10**calculate_dust(
-    x_lambda, z_array=x_zetas[-1], models=['finke2022_2'],
-    model_combined=True),
-         'b', alpha=alpha, label=r'Finke2022 z=%.2f' % x_zetas[-1])
-
-plt.plot(x_lambda, 10 ** calculate_dust(
-    x_lambda, models=['razzaque2009', 'aaa']), 'r', label='Razzaque2009')
-plt.plot(x_lambda, 10 ** kneiske2002(x_lambda), 'limegreen',
-         label='Kneiske2002')
-
-plt.plot(x_lambda, 10**dust_att_finke2(x_lambda), 'orange')
-plt.plot(x_finke, y_finke, '-', label='rough Fig 10 z=0')
-
-plt.ylabel('Escape fraction of photons')
-plt.xlabel('lambda (microns)')
-plt.legend()
-plt.xscale('log')
-plt.ylim(0., 1.2)
-plt.xlim(0.05, 10)
-
-plt.figure()
-aaa = np.linspace(0, 6)
-plt.plot(aaa, 10 ** abdollahi2018(aaa), label='g(z) in Finke22')
-plt.plot(x_zetas, 10 ** abdollahi2018(x_zetas), 'or', label='Chosen redshifts')
-plt.legend()
-plt.ylabel('g(z) = 10**(-0.4 A(z))')
-plt.xlabel('z')
-
-yyy = calculate_dust(x_lambda, 0, models=['aaa', 'abdollahi2018', 'aaa'])
-# plt.show()
-'''

@@ -33,8 +33,9 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints_2freeparamschary 2024-11-07 14:08:29/')
+# input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints_2freeparamschary 2024-11-07 14:08:29/')
 # input_file_dir = ('scripts/input_files/')
+input_file_dir = 'notebooks/'
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -71,7 +72,7 @@ markers = ['.', 'x', '+', '*', '^', '>', '<']
 
 
 # We initialize the class with the input file
-config_data = read_config_file(input_file_dir + 'input_data.yml')
+config_data = read_config_file(input_file_dir + 'input_example.yml')
 # config_data = read_config_file(input_file_dir + 'input_dust_reem.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
@@ -200,8 +201,8 @@ a.set_xticks([0, 2, 4, 6, 8, 10])
 # SFRs FOR SSP MODELS ------------------------------
 fig_sfr, ax_sfr = plt.subplots(figsize=(12, 8))
 
-z_data = np.linspace(float(config_data['redshift_array']['zmin']),
-                     float(config_data['redshift_array']['zmax']),
+z_data = np.linspace(float(config_data['redshift_array']['z_min']),
+                     float(config_data['redshift_array']['z_max']),
                      num=500)
 
 sfr_data = sfr_data_dict()
@@ -310,12 +311,12 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     function_input=config_data['ssp_models'][key][
                         'metall_formula'],
                     zz_array=z_array,
-                    args=config_data['ssp_models'][key]['args_metall']),
+                    args=config_data['ssp_models'][key]['metall_params']),
                 label=config_data['ssp_models'][key]['name'],
                 color=colors[nkey % len(colors)])
 
     ax_sfr.plot(z_data, ebl_class.sfr_function(
-        function_input=config_data['ssp_models'][key]['sfr'],
+        function_input=config_data['ssp_models'][key]['sfr_formula'],
         zz_array=z_data,
         params=config_data['ssp_models'][key]['sfr_params']),
                 label=config_data['ssp_models'][key]['name'],
@@ -324,10 +325,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
     color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
                  'purple', 'brown']
 #
-    if config_data['ssp_models'][key]['path_SSP'] not in previous_ssp:
-        previous_ssp.append(config_data['ssp_models'][key]['path_SSP'])
+    if config_data['ssp_models'][key]['ssp']['path_ssp'] not in previous_ssp:
+        previous_ssp.append(config_data['ssp_models'][key]['ssp']['path_ssp'])
         labels_ssp2.append(
-            config_data['ssp_models'][key]['path_SSP'].replace(
+            config_data['ssp_models'][key]['ssp']['path_ssp'].replace(
                 'data/ssp_synthetic_spectra/', ''))
         handles_ssp2.append(
             plt.Line2D([], [], linewidth=2,
