@@ -24,7 +24,7 @@ plt.rc('legend', fontsize=18)
 plt.rc('figure', titlesize=17)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=7, width=1.5, top=True)
+plt.rc('xtick.major', size=7, width=1.5, top=True, pad=10)
 plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
@@ -65,7 +65,7 @@ def cosmic_axion_contr(lmu, zz, mass, gayy):
     return ebl_axion_cube
 
 
-input_file_dir = ('outputs/outputs_dust_final1/')
+input_file_dir = ('outputs/outputs_dust_reem_Free_wout_lowvalCB/')
 ebl_finke = EBL.readmodel('finke2022')
 ebl_fit_chary = EBL.readascii(
     file_name='outputs/outputs_dust_final1/SB99_dustFinke3e10.txt',
@@ -75,11 +75,82 @@ ebl_fit_bosa = EBL.readascii(
     model_name='Bosa')
 
 z = np.array([0.03, 0.15, 0.65])
-lmu = np.logspace(-2, 3., int(1e4))
-ETeV = np.geomspace(0.1, 30, int(100))
+lmu = np.logspace(-2, 3., int(1e6))
+ETeV = np.geomspace(0.01, 32, int(70))
 
 # --------------------------------------------------------------------
+plt.subplots(1, 2, figsize=(16, 8))
+mass_arr = [10, 10, 10]
+gayy_arr = [5e-11, 3e-11, 1e-11]
+plt.subplot(121)
+plt.plot(lmu, ebl_finke.ebl_array(z=0., lmu=lmu),
+         ls=':', c='k', zorder=10, lw=5)
+# aaa = plt.legend(loc=1)
 
+for ni in range(len(mass_arr)):
+    plt.plot(lmu,
+             ebl_finke.ebl_array(z=0., lmu=lmu)
+             + cosmic_axion_contr(lmu, np.array([0.]),
+                                  mass_arr[ni], gayy_arr[ni]),
+             # label=r'm$_a=$' + str(mass_arr[ni]) + 'eV g='
+             #       + str(gayy_arr[ni]),
+             label=r'm$_a=%s$ eV, $g_{a, \gamma} = %s$ GeV$^{-1}$'
+                   % (str(mass_arr[ni]), str(gayy_arr[ni])),
+             lw=2
+             )
+
+bbb = plt.legend(loc=8, title='ALP parameters', fontsize=16)
+aaa = plt.legend([plt.Line2D(
+    [], [], linestyle='',ls=':', c='k', zorder=10, lw=5)],
+           ['Finke22 EBL'], loc=1)
+
+plt.gca().add_artist(aaa)
+plt.gca().add_artist(bbb)
+
+plt.xscale('log')
+plt.yscale('log')
+plt.gca().set_ylim((0.5, 50.))
+plt.gca().set_xlim((1e-1, 1000))
+plt.gca().set_xlabel('Wavelength ($\mu$m)')
+plt.gca().set_ylabel(
+    r'$\nu I_\nu (\mathrm{nW}\,\mathrm{sr}^{-1}\mathrm{m}^{-2})$')
+
+plt.subplot(122)
+plt.plot(ETeV, ebl_finke.optical_depth(z0=0.15, ETeV=ETeV),
+         ls=':', c='k', zorder=10, lw=5)
+
+for ni in range(3):
+    ebl_inside = EBL_with_axion.readmodel(
+        model='finke2022',
+        axion_mass=mass_arr[ni], axion_gayy=gayy_arr[ni])
+    plt.plot(ETeV,
+             ebl_inside.optical_depth(z0=0.15, ETeV=ETeV),
+             label=r'm$_a=%s$ eV, $g_{a, \gamma} = %s$ GeV$^{-1}$'
+                   % (str(mass_arr[ni]), str(gayy_arr[ni])),
+             lw=2)
+bbb = plt.legend(loc=4, title='ALP parameters', fontsize=16)
+aaa = plt.legend([plt.Line2D(
+    [], [], linestyle='',ls=':', c='k', zorder=10, lw=5)],
+           ['Finke22 EBL'], loc=2)
+
+plt.text(x=0.25, y=20, s=r'z = 0.15')
+
+plt.gca().add_artist(aaa)
+plt.gca().add_artist(bbb)
+
+plt.xscale('log')
+plt.yscale('log')
+plt.gca().set_ylim((1e-2, 100.))
+plt.gca().set_xlim((1e-1, 30.))
+plt.gca().set_xlabel('Energy (TeV)')
+plt.gca().set_ylabel(r'Optical depth $\tau$')
+
+
+
+plt.savefig('outputs/figures_paper/opt_depths_ax.pdf', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/opt_depths_ax.png', bbox_inches='tight')
+
+# plt.show()
 plt.subplots(1, 3, figsize=(20, 8))
 plt.subplot(131)
 
@@ -142,7 +213,7 @@ for i, zz in enumerate(z):
                label='$z = {0:.2f}$'.format(zz), lw=2)
 
 plt.gca().set_ylim((4e-3, 500.))
-plt.gca().set_xlim((0.1, 30.))
+plt.gca().set_xlim((0.1, 32.))
 plt.gca().set_xlabel('Energy (TeV)')
 plt.gca().set_ylabel(r'Optical depth $\tau$')
 aaa = plt.legend(loc=2)
@@ -173,7 +244,7 @@ for i, zz in enumerate(z):
                label='$z = {0:.2f}$'.format(zz), lw=2)
 
 plt.gca().set_ylim((0.01, 300.))
-plt.gca().set_xlim((0.1, 30.))
+plt.gca().set_xlim((0.1, 32.))
 plt.gca().set_xlabel('Energy (TeV)')
 plt.gca().set_ylabel(r'$e ^ {-(\tau_\mathrm{fit} - \tau_\mathrm{Finke})}$')
 aaa = plt.legend(loc=2)
@@ -206,7 +277,7 @@ for i, zz in enumerate(z):
                label='$z = {0:.2f}$'.format(zz),
                zorder=-1 * i)
 
-    plt.loglog(lmu, ebl_fit.ebl_array(zz, lmu),
+    plt.loglog(lmu, ebl_fit_chary.ebl_array(zz, lmu),
                ls=':', color=plt.cm.CMRmap(i / float(len(z))),
                lw=2.,
                zorder=-1 * i)
@@ -231,7 +302,7 @@ plt.gca().add_artist(bbb)
 plt.subplot(122)
 
 for i, zz in enumerate(z):
-    plt.loglog(ETeV, ebl_fit.optical_depth(zz, ETeV),
+    plt.loglog(ETeV, ebl_fit_chary.optical_depth(zz, ETeV),
                ls='dotted',
                color=plt.cm.CMRmap(i / float(len(z))),
                # color=colors[mi],

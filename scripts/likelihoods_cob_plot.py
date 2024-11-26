@@ -47,7 +47,7 @@ plt.rc('ytick.minor', size=7, width=1.5)
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
-direct_name = str('outputs/outputs_dust_reem 2024-10-22 14:10:22')
+direct_name = str('outputs/outputs_dust_reem_wto_LOWdatapoints_dustfree 2024-11-22 10:24:12')
 print(direct_name)
 
 # Configuration file reading and data input/output ---------#
@@ -206,7 +206,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
         config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
-            params[-1].copy()
+            params[8].copy()
         )
         return ebl_class.ebl_ssp_individualData(
             yaml_data=config_data['ssp_models'][key],
@@ -220,7 +220,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
         config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
-            params[-1].copy()
+            params[8].copy()
         )
 
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])

@@ -105,7 +105,7 @@ class EBL_model(object):
             Maximum redshift at which we form SSPs.
         """
 
-        self._shifted_times_emiss = None
+        self._shifted_zz_emiss = None
         self._log_t_ssp_intcube = None
         self._process_time = time.process_time()
         logging.basicConfig(level='INFO',
@@ -119,9 +119,8 @@ class EBL_model(object):
         self._log_freq_cube = None
         self._steps_integration_cube = None
 
+        self._ssp_log_time_init = None
         self._ssp_metall = None
-        self._ssp_log_time = None
-        self._ssp_log_freq = None
         self._ssp_lumin_spline = None
         self._kernel_emiss = None
 
@@ -292,14 +291,14 @@ class EBL_model(object):
         """
         if yaml_file['ssp_type'] == 'SB99':
 
-            self._ssp_metall = np.sort(np.array(
+            ssp_metall = np.sort(np.array(
                 os.listdir(yaml_file['path_ssp']), dtype=float))
 
             # Open one of the files and check for time steps and frequencies
             d = np.loadtxt(
-                yaml_file['path_ssp'] + str(self._ssp_metall[0])
+                yaml_file['path_ssp'] + str(ssp_metall[0])
                 + yaml_file['file_name']
-                + str(self._ssp_metall[0]).replace('0.', '')
+                + str(ssp_metall[0]).replace('0.', '')
                 + '.spectrum1',
                 skiprows=yaml_file['ignore_rows'])
 
@@ -310,9 +309,9 @@ class EBL_model(object):
 
             dd_total = np.zeros((l_total.shape[0],
                                  t_total.shape[0],
-                                 len(self._ssp_metall) + 2))
+                                 len(ssp_metall) + 2))
 
-            for n_met, met in enumerate(self._ssp_metall):
+            for n_met, met in enumerate(ssp_metall):
                 data = np.loadtxt(
                     yaml_file['path_ssp'] + str(met) +
                     yaml_file['file_name'] + str(met).replace('0.', '')
@@ -323,21 +322,21 @@ class EBL_model(object):
                     t_total.shape[0], l_total.shape[0]).T
 
             # Extend the stellar spectra to very low and high metallicities
-            self._ssp_metall = np.insert(self._ssp_metall, 0, 1e-43)
+            ssp_metall = np.insert(ssp_metall, 0, 1e-43)
             dd_total[:, :, 0] = dd_total[:, :, 1]
 
-            self._ssp_metall = np.append(self._ssp_metall, 1.)
+            ssp_metall = np.append(ssp_metall, 1.)
             dd_total[:, :, -1] = dd_total[:, :, -2]
 
             # Define the quantities we work with
-            self._ssp_log_time = np.log10(t_total)  # log(time/yrs)
-            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
+            ssp_log_time = np.log10(t_total)  # log(time/yrs)
+            ssp_log_freq = np.log10(  # log(frequency/Hz)
                 c.value / l_total[::-1] / 1E-10)
-            ssp_log_emis = (dd_total[::-1]  # log(L_nu[erg/s/Hz/M_solar])
-                            - float(yaml_file['total_stellar_mass'])
-                            + np.log10(1E10 * c.value)
-                            - 2. * self._ssp_log_freq[:, np.newaxis,
-                                   np.newaxis])
+            ssp_log_emis = (
+                    dd_total[::-1]  # log(L_nu[erg/s/Hz/M_solar])
+                    - float(yaml_file['total_stellar_mass'])
+                    + np.log10(1E10 * c.value)
+                    - 2. * ssp_log_freq[:, np.newaxis, np.newaxis])
 
         elif yaml_file['ssp_type'] == 'Popstar09':
             list_files = os.listdir(yaml_file['path_ssp'])
@@ -348,7 +347,7 @@ class EBL_model(object):
                     float(listt.replace(pop_filename, '')))
 
             indexes = np.argsort(numbers)
-            self._ssp_log_time = np.sort(numbers)
+            ssp_log_time = np.sort(numbers)
             ssp_wavelenghts = np.loadtxt(
                 yaml_file['path_ssp'] + list_files[0])[:, 0]
             pop09_lumin_cube = np.zeros((len(ssp_wavelenghts),
@@ -394,23 +393,23 @@ class EBL_model(object):
             del pop09_lumin_cube
 
         elif yaml_file['ssp_type'] == 'pegase3':
-            self._ssp_metall = [0.1, 0.05, 0.02, 0.008,
+            ssp_metall = [0.1, 0.05, 0.02, 0.008,
                                 0.004, 0.0004, 0.0001]
-            # print(self._ssp_metall)
+            # print(ssp_metall)
 
             data_pegase = np.loadtxt(
                 yaml_file['path_ssp'] + 'spectral_resultsZ0.0001.txt')
             t_pegase = np.unique(data_pegase[:, 0])
             l_pegase = np.unique(data_pegase[:, 1])
 
-            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
+            ssp_log_freq = np.log10(  # log(frequency/Hz)
                 c.value / l_pegase[::-1] * 1e10)
 
             dd_pegase = np.zeros((l_pegase.shape[0],
                                   t_pegase.shape[0],
-                                  len(self._ssp_metall) + 1))
+                                  len(ssp_metall) + 1))
 
-            for n_met, met in enumerate(self._ssp_metall):
+            for n_met, met in enumerate(ssp_metall):
                 data_pegase = np.loadtxt(
                     yaml_file['path_ssp'] +
                     'spectral_resultsZ' + str(met) + '.txt')
@@ -419,13 +418,13 @@ class EBL_model(object):
                     t_pegase.shape[0],
                     l_pegase.shape[0]).T[::-1]
 
-            self._ssp_metall = np.append(self._ssp_metall, 1e-43)
+            ssp_metall = np.append(ssp_metall, 1e-43)
             dd_pegase[:, :, -1] = dd_pegase[:, :, -2]
 
-            self._ssp_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
-            self._ssp_log_time[np.isnan(self._ssp_log_time)] = -43.
-            self._ssp_log_time[
-                np.invert(np.isfinite(self._ssp_log_time))] = -43.
+            ssp_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
+            ssp_log_time[np.isnan(ssp_log_time)] = -43.
+            ssp_log_time[
+                np.invert(np.isfinite(ssp_log_time))] = -43.
 
             ssp_log_emis = np.log10(dd_pegase)
             ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
@@ -439,38 +438,76 @@ class EBL_model(object):
 
         elif yaml_file['ssp_type'] == 'generic':
             """
-            Generic datafile for inputing luminosity data.
-            - First column: time/age of the SSP [years]
-            - Second column: wavelength of luminosity [Angstroms]
-            - Third column: luminosity [erg/sec/A/Msun]
+            Generic datafile(s) for inputing luminosity data, dimensions
+            (n+1) x (m+1).
+            Each of the datafiles has to have the name of the metallicity
+            of each dataset.
+            
+            In each file:
+            - The [0,0] entry is empty.
+            - The zeroth column [1:] contains the time/age of the SSP [years].
+            - The first row [1:] contains the wavelengths [Angstroms].
+            - The remaining values (n x m) are the luminosity L_lambda
+                [erg/sec/A/Msun].
+            
+            This method assumes that all files share the wavelength and
+            age array.
             """
-            data_generic = np.loadtxt(yaml_file['path_ssp'])
+            ssp_metall = np.sort(np.array(
+                os.listdir(yaml_file['path_ssp']), dtype=float))
 
-            t_generic = np.unique(data_generic[:, 0])
-            l_generic = np.unique(data_generic[:, 1])
-            dd_generic = data_generic[:, 2].reshape(
-                t_generic.shape[0], l_generic.shape[0]).T[::-1]
+            # Open one of the files and check for time steps and frequencies
+            data_generic = np.loadtxt(
+                yaml_file['path_ssp'] + str(ssp_metall[0]),
+                skiprows=yaml_file['ignore_rows'])
 
-            self._ssp_log_time = np.log10(t_generic)  # log(time/yrs)
-            self._ssp_log_time[np.isnan(self._ssp_log_time)] = -43.
-            self._ssp_log_time[
-                np.invert(np.isfinite(self._ssp_log_time))] = -43.
+            # Get unique time steps, frequencies and metallicities,
+            # and their respective spectral data
+            t_total = data_generic[0, 1:]
+            l_total = data_generic[1:, 0]
 
-            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l_generic[::-1] / 1E-10)
+            ssp_log_emis = np.zeros(
+                (l_total.shape[0], t_total.shape[0],
+                 len(ssp_metall) + 2))
+            import matplotlib.pyplot as plt
+            plt.figure()
+            xx_amstrongs = np.logspace(2, 6, 2000)
+            color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
+                     'purple', 'brown']
 
-            ssp_log_emis = (dd_generic)
-            ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
-            ssp_log_emis[
-                np.invert(np.isfinite(ssp_log_emis))] = -43.
+            for n_met, met in enumerate(ssp_metall):
+                data = np.loadtxt(
+                    yaml_file['path_ssp'] + str(met),
+                    skiprows=yaml_file['ignore_rows'])
 
-            self._ssp_metall = [1e-43, 0.1]
-            aaa = np.zeros((len(self._ssp_log_freq),
-                            len(self._ssp_log_time),
-                            len(self._ssp_metall)))
-            aaa[:, :, 0] = ssp_log_emis
-            aaa[:, :, 1] = ssp_log_emis
-            ssp_log_emis = aaa
+                ssp_log_emis[:, :, n_met + 1] = data[1:, 1:]
+                for i in ([0, 10, 50, -1]):
+                    plt.loglog(l_total, ssp_log_emis[:, i, n_met+1],
+                        linestyle='-',
+                        color=color_ssp[i%len(color_ssp)],
+                        alpha=float(n_met) / len(ssp_metall) * 1.1
+                    )
+            plt.show()
+
+            # Extend the stellar spectra to very low and high metallicities
+            ssp_metall = np.insert(ssp_metall, 0, 1e-43)
+            ssp_log_emis[:, :, 0] = ssp_log_emis[:, :, 1]
+
+            ssp_metall = np.append(ssp_metall, 1.)
+            ssp_log_emis[:, :, -1] = ssp_log_emis[:, :, -2]
+
+            ssp_log_time = np.log10(t_total)  # log(time/yrs)
+            ssp_log_time[np.isnan(ssp_log_time)] = -43.
+            ssp_log_time[
+                np.invert(np.isfinite(ssp_log_time))] = -43.
+
+            ssp_log_freq = np.log10(  # log(frequency/Hz)
+                c.value / l_total / 1E-10)
+
+            ssp_log_emis = np.log10(ssp_log_emis)
+            ssp_log_emis += (np.log10(1E10 * c.value)
+                             - 2. * ssp_log_freq
+                             [:, np.newaxis, np.newaxis])
 
         else:
             print('SSP type not recognized')
@@ -481,15 +518,37 @@ class EBL_model(object):
             np.invert(np.isfinite(ssp_log_emis))] = -43.
 
         self._ssp_lumin_spline = RegularGridInterpolator(
-            points=(self._ssp_log_freq,
-                    self._ssp_log_time,
-                    np.log10(self._ssp_metall)),
+            points=(ssp_log_freq,
+                    ssp_log_time,
+                    np.log10(ssp_metall)),
             values=ssp_log_emis,
             method='linear',
             bounds_error=False, fill_value=-43
         )
+        color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
+                     'purple', 'brown']
+
+        import matplotlib.pyplot as plt
+        plt.figure()
+        xx_amstrongs = np.logspace(2, 6, 2000)
+        for n_met, met in enumerate(ssp_metall):
+            for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
+                plt.plot(
+                    xx_amstrongs,
+                    self._ssp_lumin_spline(
+                        xi=(
+                            np.log10(c.value / xx_amstrongs * 1e10),
+                            age, np.log10(met)),
+                    ),
+                    linestyle='-',
+                    color=color_ssp[i],
+                    alpha=float(n_met) / len(ssp_metall) * 1.1
+                )
+        # plt.show()
 
         del ssp_log_emis
+        self._ssp_metall = ssp_metall
+        self._ssp_log_time_init = ssp_log_time[0]
         self.logging_info('Reading of SSP file')
         return
 
@@ -618,7 +677,7 @@ class EBL_model(object):
 
         elif yaml_data['library'] == 'bosa':
 
-            data = fits.open(yaml_data['library_path'])
+            data = fits.open(yaml_data['file_path'])
             aaa = data[1].data
 
             yyy = np.column_stack((
@@ -685,7 +744,7 @@ class EBL_model(object):
 
         if (self._ssp_lumin_spline is None
                 or np.any(self._last_ssp != yaml_data['ssp'])
-                or np.any(yaml_data['metall_params'] != self._last_Zevol)):
+                or np.any(self._last_Zevol != yaml_data['metall_params'])):
             self.read_SSP_file(yaml_data['ssp'])
 
             lookback_time_cube = self._cube * self._cosmo.lookback_time(
@@ -696,23 +755,20 @@ class EBL_model(object):
             self._log_t_ssp_intcube = np.log10(
                 (self._cosmo.lookback_time(self._z_max)
                  - lookback_time_cube).to(u.yr).value)
-            self._log_t_ssp_intcube[self._log_t_ssp_intcube
-                                    > self._ssp_log_time[-1]] = (
-                self._ssp_log_time[-1])
 
             self._log_t_ssp_intcube = (
-                    (self._log_t_ssp_intcube - self._ssp_log_time[0])
+                    (self._log_t_ssp_intcube - self._ssp_log_time_init)
                     * self._steps_integration_cube
-                    + self._ssp_log_time[0])
+                    + self._ssp_log_time_init)
 
             self.logging_info('SSP emissivity: set time integration cube')
 
             # Two interpolations, transforming t->z (using log10 for both of
             # them) and a bi spline with the SSP data
 
-            self._shifted_times_emiss = self._cube * 1e-43
+            self._shifted_zz_emiss = self._cube * 1e-43
 
-            self._shifted_times_emiss = self.t2z(np.log10(
+            self._shifted_zz_emiss = self.t2z(np.log10(
                 lookback_time_cube.value
                 + 10. ** self._log_t_ssp_intcube))
 
@@ -731,7 +787,7 @@ class EBL_model(object):
                         self._log_t_ssp_intcube,
                         np.log10(self.metall_mean(
                             function_input=yaml_data['metall_formula'],
-                            zz_array=self._shifted_times_emiss,
+                            zz_array=self._shifted_zz_emiss,
                             args=yaml_data['metall_params']))))
             )
 
@@ -756,7 +812,7 @@ class EBL_model(object):
             self.logging_info('Dust reem: enter')
             mean_metall_cube = np.log10(self.metall_mean(
                 function_input=yaml_data['metall_formula'],
-                zz_array=self._shifted_times_emiss,
+                zz_array=self._shifted_zz_emiss,
                 args=yaml_data['metall_params']))
             self.logging_info('Dust reem: mean metall calc')
 
@@ -794,7 +850,7 @@ class EBL_model(object):
         # SFR multiplication
         kernel_emiss *= (
             self.sfr_function(sfr_formula,
-                              self._shifted_times_emiss,
+                              self._shifted_zz_emiss,
                               sfr_params))
 
         self.logging_info('SSP emissivity: calculate ssp kernel')
@@ -1265,8 +1321,8 @@ class EBL_model(object):
         """
         Creates a file containing the values for wavelength, redshift and
         EBL values, of dimensions (n+1) x (m+1).
-        The zeroth column [1:] contains the wavelength values in mu meters.
-        The first row [1:] contains the redshift values.
+        The zeroth column [1:] contains the n wavelength values in mu meters.
+        The first row [1:] contains the m redshift values.
         The remaining values (n x m) are the EBL photon density values
         in nW / m^2 / sr.
         The [0,0] entry is empty.

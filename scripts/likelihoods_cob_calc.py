@@ -56,7 +56,7 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 config_data = read_config_file(
     # 'scripts/input_files/input_dust_reem.yml')
-    'notebooks/input_example.yml')
+    'scripts/input_files/input_example.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use
@@ -105,7 +105,6 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     def fit_emiss(x_all, params):
         lambda_emiss, z_emiss = x_all
-        freq_emissions = np.log10(c.value / lambda_emiss * 1e6)
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
@@ -118,9 +117,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
 
-        return (lambda_emiss* ebl_class.emiss_ssp_spline(freq_emissions,
-                                                   z_emiss)
-                      *1e-7)
+        return (c.value / lambda_emiss * 1e6
+                * ebl_class.emiss_ssp_spline(lambda_emiss, z_emiss)
+                * 1e-7)
 
 
     def sfr(x, params):
@@ -184,7 +183,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
     # m.fixed[5] = True
     # m.fixed[6] = True
     m.fixed[7] = True
-    # m.fixed[8] = True
+    m.fixed[8] = True
+    m.fixed[9] = True
     m.values[7] = 0.02
     print(m.params)
 
