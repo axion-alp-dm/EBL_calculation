@@ -310,7 +310,7 @@ class EBL_model(object):
 
             dd_total = np.zeros((l_total.shape[0],
                                  t_total.shape[0],
-                                 len(self._ssp_metall) + 1))
+                                 len(self._ssp_metall) + 2))
 
             for n_met, met in enumerate(self._ssp_metall):
                 data = np.loadtxt(
@@ -322,16 +322,19 @@ class EBL_model(object):
                 dd_total[:, :, n_met + 1] = data[:, 2].reshape(
                     t_total.shape[0], l_total.shape[0]).T
 
-            # Extend the stellar spectra to very low metallicities
+            # Extend the stellar spectra to very low and high metallicities
             self._ssp_metall = np.insert(self._ssp_metall, 0, 1e-43)
             dd_total[:, :, 0] = dd_total[:, :, 1]
+
+            self._ssp_metall = np.append(self._ssp_metall, 1.)
+            dd_total[:, :, -1] = dd_total[:, :, -2]
 
             # Define the quantities we work with
             self._ssp_log_time = np.log10(t_total)  # log(time/yrs)
             self._ssp_log_freq = np.log10(  # log(frequency/Hz)
                 c.value / l_total[::-1] / 1E-10)
             ssp_log_emis = (dd_total[::-1]  # log(L_nu[erg/s/Hz/M_solar])
-                            - 6.
+                            - float(yaml_file['total_stellar_mass'])
                             + np.log10(1E10 * c.value)
                             - 2. * self._ssp_log_freq[:, np.newaxis,
                                    np.newaxis])

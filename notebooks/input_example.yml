@@ -43,6 +43,7 @@ ssp_models:
       ssp_type: SB99
       file_name: /kroupa_
       ignore_rows: 6
+      total_stellar_mass: 6
 
     dust_abs_models: ['finke2022_2']
     dust_abs_params:
