@@ -401,6 +401,7 @@ class EBL_model(object):
                 yaml_file['path_ssp'] + 'spectral_resultsZ0.0001.txt')
             t_pegase = np.unique(data_pegase[:, 0])
             l_pegase = np.unique(data_pegase[:, 1])
+            l_total = l_pegase
 
             ssp_log_freq = np.log10(  # log(frequency/Hz)
                 c.value / l_pegase[::-1] * 1e10)
@@ -432,7 +433,7 @@ class EBL_model(object):
                 np.invert(np.isfinite(ssp_log_emis))] = -43.
 
             ssp_log_emis += (np.log10(1E10 * c.value)
-                             - 2. * self._ssp_log_freq
+                             - 2. * ssp_log_freq
                              [:, np.newaxis, np.newaxis])
 
 
@@ -470,10 +471,6 @@ class EBL_model(object):
                 (l_total.shape[0], t_total.shape[0],
                  len(ssp_metall) + 2))
             import matplotlib.pyplot as plt
-            plt.figure()
-            xx_amstrongs = np.logspace(2, 6, 2000)
-            color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
-                     'purple', 'brown']
 
             for n_met, met in enumerate(ssp_metall):
                 data = np.loadtxt(
@@ -481,13 +478,7 @@ class EBL_model(object):
                     skiprows=yaml_file['ignore_rows'])
 
                 ssp_log_emis[:, :, n_met + 1] = data[1:, 1:]
-                for i in ([0, 10, 50, -1]):
-                    plt.loglog(l_total, ssp_log_emis[:, i, n_met+1],
-                        linestyle='-',
-                        color=color_ssp[i%len(color_ssp)],
-                        alpha=float(n_met) / len(ssp_metall) * 1.1
-                    )
-            plt.show()
+
 
             # Extend the stellar spectra to very low and high metallicities
             ssp_metall = np.insert(ssp_metall, 0, 1e-43)
@@ -502,10 +493,10 @@ class EBL_model(object):
                 np.invert(np.isfinite(ssp_log_time))] = -43.
 
             ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l_total / 1E-10)
+                c.value / l_total / 1e-10)[::-1]
 
             ssp_log_emis = np.log10(ssp_log_emis)
-            ssp_log_emis += (np.log10(1E10 * c.value)
+            ssp_log_emis += (np.log10(1e10 * c.value)
                              - 2. * ssp_log_freq
                              [:, np.newaxis, np.newaxis])
 
@@ -528,18 +519,28 @@ class EBL_model(object):
         color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
                      'purple', 'brown']
 
+        print(ssp_metall)
         import matplotlib.pyplot as plt
+        plt.figure()
+        plt.title(yaml_file['path_ssp'])
+        for n_met, met in enumerate(ssp_metall):
+            for i in ([0, 10, 50, -1]):
+                plt.loglog(l_total, ssp_log_emis[:, i, n_met],
+                           linestyle='-',
+                           color=color_ssp[i % len(color_ssp)],
+                           alpha=float(n_met) / len(ssp_metall) * 1.1
+                           )
+
         plt.figure()
         xx_amstrongs = np.logspace(2, 6, 2000)
         for n_met, met in enumerate(ssp_metall):
             for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-                plt.plot(
-                    xx_amstrongs,
+                aa = np.argmin(age - ssp_log_time)
+                plt.plot(xx_amstrongs[::-1],
                     self._ssp_lumin_spline(
                         xi=(
                             np.log10(c.value / xx_amstrongs * 1e10),
-                            age, np.log10(met)),
-                    ),
+                            age, np.log10(met))),
                     linestyle='-',
                     color=color_ssp[i],
                     alpha=float(n_met) / len(ssp_metall) * 1.1
@@ -746,6 +747,7 @@ class EBL_model(object):
                 or np.any(self._last_ssp != yaml_data['ssp'])
                 or np.any(self._last_Zevol != yaml_data['metall_params'])):
             self.read_SSP_file(yaml_data['ssp'])
+
 
             lookback_time_cube = self._cube * self._cosmo.lookback_time(
                 self._z_array).to(u.yr)[np.newaxis, :, np.newaxis]

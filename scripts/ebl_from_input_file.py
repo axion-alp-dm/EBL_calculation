@@ -233,7 +233,7 @@ labels_ssp2 = []
 handles_ssp2 = []
 
 print('%.3f' %(memory_usage_psutil()))
-
+ebl_class.logging_prints = False
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
@@ -246,10 +246,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.write_ebl_to_ascii(output_path=input_file_dir, name=key)
-    print(ebl_class.ebl_ssp_spline(
-        np.log10(c.value/0.608*1e6), 0.),
-          21.98 - ebl_class.ebl_ssp_spline(
-        np.log10(c.value/0.608*1e6), 0.))
+    print(ebl_class.ebl_ssp_spline(0.608, 0.),
+          21.98 - ebl_class.ebl_ssp_spline(0.608, 0.))
     print('%.3f' % (memory_usage_psutil()))
 
 
@@ -260,7 +258,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
                 # markersize=16, marker=markers[nkey]
                 )
 
-    ebl_class.logging_prints = True
+
 
     plt.figure(fig_emiss_lambda)
     for nz, zz in enumerate(np.unique(emiss_data['z'])):
