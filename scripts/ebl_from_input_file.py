@@ -339,10 +339,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
                 ax_ssp.plot(
                     xx_amstrongs,
                     ebl_class.ssp_lumin_spline(
-                        xi=(
-                            np.log10(c.value / xx_amstrongs * 1e10),
-                            age, np.log10(met)),
-                    ),
+                        wv_array=xx_amstrongs, age_array=age,
+                        metall_array=met),
                     linestyle=linstyles_ssp[len(previous_ssp) - 1],
                     color=color_ssp[i],
                     alpha=float(n_met) / len(list_met) * 1.1

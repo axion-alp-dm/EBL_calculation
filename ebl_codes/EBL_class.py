@@ -10,8 +10,7 @@ from scipy.interpolate import UnivariateSpline, RectBivariateSpline, \
 
 from astropy.io import fits
 from astropy import units as u
-from astropy.constants import c, L_sun
-from astropy.constants import h as h_plank
+import astropy.constants as c
 from astropy.cosmology import FlatLambdaCDM
 
 from ebl_codes import dust_absorption_models as dust_abs
@@ -148,16 +147,14 @@ class EBL_model(object):
         self._z_array = z_array
         self._z_max = z_max
         self._lambda_array = lambda_array[::-1]
-        self._freq_array = np.log10(c.value / lambda_array[::-1] * 1e6)
+        self._freq_array = self.log10_safe(c.c.value / lambda_array[::-1] * 1e6)
         self._t_intsteps = t_intsteps
-        tt = np.log10(self._cosmo.lookback_time(
+
+        tt = self.log10_safe(self._cosmo.lookback_time(
             self._z_array).to(u.yr).value)
-        tt[np.isnan(tt)] = -43.
-        tt[np.invert(np.isfinite(tt))] = -43.
 
         self._t2z = UnivariateSpline(
-            tt,
-            np.log10(self._z_array),
+            tt, self.log10_safe(self._z_array),
             s=0, k=1)
 
         self._last_ssp = None
@@ -171,24 +168,40 @@ class EBL_model(object):
         return
 
     def emiss_ssp_spline(self, wv_array, zz_array):
-        ff_array = np.log10(c.value / wv_array * 1e6)
+        ff_array = np.log10(c.c.value / wv_array * 1e6)
         return 10 ** self._emiss_ssp_spline((ff_array, zz_array))
 
     def ebl_total_spline(self, wv_array, zz_array):
-        ff_array = np.log10(c.value / wv_array * 1e6)
+        ff_array = np.log10(c.c.value / wv_array * 1e6)
         return 10 ** self._ebl_total_spline(ff_array, zz_array, grid=False)
 
     def ebl_ssp_spline(self, wv_array, zz_array):
-        ff_array = np.log10(c.value / wv_array * 1e6)
+        ff_array = np.log10(c.c.value / wv_array * 1e6)
         return 10 ** self._ebl_ssp_spline(ff_array, zz_array, grid=False)
 
     def ebl_ihl_spline(self, wv_array, zz_array):
-        ff_array = np.log10(c.value / wv_array * 1e6)
+        ff_array = np.log10(c.c.value / wv_array * 1e6)
         return 10 ** self._ebl_ihl_spline(ff_array, zz_array, grid=False)
 
-    @property
-    def ssp_lumin_spline(self):
-        return self._ssp_lumin_spline
+
+    def ssp_lumin_spline(self, wv_array=None,
+                         freq_array=None,
+                         age_array=6.,
+                         metall_array=0.02):
+        if wv_array is None and freq_array is None:
+            print('No values given for either wavelength or frequency.'
+                  ' Choose one!')
+            exit()
+
+        if wv_array is not None and freq_array is not None:
+            print('Given both wavelength and frequency arrays.'
+                  ' Choose only one!')
+            exit()
+
+        if wv_array is not None:
+            freq_array = np.log10(c.c.value / wv_array * 1e10)
+        return self._ssp_lumin_spline(
+            xi=(freq_array, age_array, np.log10(metall_array)))
 
     @property
     def logging_prints(self):
@@ -201,6 +214,15 @@ class EBL_model(object):
 
     def t2z(self, tt):
         return 10 ** self._t2z(tt)
+
+    @staticmethod
+    def log10_safe(array_input):
+        array_copy = array_input.copy()
+        array_copy[array_copy < 1e-43] = 1e-43
+        array_copy = np.log10(array_copy)
+        array_copy[np.isnan(array_copy)] = -43.
+        array_copy[np.invert(np.isfinite(array_copy))] = -43.
+        return array_copy
 
     def change_axion_contribution(self, mass, gayy):
         """
@@ -329,13 +351,13 @@ class EBL_model(object):
             dd_total[:, :, -1] = dd_total[:, :, -2]
 
             # Define the quantities we work with
-            ssp_log_time = np.log10(t_total)  # log(time/yrs)
-            ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l_total[::-1] / 1E-10)
+            ssp_log_time = self.log10_safe(t_total)  # log(time/yrs)
+            ssp_log_freq = self.log10_safe(  # log(frequency/Hz)
+                c.c.value / l_total[::-1] / 1e-10)
             ssp_log_emis = (
                     dd_total[::-1]  # log(L_nu[erg/s/Hz/M_solar])
                     - float(yaml_file['total_stellar_mass'])
-                    + np.log10(1E10 * c.value)
+                    + np.log10(1e10 * c.c.value)
                     - 2. * ssp_log_freq[:, np.newaxis, np.newaxis])
 
         elif yaml_file['ssp_type'] == 'Popstar09':
@@ -353,8 +375,8 @@ class EBL_model(object):
             pop09_lumin_cube = np.zeros((len(ssp_wavelenghts),
                                          len(list_files)))
 
-            self._ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / ssp_wavelenghts[::-1] / 1E-10)
+            self._ssp_log_freq = self.log10_safe(  # log(frequency/Hz)
+                c.c.value / ssp_wavelenghts[::-1] / 1E-10)
 
             x_is_1e4 = np.argmin(np.abs(ssp_wavelenghts - 1e4))
             cut = 5e27 / 3.828e33
@@ -377,12 +399,12 @@ class EBL_model(object):
                     pop09_lumin_cube[:, nind] = yyy
 
             # log(em[erg/s/Hz/M_solar])
-            ssp_log_emis = np.log10(pop09_lumin_cube[::-1]
+            ssp_log_emis = self.log10_safe(pop09_lumin_cube[::-1]
                                     * 3.828e33)
             ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
             ssp_log_emis[
                 np.invert(np.isfinite(ssp_log_emis))] = -43.
-            ssp_log_emis += (np.log10(1E10 * c.value)
+            ssp_log_emis += (np.log10(1E10 * c.c.value)
                              - 2. * self._ssp_log_freq[:, np.newaxis])
 
             self._ssp_log_freq = (self._ssp_log_freq[1:]
@@ -401,10 +423,9 @@ class EBL_model(object):
                 yaml_file['path_ssp'] + 'spectral_resultsZ0.0001.txt')
             t_pegase = np.unique(data_pegase[:, 0])
             l_pegase = np.unique(data_pegase[:, 1])
-            l_total = l_pegase
 
-            ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l_pegase[::-1] * 1e10)
+            ssp_log_freq = self.log10_safe(  # log(frequency/Hz)
+                c.c.value / l_pegase[::-1] * 1e10)
 
             dd_pegase = np.zeros((l_pegase.shape[0],
                                   t_pegase.shape[0],
@@ -422,17 +443,10 @@ class EBL_model(object):
             ssp_metall = np.append(ssp_metall, 1e-43)
             dd_pegase[:, :, -1] = dd_pegase[:, :, -2]
 
-            ssp_log_time = np.log10(t_pegase * 1e6)  # log(time/yrs)
-            ssp_log_time[np.isnan(ssp_log_time)] = -43.
-            ssp_log_time[
-                np.invert(np.isfinite(ssp_log_time))] = -43.
+            ssp_log_time = self.log10_safe(t_pegase * 1e6)  # log(time/yrs)
 
-            ssp_log_emis = np.log10(dd_pegase)
-            ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
-            ssp_log_emis[
-                np.invert(np.isfinite(ssp_log_emis))] = -43.
-
-            ssp_log_emis += (np.log10(1E10 * c.value)
+            ssp_log_emis = self.log10_safe(dd_pegase)
+            ssp_log_emis += (np.log10(1E10 * c.c.value)
                              - 2. * ssp_log_freq
                              [:, np.newaxis, np.newaxis])
 
@@ -462,41 +476,37 @@ class EBL_model(object):
                 yaml_file['path_ssp'] + str(ssp_metall[0]),
                 skiprows=yaml_file['ignore_rows'])
 
-            # Get unique time steps, frequencies and metallicities,
-            # and their respective spectral data
+            # Get unique time steps and frequencies
             t_total = data_generic[0, 1:]
             l_total = data_generic[1:, 0]
 
+            # Load all the luminosity data for different metallicities
             ssp_log_emis = np.zeros(
                 (l_total.shape[0], t_total.shape[0],
                  len(ssp_metall) + 2))
-            import matplotlib.pyplot as plt
 
             for n_met, met in enumerate(ssp_metall):
                 data = np.loadtxt(
                     yaml_file['path_ssp'] + str(met),
                     skiprows=yaml_file['ignore_rows'])
-
                 ssp_log_emis[:, :, n_met + 1] = data[1:, 1:]
 
-
-            # Extend the stellar spectra to very low and high metallicities
+            # Extend the stellar spectra to very low metallicities
             ssp_metall = np.insert(ssp_metall, 0, 1e-43)
             ssp_log_emis[:, :, 0] = ssp_log_emis[:, :, 1]
 
+            # Extend the stellar spectra to very high metallicities
             ssp_metall = np.append(ssp_metall, 1.)
             ssp_log_emis[:, :, -1] = ssp_log_emis[:, :, -2]
 
-            ssp_log_time = np.log10(t_total)  # log(time/yrs)
-            ssp_log_time[np.isnan(ssp_log_time)] = -43.
-            ssp_log_time[
-                np.invert(np.isfinite(ssp_log_time))] = -43.
+            # Calculate the logarithms of all the values
+            ssp_log_time = self.log10_safe(t_total)
 
-            ssp_log_freq = np.log10(  # log(frequency/Hz)
-                c.value / l_total / 1e-10)[::-1]
+            ssp_log_freq = self.log10_safe(  # log(frequency/Hz)
+                c.c.value / l_total / 1e-10)
 
-            ssp_log_emis = np.log10(ssp_log_emis)
-            ssp_log_emis += (np.log10(1e10 * c.value)
+            ssp_log_emis = self.log10_safe(ssp_log_emis)
+            ssp_log_emis += (np.log10(1e10 * c.c.value)
                              - 2. * ssp_log_freq
                              [:, np.newaxis, np.newaxis])
 
@@ -511,45 +521,15 @@ class EBL_model(object):
         self._ssp_lumin_spline = RegularGridInterpolator(
             points=(ssp_log_freq,
                     ssp_log_time,
-                    np.log10(ssp_metall)),
+                    self.log10_safe(ssp_metall)),
             values=ssp_log_emis,
             method='linear',
             bounds_error=False, fill_value=-43
         )
-        color_ssp = ['b', 'orange', 'k', 'r', 'green', 'grey', 'limegreen',
-                     'purple', 'brown']
 
-        print(ssp_metall)
-        import matplotlib.pyplot as plt
-        plt.figure()
-        plt.title(yaml_file['path_ssp'])
-        for n_met, met in enumerate(ssp_metall):
-            for i in ([0, 10, 50, -1]):
-                plt.loglog(l_total, ssp_log_emis[:, i, n_met],
-                           linestyle='-',
-                           color=color_ssp[i % len(color_ssp)],
-                           alpha=float(n_met) / len(ssp_metall) * 1.1
-                           )
-
-        plt.figure()
-        xx_amstrongs = np.logspace(2, 6, 2000)
-        for n_met, met in enumerate(ssp_metall):
-            for i, age in enumerate([6.0, 6.5, 7.5, 8., 8.5, 9., 10.]):
-                aa = np.argmin(age - ssp_log_time)
-                plt.plot(xx_amstrongs[::-1],
-                    self._ssp_lumin_spline(
-                        xi=(
-                            np.log10(c.value / xx_amstrongs * 1e10),
-                            age, np.log10(met))),
-                    linestyle='-',
-                    color=color_ssp[i],
-                    alpha=float(n_met) / len(ssp_metall) * 1.1
-                )
-        # plt.show()
-
-        del ssp_log_emis
         self._ssp_metall = ssp_metall
         self._ssp_log_time_init = ssp_log_time[0]
+        del ssp_log_freq, ssp_log_time, ssp_metall, ssp_log_emis
         self.logging_info('Reading of SSP file')
         return
 
@@ -616,8 +596,7 @@ class EBL_model(object):
             return 0.
 
     def spline_dust_reemission(self, yaml_data):
-        # print('%e' %10**float(yaml_data['f_tir']))
-        # print(yaml_data['f_tir'], type(yaml_data['f_tir']))
+
         if yaml_data['library'] == 'chary2001':
 
             f_tir = 10 ** float(yaml_data['f_tir'])
@@ -625,10 +604,11 @@ class EBL_model(object):
             self.logging_info('Dust reem: reading of template file')
 
             ir_wv = chary[1].data.field('LAMBDA')[0]
-            ir_freq = c.value / ir_wv * 1e6
+            ir_freq = c.c.value / ir_wv * 1e6
 
-            ir_lum = (np.log10(chary[1].data.field('NULNUINLSUN')[0])
-                      - np.log10(f_tir))
+            ir_lum = (
+                    self.log10_safe(chary[1].data.field('NULNUINLSUN')[0])
+                    - np.log10(f_tir))
 
             self.logging_info('Dust reem: calculation of luminosities')
 
@@ -648,10 +628,10 @@ class EBL_model(object):
 
             sort_order = np.argsort(l_tir)
             l_tir = l_tir[sort_order]
-            l_tir *= L_sun.to(u.erg / u.s).value
+            l_tir *= c.L_sun.to(u.erg / u.s).value
 
             ir_lum -= np.log10(ir_freq[:, np.newaxis])
-            ir_lum += np.log10(L_sun.to(u.erg / u.s).value)
+            ir_lum += np.log10(c.L_sun.to(u.erg / u.s).value)
             ir_lum[ir_lum < -43] = -43
             ir_lum = ir_lum[:, sort_order]
 
@@ -686,10 +666,10 @@ class EBL_model(object):
                 aaa['nuLnu[Z=6.99103]'], aaa['nuLnu[Z=7.99103]'],
                 aaa['nuLnu[Z=8.29205999]'], aaa['nuLnu[Z=8.69]'],
                 aaa['nuLnu[Z=9.08794001]']))
-            yyy = (yyy * (L_sun.to(u.erg / u.s)).value
-                   * (aaa['wavelength'] * 1e-9 / c.value)[:, np.newaxis])
+            yyy = (yyy * (c.L_sun.to(u.erg / u.s)).value
+                   * (aaa['wavelength'] * 1e-9 / c.c.value)[:, np.newaxis])
 
-            yyy = np.log10(yyy)
+            yyy = self.log10_safe(yyy)
 
             yyy_whole = np.zeros((np.shape(yyy)[0], 2, np.shape(yyy)[1]))
             yyy_whole[:, 0, :] = yyy - np.log10(1e5)
@@ -698,7 +678,7 @@ class EBL_model(object):
             yyy_whole[np.isnan(yyy_whole)] = -43.
             yyy_whole[np.invert(np.isfinite(yyy_whole))] = -43.
 
-            l_tir = np.array([1e-5, 1e8]) * L_sun.to(u.erg / u.s).value
+            l_tir = np.array([1e-5, 1e8]) * c.L_sun.to(u.erg / u.s).value
 
             dust_reem_spline = RegularGridInterpolator(
                 points=(np.log10(aaa['wavelength'] * 1e-3),
@@ -784,22 +764,22 @@ class EBL_model(object):
                     10. ** self._log_t_ssp_intcube  # Variable change,
                     * np.log(10.)  # integration over y=log10(x)
                     * 10. **  # L(t)
-                    self.ssp_lumin_spline(xi=(
-                        self._log_freq_cube,
-                        self._log_t_ssp_intcube,
-                        np.log10(self.metall_mean(
+                    self.ssp_lumin_spline(
+                        freq_array=self._log_freq_cube,
+                        age_array=self._log_t_ssp_intcube,
+                        metall_array=self.metall_mean(
                             function_input=yaml_data['metall_formula'],
                             zz_array=self._shifted_zz_emiss,
-                            args=yaml_data['metall_params']))))
+                            args=yaml_data['metall_params']))
             )
 
-            self._kernel_emiss[np.isnan(self._kernel_emiss)] = -43.
-            self._kernel_emiss[
-                np.invert(np.isfinite(self._kernel_emiss))] = -43.
+            # self._kernel_emiss[np.isnan(self._kernel_emiss)] = 1e-43
+            # self._kernel_emiss[
+            #     np.invert(np.isfinite(self._kernel_emiss))] = 1e-43
             self.logging_info('SSP emissivity: set the initial kernel')
 
         # Dust absorption (applied in log10)
-        fract_dust_Notabs = 10 ** dust_abs.calculate_dust(
+        fract_dust_Notabs = dust_abs.calculate_dust(
             wv_array=self._lambda_array,
             models=yaml_data['dust_abs_models'],
             z_array=self._z_array,
@@ -812,20 +792,20 @@ class EBL_model(object):
         # Dust reemission loading ------------------------------------
         if yaml_data['dust_reem']:
             self.logging_info('Dust reem: enter')
-            mean_metall_cube = np.log10(self.metall_mean(
+            mean_metall_cube = self.metall_mean(
                 function_input=yaml_data['metall_formula'],
                 zz_array=self._shifted_zz_emiss,
-                args=yaml_data['metall_params']))
+                args=yaml_data['metall_params'])
             self.logging_info('Dust reem: mean metall calc')
 
             lumin_abs = (
                     10 ** self._log_freq_cube
                     * np.log(10.)  # integration over y=log10(x)
                     * 10. **  # L(t)
-                    self.ssp_lumin_spline(xi=(
-                        self._log_freq_cube,
-                        self._log_t_ssp_intcube,
-                        mean_metall_cube))
+                    self.ssp_lumin_spline(
+                        freq_array=self._log_freq_cube,
+                        age_array=self._log_t_ssp_intcube,
+                        metall_array=mean_metall_cube)
                     * (1. - fract_dust_Notabs)
             )
             self.logging_info('Dust reem: lumin_abs calc')
@@ -865,9 +845,7 @@ class EBL_model(object):
         self.logging_info('SSP emissivity: integrate emissivity')
 
         # Spline of the emissivity
-        log10_emiss = np.log10(self._emiss_ssp_cube)
-        log10_emiss[np.isnan(log10_emiss)] = -43.
-        log10_emiss[np.invert(np.isfinite(log10_emiss))] = -43.
+        log10_emiss = self.log10_safe(self._emiss_ssp_cube)
 
         self._emiss_ssp_spline = RegularGridInterpolator(
             points=(self._freq_array, self._z_array),
@@ -925,12 +903,10 @@ class EBL_model(object):
         self.logging_info('SSP EBL: integration')
 
         # Spline of the SSP EBL intensity
-        log10_ebl = np.log10(self._ebl_ssp_cube)
-        log10_ebl[np.isnan(log10_ebl)] = -43.
-        log10_ebl[np.invert(np.isfinite(log10_ebl))] = -43.
-        self._ebl_ssp_spline = RectBivariateSpline(x=self._freq_array,
-                                                   y=self._z_array,
-                                                   z=log10_ebl, kx=1, ky=1)
+        log10_ebl = self.log10_safe(self._ebl_ssp_cube)
+        self._ebl_ssp_spline = RectBivariateSpline(
+            x=self._freq_array, y=self._z_array, z=log10_ebl,
+            kx=1, ky=1)
 
         # Free memory and log the time
         del ebl_intcube, log10_ebl
@@ -945,11 +921,11 @@ class EBL_model(object):
                                    * (np.max(self._z_array)
                                       - self._z_cube))
 
-            self._shifted_freq = (self._log_freq_cube + np.log10(
+            self._shifted_freq = (self._log_freq_cube + self.log10_safe(
                 (1. + self._ebl_z_intcube) / (1. + self._z_cube)))
 
             self._ebl_intcube = (10. ** self._log_freq_cube
-                                 * c.value / 4. / np.pi)
+                                 * c.c.value / 4. / np.pi)
             self._ebl_intcube = (self._ebl_intcube
                                  / ((1. + self._ebl_z_intcube)
                                     * self._cosmo.H(
@@ -969,7 +945,7 @@ class EBL_model(object):
                                              )
                                   )
 
-            self._ebl_intcube = (c.value * 10 ** freq_positions
+            self._ebl_intcube = (c.c.value * 10 ** freq_positions
                                  / 4. / np.pi)[:, np.newaxis]
             self._ebl_intcube = (self._ebl_intcube
                                  / ((1. + self._ebl_z_intcube)
@@ -1013,7 +989,7 @@ class EBL_model(object):
 
         self.logging_info('SSP EBL: emissivity calculated')
 
-        new_individualFreq = np.log10(c.value / x_data[::-1] * 1e6)
+        new_individualFreq = np.log10(c.c.value / x_data[::-1] * 1e6)
 
         if (self._ebl_intcube is None
                 or np.shape(self._ebl_intcube)[0]
@@ -1115,13 +1091,10 @@ class EBL_model(object):
         ).to(u.erg / u.s / u.Mpc ** 3)
 
         # Spline of the luminosity
-        log10_lumin = np.log10(self._emiss_ihl_cube.value)
-        log10_lumin[np.isnan(log10_lumin)] = -43.
-        log10_lumin[np.invert(np.isfinite(log10_lumin))] = -43.
-        self._emiss_ihl_spline = RectBivariateSpline(x=self._freq_array,
-                                                     y=self._z_array,
-                                                     z=log10_lumin,
-                                                     kx=1, ky=1)
+        log10_lumin = self.log10_safe(self._emiss_ihl_cube.value)
+        self._emiss_ihl_spline = RectBivariateSpline(
+            x=self._freq_array, y=self._z_array, z=log10_lumin,
+            kx=1, ky=1)
 
         # Free memory and log the time
         del old_spectrum, old_spectrum_spline, old_spline, mf, L22
@@ -1184,12 +1157,10 @@ class EBL_model(object):
         self._ebl_ihl_cube = self._ebl_ihl_cube.to(u.nW / u.m ** 2).value
 
         # Spline of the IHL EBL intensity
-        log10_ebl = np.log10(self._ebl_ihl_cube)
-        log10_ebl[np.isnan(log10_ebl)] = -43.
-        log10_ebl[np.invert(np.isfinite(log10_ebl))] = -43.
-        self._ebl_ihl_spline = RectBivariateSpline(x=self._freq_array,
-                                                   y=self._z_array,
-                                                   z=log10_ebl, kx=1, ky=1)
+        log10_ebl = self.log10_safe(self._ebl_ihl_cube)
+        self._ebl_ihl_spline = RectBivariateSpline(
+            x=self._freq_array, y=self._z_array, z=log10_ebl,
+            kx=1, ky=1)
 
         # Free memory and log the time
         del kernel_ebl_intra, z_integr, log10_ebl
@@ -1218,7 +1189,7 @@ class EBL_model(object):
         axion_gayy = axion_gayy * u.GeV ** -1
 
         z_star = (axion_mass
-                  / (2. * h_plank.to(u.eV * u.s)
+                  / (2. * c.h.to(u.eV * u.s)
                      * 10 ** self._log_freq_cube[:, :, 0] * u.s ** -1)
                   - 1.)
 
@@ -1233,9 +1204,7 @@ class EBL_model(object):
                 * (z_star > self._z_cube[:, :, 0]))
 
         # Spline of the axion EBL intensity
-        log10_ebl = np.log10(self._ebl_axion_cube)
-        log10_ebl[np.isnan(log10_ebl)] = -43.
-        log10_ebl[np.invert(np.isfinite(log10_ebl))] = -43.
+        log10_ebl = self.log10_safe(self._ebl_axion_cube)
         self._ebl_axion_spline = RectBivariateSpline(x=self._freq_array,
                                                      y=self._z_array,
                                                      z=log10_ebl,
