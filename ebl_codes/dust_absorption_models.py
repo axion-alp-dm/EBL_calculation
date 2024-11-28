@@ -62,12 +62,12 @@ def calculate_dust(wv_array, z_array=0.,
 
     # The absorption models are defined in one definition
     if len(models) == 1:
-        if models[0] == 'finke2022':
-            dust_att = finke2022(
-                wv_array, z_array, dust_params, verbose=verbose)
+        if models[0] == 'comb_model_1':
+            dust_att = comb_model_1(wv_array, z_array, dust_params,
+                                    verbose=verbose)
 
-        elif models[0] == 'finke2022_2':
-            dust_att = finke2022_2(
+        elif models[0] == 'finke2022':
+            dust_att = finke2022(
                 wv_array, z_array, dust_params, verbose=verbose)
 
         else:
@@ -86,6 +86,10 @@ def calculate_dust(wv_array, z_array=0.,
             dust_att += razzaque2009(
                 wv_array[:, np.newaxis], dust_params, verbose=verbose)
 
+        elif models[0] == 'dust_att_finke':
+            dust_att += dust_att_finke(
+                wv_array[:, np.newaxis], dust_params, verbose=verbose)
+
         else:
             print('   -> No dust absorption dependency with wavelength.')
 
@@ -101,7 +105,7 @@ def calculate_dust(wv_array, z_array=0.,
     else:
         print('   -> No dust absorption model chosen.')
         print('   -> CAREFUL: has the model been correctly chosen?')
-        print('   -> Number of name inputs in the array: ', len(models))
+        print('   -> Number of model inputs in the array: ', len(models))
 
     dust_att[np.isnan(dust_att)] = -43.
     dust_att[np.invert(np.isfinite(dust_att))] = -43.
@@ -121,20 +125,14 @@ def kneiske2002(wv, dust_params, verbose=True):
         Random index
     """
     try:
-        Ebv_Kn02 = dust_params['Ebv_Kn02']
+        Ebv_Kn02 = dust_params['params_kneiske2002'][0]
+        R_Kn02 = dust_params['params_kneiske2002'][1]
     except:
         Ebv_Kn02 = 0.15
-        if verbose:
-            print('   -> Default parameter for Ebv_Kn02 chosen: ',
-                  Ebv_Kn02)
-
-    try:
-        R_Kn02 = dust_params['R_Kn02']
-    except:
         R_Kn02 = 3.2
         if verbose:
-            print('   -> Default parameter for R_Kn02 chosen: ',
-                  R_Kn02)
+            print('   -> Default parameter for Ebv, R chosen: ',
+                  Ebv_Kn02, ',', R_Kn02)
 
     return (np.minimum(-.4 * Ebv_Kn02 * .68 * R_Kn02
                        * (1. / wv - .35), 0.))
@@ -187,6 +185,7 @@ def razzaque2009(lambda_array, dust_params, verbose=True):
     yy += ((initial_value_rz09[3]
             + multipl_factor_rz09[3] * np.log10(lambda_array))
            * (lambda_array > lambda_cuts_rz09[2]))
+    yy[yy < 1e-43] = 1e-43
     return np.log10(yy)
 
 
@@ -215,7 +214,7 @@ def abdollahi2018(z_array, params_dust=None, verbose=True):
             / (1. + ((1. + z_array) / params_ab18[2]) ** params_ab18[3]))
 
 
-def dust_att_finke2(lambda_array, params_dust=None, verbose=True):
+def dust_att_finke(lambda_array, params_dust=None, verbose=True):
     """
 
     :param lambda_array:
@@ -267,7 +266,7 @@ def dust_att_finke2(lambda_array, params_dust=None, verbose=True):
     return np.log10(yy)
 
 
-def finke2022(lambda_array, z_array, dust_params, verbose=True):
+def comb_model_1(lambda_array, z_array, dust_params, verbose=True):
     """
     Dust attenuation as a function of wavelength and redshift
     following Finke22 or 2210.01157
@@ -290,7 +289,7 @@ def finke2022(lambda_array, z_array, dust_params, verbose=True):
     return np.minimum(yy, 0)
 
 
-def finke2022_2(lambda_array, z_array, dust_params, verbose=True):
+def finke2022(lambda_array, z_array, dust_params, verbose=True):
     """
     Dust attenuation as a function of wavelength and redshift
     following Finke22 or 2210.01157.
@@ -308,8 +307,8 @@ def finke2022_2(lambda_array, z_array, dust_params, verbose=True):
         yy = np.zeros([np.shape(lambda_array)[0], np.shape(z_array)[0]])
 
     yy += abdollahi2018(z_array, dust_params, verbose=verbose)
-    yy += (dust_att_finke2(
+    yy += (dust_att_finke(
         lambda_array, dust_params, verbose=verbose)[:, np.newaxis]
-           - dust_att_finke2(0.15, dust_params))
+           - dust_att_finke(0.15, dust_params))
 
     return np.minimum(yy, 0)

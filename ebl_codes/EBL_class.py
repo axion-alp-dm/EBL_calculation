@@ -147,7 +147,8 @@ class EBL_model(object):
         self._z_array = z_array
         self._z_max = z_max
         self._lambda_array = lambda_array[::-1]
-        self._freq_array = self.log10_safe(c.c.value / lambda_array[::-1] * 1e6)
+        self._freq_array = self.log10_safe(
+            c.c.value / lambda_array[::-1] * 1e6)
         self._t_intsteps = t_intsteps
 
         tt = self.log10_safe(self._cosmo.lookback_time(
@@ -182,7 +183,6 @@ class EBL_model(object):
     def ebl_ihl_spline(self, wv_array, zz_array):
         ff_array = np.log10(c.c.value / wv_array * 1e6)
         return 10 ** self._ebl_ihl_spline(ff_array, zz_array, grid=False)
-
 
     def ssp_lumin_spline(self, wv_array=None,
                          freq_array=None,
@@ -400,7 +400,7 @@ class EBL_model(object):
 
             # log(em[erg/s/Hz/M_solar])
             ssp_log_emis = self.log10_safe(pop09_lumin_cube[::-1]
-                                    * 3.828e33)
+                                           * 3.828e33)
             ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
             ssp_log_emis[
                 np.invert(np.isfinite(ssp_log_emis))] = -43.
@@ -416,7 +416,7 @@ class EBL_model(object):
 
         elif yaml_file['ssp_type'] == 'pegase3':
             ssp_metall = [0.1, 0.05, 0.02, 0.008,
-                                0.004, 0.0004, 0.0001]
+                          0.004, 0.0004, 0.0001]
             # print(ssp_metall)
 
             data_pegase = np.loadtxt(
@@ -506,9 +506,11 @@ class EBL_model(object):
                 c.c.value / l_total / 1e-10)
 
             ssp_log_emis = self.log10_safe(ssp_log_emis)
-            ssp_log_emis += (np.log10(1e10 * c.c.value)
-                             - 2. * ssp_log_freq
-                             [:, np.newaxis, np.newaxis])
+
+            if yaml_file['L_lambda']:
+                ssp_log_emis += (np.log10(1e10 * c.c.value)
+                                 - 2. * ssp_log_freq
+                                 [:, np.newaxis, np.newaxis])
 
         else:
             print('SSP type not recognized')
@@ -596,6 +598,11 @@ class EBL_model(object):
             return 0.
 
     def spline_dust_reemission(self, yaml_data):
+        """
+
+        :param yaml_data:
+        :return:
+        """
 
         if yaml_data['library'] == 'chary2001':
 
@@ -665,7 +672,7 @@ class EBL_model(object):
                 aaa['nuLnu[Z=6.99103]'],
                 aaa['nuLnu[Z=6.99103]'], aaa['nuLnu[Z=7.99103]'],
                 aaa['nuLnu[Z=8.29205999]'], aaa['nuLnu[Z=8.69]'],
-                aaa['nuLnu[Z=9.08794001]']))
+                aaa['nuLnu[Z=9.08794001]'], aaa['nuLnu[Z=9.08794001]']))
             yyy = (yyy * (c.L_sun.to(u.erg / u.s)).value
                    * (aaa['wavelength'] * 1e-9 / c.c.value)[:, np.newaxis])
 
@@ -683,7 +690,8 @@ class EBL_model(object):
             dust_reem_spline = RegularGridInterpolator(
                 points=(np.log10(aaa['wavelength'] * 1e-3),
                         np.log10(l_tir),
-                        np.log10([1e-43, 0.0004, 0.004, 0.008, 0.02, 0.05])),
+                        np.log10([1e-43, 0.0004, 0.004,
+                                  0.008, 0.02, 0.05, 1.])),
                 values=yyy_whole,
                 method='linear',
                 bounds_error=False, fill_value=-43.
@@ -727,7 +735,6 @@ class EBL_model(object):
                 or np.any(self._last_ssp != yaml_data['ssp'])
                 or np.any(self._last_Zevol != yaml_data['metall_params'])):
             self.read_SSP_file(yaml_data['ssp'])
-
 
             lookback_time_cube = self._cube * self._cosmo.lookback_time(
                 self._z_array).to(u.yr)[np.newaxis, :, np.newaxis]
