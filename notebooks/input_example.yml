@@ -75,15 +75,15 @@ ssp_models:
       total_stellar_mass: 6
       L_lambda: True
 
-    dust_abs_models: ['finke2022']
+    dust_abs_models: 'finke2022'
     dust_abs_params:
       params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
       fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
 
-    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
+    metall_formula: 'tanikawa22'
     metall_params: [ -0.147, 0.207, 0.819, 0.02]
 
-    sfr_formula: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_formula: 'abdollahi09'
     sfr_params: [ 0.0150, 2.254, 3.347, 6.56 ]
 
     dust_reem: True
@@ -104,15 +104,15 @@ ssp_models:
       total_stellar_mass: 6
       L_lambda: True
 
-    dust_abs_models: ['finke2022']
+    dust_abs_models: 'finke2022'
     dust_abs_params:
       params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
       fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
 
-    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-    metall_params: [ -0.147, 0.207, 0.819, 0.02]
+    metall_formula: 'constant'
+    metall_params: [0.02]
 
-    sfr_formula: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
+    sfr_formula: 'abdollahi09'
     sfr_params: [ 0.0150, 2.254, 3.347, 6.56 ]
 
     dust_reem: True

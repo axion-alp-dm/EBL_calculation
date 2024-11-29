@@ -13,7 +13,9 @@ from astropy import units as u
 import astropy.constants as c
 from astropy.cosmology import FlatLambdaCDM
 
-from ebl_codes import dust_absorption_models as dust_abs
+from ebl_codes.sfr_models import sfr_model
+from ebl_codes.metall_models import metall_model
+from ebl_codes import dust_absorption_models as dust_abs_model
 
 try:
     from hmf import MassFunction
@@ -555,47 +557,6 @@ class EBL_model(object):
         self.logging_info('Initialize cubes: end')
         return
 
-    def metall_mean(self, function_input, zz_array, args=None):
-        if args is None:
-            args = []
-
-        if type(function_input) == str:
-            return (lambda x: eval(function_input)(x, args))(zz_array)
-        elif callable(function_input):
-            return function_input(zz_array)
-        else:
-            print(
-                'Unrecognized type of metallicity evolution '
-                '(required string or callable)')
-            return 0.
-
-    def sfr_function(self, function_input, zz_array, params=None):
-        """
-        Stellar Formation Rate (SFR) is the density of stars that are born
-        as a function of time/redshift.
-
-        function_input: string or callable
-            Formula (analytical or numerical) of the SFR.
-        zz_array: 1D array
-            Redshift values to input in the formula.
-        params: 1D array or list
-            Optional parameters that can enter the sfr formula.
-
-        :return: 1D array
-            SFR values with the same length of the xx-array.
-        """
-        if params is None:
-            params = []
-
-        if type(function_input) == str:
-            return (lambda x: eval(function_input)(x, params))(zz_array)
-        elif callable(function_input):
-            return function_input(zz_array)
-        else:
-            print(
-                'Unrecognized type of sfr '
-                '(required string or callable)')
-            return 0.
 
     def spline_dust_reemission(self, yaml_data):
         """
@@ -774,10 +735,11 @@ class EBL_model(object):
                     self.ssp_lumin_spline(
                         freq_array=self._log_freq_cube,
                         age_array=self._log_t_ssp_intcube,
-                        metall_array=self.metall_mean(
-                            function_input=yaml_data['metall_formula'],
+                        metall_array=metall_model(
                             zz_array=self._shifted_zz_emiss,
-                            args=yaml_data['metall_params']))
+                            metall_model=yaml_data['metall_formula'],
+                            metall_params=yaml_data['metall_params'],
+                            verbose=self._log_prints))
             )
 
             # self._kernel_emiss[np.isnan(self._kernel_emiss)] = 1e-43
@@ -786,11 +748,12 @@ class EBL_model(object):
             self.logging_info('SSP emissivity: set the initial kernel')
 
         # Dust absorption (applied in log10)
-        fract_dust_Notabs = dust_abs.calculate_dust(
+        fract_dust_Notabs = dust_abs_model.calculate_dust(
             wv_array=self._lambda_array,
             models=yaml_data['dust_abs_models'],
             z_array=self._z_array,
-            dust_params=yaml_data['dust_abs_params'])[:, :, np.newaxis]
+            dust_params=yaml_data['dust_abs_params'],
+            verbose=self._log_prints)[:, :, np.newaxis]
 
         kernel_emiss = self._kernel_emiss * fract_dust_Notabs
 
@@ -799,10 +762,11 @@ class EBL_model(object):
         # Dust reemission loading ------------------------------------
         if yaml_data['dust_reem']:
             self.logging_info('Dust reem: enter')
-            mean_metall_cube = self.metall_mean(
-                function_input=yaml_data['metall_formula'],
-                zz_array=self._shifted_zz_emiss,
-                args=yaml_data['metall_params'])
+            mean_metall_cube = metall_model(
+                            zz_array=self._shifted_zz_emiss,
+                            metall_model=yaml_data['metall_formula'],
+                            metall_params=yaml_data['metall_params'],
+                            verbose=self._log_prints)
             self.logging_info('Dust reem: mean metall calc')
 
             lumin_abs = (
@@ -837,10 +801,9 @@ class EBL_model(object):
             self.logging_info('Dust reem: sum to kernel_emiss')
 
         # SFR multiplication
-        kernel_emiss *= (
-            self.sfr_function(sfr_formula,
-                              self._shifted_zz_emiss,
-                              sfr_params))
+        kernel_emiss *= sfr_model(
+            zz_array=self._shifted_zz_emiss, sfr_model=sfr_formula,
+            sfr_params=sfr_params, verbose=self._log_prints)
 
         self.logging_info('SSP emissivity: calculate ssp kernel')
 

@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline, RegularGridInterpolator
 
+from ebl_codes.metall_models import metall_model
+from ebl_codes.sfr_models import sfr_model
 from ebl_codes.EBL_class import EBL_model
 from astropy.constants import c
 
@@ -233,7 +235,7 @@ labels_ssp2 = []
 handles_ssp2 = []
 
 print('%.3f' %(memory_usage_psutil()))
-ebl_class.logging_prints = False
+ebl_class.logging_prints = True
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
@@ -305,18 +307,18 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                     color=colors[nkey % len(colors)]))
 
     ax_met.plot(z_array,
-                ebl_class.metall_mean(
-                    function_input=config_data['ssp_models'][key][
-                        'metall_formula'],
+                metall_model(
                     zz_array=z_array,
-                    args=config_data['ssp_models'][key]['metall_params']),
+                    metall_model=config_data['ssp_models'][key]['metall_formula'],
+                    metall_params=config_data['ssp_models'][key]['metall_params']
+                ),
                 label=config_data['ssp_models'][key]['name'],
                 color=colors[nkey % len(colors)])
 
-    ax_sfr.plot(z_data, ebl_class.sfr_function(
-        function_input=config_data['ssp_models'][key]['sfr_formula'],
+    ax_sfr.plot(z_data, sfr_model(
         zz_array=z_data,
-        params=config_data['ssp_models'][key]['sfr_params']),
+        sfr_model=config_data['ssp_models'][key]['sfr_formula'],
+        sfr_params=config_data['ssp_models'][key]['sfr_params']),
                 label=config_data['ssp_models'][key]['name'],
                 color=colors[nkey % len(colors)])
 

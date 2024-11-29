@@ -61,12 +61,15 @@ def calculate_dust(wv_array, z_array=0.,
         dust_att = np.zeros([np.shape(wv_array)[0], np.shape(z_array)[0]])
 
     # The absorption models are defined in one definition
-    if len(models) == 1:
-        if models[0] == 'comb_model_1':
+    if len(models) == 1 or type(models) == str:
+        if len(models) == 1:
+            models = models[0]
+
+        if models == 'comb_model_1':
             dust_att = comb_model_1(wv_array, z_array, dust_params,
                                     verbose=verbose)
 
-        elif models[0] == 'finke2022':
+        elif models == 'finke2022':
             dust_att = finke2022(
                 wv_array, z_array, dust_params, verbose=verbose)
 
