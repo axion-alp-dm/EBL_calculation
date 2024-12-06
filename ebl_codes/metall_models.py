@@ -30,5 +30,5 @@ def constant(zz_array, params=None, verbose=True):
         if verbose:
             print('   -> Metallicity: default parameters chosen: ',
                   params)
-    return np.ones(len(zz_array)) * params
+    return np.ones(np.shape(zz_array)) * params
 

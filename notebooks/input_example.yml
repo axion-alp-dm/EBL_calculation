@@ -48,7 +48,7 @@ ssp_models:
 #
 #    dust_abs_models: ['finke2022']
 #    dust_abs_params:
-#      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
+#      params_fermi18: [ 1.52, 0.35, 4.12, 5.89 ]
 #      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
 #
 #    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
@@ -64,60 +64,130 @@ ssp_models:
 #      f_tir: 9.68  # [dex]
 #      wv_reem_min: 5.33  # [microns]
 
-  pegaseBG_Finke_chary:
-    name: 'Pegase generic'
+#  pegaseBG_Finke_chary:
+#    name: 'Pegase generic'
+#
+#    ssp:
+#      path_ssp: data/ssp_synthetic_spectra/pegase3/spectra_Kroupa_newformat/
+#      ssp_type: generic
+#      file_name: ''
+#      ignore_rows: 0
+#      total_stellar_mass: 6
+#      L_lambda: True
+#
+#    dust_abs_models: 'finke2022'
+#    dust_abs_params:
+#      params_fermi18: [ 1.52, 0.35, 4.12, 5.89 ]
+#      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
+#
+#    metall_formula: 'tanikawa22'
+#    metall_params: [ -0.147, 0.207, 0.819, 0.02]
+#
+#    sfr_formula: 'madau14'
+#    sfr_params: [0.015, 2.7, 2.9, 5.6]
+#
+#    dust_reem: True
+#    dust_reem_params:
+#      library: chary2001
+#      file_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
+#      f_tir: 9.68  # [dex]
+#      wv_reem_min: 5.33  # [microns]
 
-    ssp:
-      path_ssp: data/ssp_synthetic_spectra/pegase3/spectra_Kroupa_newformat/
-      ssp_type: generic
-      file_name: ''
-      ignore_rows: 0
-      total_stellar_mass: 6
-      L_lambda: True
 
-    dust_abs_models: 'finke2022'
+#  pegaseBG_Finke_bosa:
+#    name: 'Pegase bosa'
+#
+#    ssp:
+#      path_ssp: data/ssp_synthetic_spectra/pegase3/spectra_Kroupa_newformat/
+#      ssp_type: generic
+#      file_name: ''
+#      ignore_rows: 0
+#      total_stellar_mass: 6
+#      L_lambda: True
+#
+#    dust_abs_models: 'finke2022'
+#    dust_abs_params:
+#      params_fermi18: [ 1.52, 0.35, 4.12, 5.89 ]
+#      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
+#
+#    metall_formula: 'tanikawa22'
+#    metall_params: [ -0.147, 0.207, 0.819, 0.02]
+#
+#    sfr_formula: 'madau14'
+#    sfr_params: [0.015, 2.7, 2.9, 5.6]
+#
+#    dust_reem: True
+#    dust_reem_params:
+#      library: bosa
+#      file_path: 'outputs/dust_reem/Z.fits'
+
+#  SB99_Finke_chary:
+#    name: 'Our model'
+#
+#    ssp:
+#      path_ssp: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
+#      ssp_type: SB99
+#      file_name: /kroupa_
+#      ignore_rows: 6
+#      total_stellar_mass: 6
+#      L_lambda: True
+#
+#    dust_abs_models: 'finke2022'
+#    dust_abs_params:
+#      params_fermi18: [ 1.52, 0.35, 4.12, 5.89 ]
+#      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
+#
+#    metall_formula: 'constant'
+#    metall_params: [0.02]
+#
+#    sfr_formula: 'madau14'
+#    sfr_params: [0.015, 2.7, 2.9, 5.6]
+#
+#    dust_reem: True
+#    dust_reem_params:
+#      library: chary2001
+#      file_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
+#      f_tir: 9.68  # [dex]
+#      wv_reem_min: 5.33  # [microns]
+
+  SB99_Finke_bosa:
+    dust_abs_models:
+      - finke2022
     dust_abs_params:
-      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
-      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
-
-    metall_formula: 'tanikawa22'
-    metall_params: [ -0.147, 0.207, 0.819, 0.02]
-
-    sfr_formula: 'abdollahi09'
-    sfr_params: [ 0.0150, 2.254, 3.347, 6.56 ]
-
-    dust_reem: True
+      fesc_steps_fn22:
+        - 0.19026841739819628
+        - 0.21769647479187074
+        - 0.24664564616751203
+        - 0.4405596977469474
+        - 0.702267829157408
+      params_fermi18:
+        - 1.52
+        - 0.35
+        - 4.12
+        - 5.89
+    dust_reem: true
     dust_reem_params:
-      library: chary2001
-      file_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
-      f_tir: 9.68  # [dex]
-      wv_reem_min: 5.33  # [microns]
-
-  SB99_Finke_chary:
-    name: 'Our model'
-
+      f_tir: 9.68
+      file_path: outputs/dust_reem/Z.fits
+      library: bosa
+      wv_reem_min: 5.33
+    metall_formula: tanikawa22
+    metall_params:
+      - -1.363077660454558e-06
+      - 0.1709136894779165
+      - 1.0750514513578506
+      - 0.02
+    name: Bosa quasi fit
+    sfr_formula: 'madau14'
+    sfr_params:
+      - 0.015915657766652082
+      - 2.303543288627401
+      - 3.287937285946092
+      - 6.633075702961276
     ssp:
-      path_ssp: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-      ssp_type: SB99
       file_name: /kroupa_
       ignore_rows: 6
+      path_ssp: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
+      ssp_type: SB99
       total_stellar_mass: 6
       L_lambda: True
-
-    dust_abs_models: 'finke2022'
-    dust_abs_params:
-      params_ab18: [ 1.52, 0.35, 4.12, 5.89 ]
-      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
-
-    metall_formula: 'constant'
-    metall_params: [0.02]
-
-    sfr_formula: 'abdollahi09'
-    sfr_params: [ 0.0150, 2.254, 3.347, 6.56 ]
-
-    dust_reem: True
-    dust_reem_params:
-      library: chary2001
-      file_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
-      f_tir: 9.68  # [dex]
-      wv_reem_min: 5.33  # [microns]

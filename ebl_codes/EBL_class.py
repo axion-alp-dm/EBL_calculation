@@ -241,7 +241,8 @@ class EBL_model(object):
         ----------
         mass: float [eV]
             Value of (m_a * c**2) of the decaying axion.
-        gayy: float [GeV**-1]
+        gayy: float [GeV**-1
+        ]
             Coupling constant of the axion with two photons (decay).
         """
         self.ebl_axion_calculation(axion_mass=mass, axion_gayy=gayy)
@@ -795,7 +796,7 @@ class EBL_model(object):
                 (np.log10(self._lambda_array)[:, np.newaxis, np.newaxis]
                  * self._cube,
                  np.log10(l_int_abs)[np.newaxis, :, :] * self._cube,
-                 mean_metall_cube
+                 np.log10(mean_metall_cube)
                  )))
             )
             self.logging_info('Dust reem: sum to kernel_emiss')

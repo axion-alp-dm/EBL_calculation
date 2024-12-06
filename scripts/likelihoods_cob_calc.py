@@ -7,6 +7,9 @@ import numpy as np
 
 print(sys.path)
 sys.path.append('/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/')
+
+from ebl_codes.sfr_models import sfr_model
+from ebl_codes.metall_models import metall_model
 from ebl_codes.EBL_class import EBL_model
 
 from data.emissivity_measurs.emissivity_read_data import emissivity_data
@@ -56,7 +59,7 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 config_data = read_config_file(
     # 'scripts/input_files/input_dust_reem.yml')
-    'scripts/input_files/input_example.yml')
+    'notebooks/input_example.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use
@@ -123,14 +126,17 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
 
     def sfr(x, params):
-        return ebl_class.sfr_function(
-            config_data['ssp_models'][key]['sfr_formula'], x, params[0:4])
+        return sfr_model(
+            zz_array=x,
+            sfr_model=config_data['ssp_models'][key]['sfr_formula'],
+            sfr_params=params[0:4])
 
 
     def metall(x, params):
-        return ebl_class.metall_mean(
-            config_data['ssp_models'][key]['metall_formula'],
-            x, params[4:8])
+        return metall_model(
+            zz_array=x,
+            metall_model=config_data['ssp_models'][key]['metall_formula'],
+            metall_params=params[4:8])
 
 
     combined_likelihood = (LeastSquares(igl_ebldata['lambda'],

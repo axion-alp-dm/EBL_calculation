@@ -30,7 +30,7 @@ def calculate_dust(wv_array, z_array=0.,
             If either of them does not correspond to any listed models,
             no dust absorption will be calculated.
             - Wavelength accepted values: kneiske2002, razzaque2009
-            - Redshift accepted values: abdollahi2018
+            - Redshift accepted values: fermi2018
 
         -> If 1 string is given, a combined wavelength and redshift
             model will be applied.
@@ -97,8 +97,8 @@ def calculate_dust(wv_array, z_array=0.,
             print('   -> No dust absorption dependency with wavelength.')
 
         # Redshift dependency
-        if models[1] == 'abdollahi2018':
-            dust_att += abdollahi2018(
+        if models[1] == 'fermi2018':
+            dust_att += fermi2018(
                 z_array[np.newaxis, :], dust_params, verbose=verbose)
 
         else:
@@ -107,8 +107,8 @@ def calculate_dust(wv_array, z_array=0.,
 
     else:
         print('   -> No dust absorption model chosen.')
-        print('   -> CAREFUL: has the model been correctly chosen?')
-        print('   -> Number of model inputs in the array: ', len(models))
+        print('      CAREFUL: has the model been correctly chosen?')
+        print('      Number of model inputs in the array: ', len(models))
 
     dust_att[np.isnan(dust_att)] = -43.
     dust_att[np.invert(np.isfinite(dust_att))] = -43.
@@ -192,7 +192,7 @@ def razzaque2009(lambda_array, dust_params, verbose=True):
     return np.log10(yy)
 
 
-def abdollahi2018(z_array, params_dust=None, verbose=True):
+def fermi2018(z_array, params_dust=None, verbose=True):
     """
     Dust attenuation as a function of redshift following Abdollahi18
     or 1812.01031, in the supplementary material.
@@ -206,15 +206,16 @@ def abdollahi2018(z_array, params_dust=None, verbose=True):
         Order: [m_d, n_d, p_d, q_d]
     """
     try:
-        params_ab18 = params_dust['params_ab18']
+        params_fermi18 = params_dust['params_fermi18']
     except:
-        params_ab18 = [1.49, 0.64, 3.4, 3.54]
+        params_fermi18 = [1.49, 0.64, 3.4, 3.54]
         if verbose:
             print('   -> Default parameters for params_ab18 chosen: ',
-                  params_ab18)
+                  params_fermi18)
 
-    return (-0.4 * params_ab18[0] * (1. + z_array) ** params_ab18[1]
-            / (1. + ((1. + z_array) / params_ab18[2]) ** params_ab18[3]))
+    return (-0.4 * params_fermi18[0]
+            * (1. + z_array) ** params_fermi18[1]
+            / (1. + ((1. + z_array) / params_fermi18[2]) ** params_fermi18[3]))
 
 
 def dust_att_finke(lambda_array, params_dust=None, verbose=True):
@@ -285,10 +286,10 @@ def comb_model_1(lambda_array, z_array, dust_params, verbose=True):
     else:
         yy = np.zeros([np.shape(lambda_array)[0], np.shape(z_array)[0]])
 
-    yy += abdollahi2018(z_array, dust_params, verbose=verbose)
+    yy += fermi2018(z_array, dust_params, verbose=verbose)
     yy += (razzaque2009(
         lambda_array, dust_params, verbose=verbose)[:, np.newaxis]
-           - razzaque2009(0.15, dust_params, verbose=verbose))
+           - razzaque2009(0.15, dust_params, verbose=False))
     return np.minimum(yy, 0)
 
 
@@ -309,9 +310,9 @@ def finke2022(lambda_array, z_array, dust_params, verbose=True):
     else:
         yy = np.zeros([np.shape(lambda_array)[0], np.shape(z_array)[0]])
 
-    yy += abdollahi2018(z_array, dust_params, verbose=verbose)
+    yy += fermi2018(z_array, dust_params, verbose=verbose)
     yy += (dust_att_finke(
         lambda_array, dust_params, verbose=verbose)[:, np.newaxis]
-           - dust_att_finke(0.15, dust_params))
+           - dust_att_finke(0.15, dust_params, verbose=False))
 
     return np.minimum(yy, 0)

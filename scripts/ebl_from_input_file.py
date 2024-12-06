@@ -35,9 +35,9 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-# input_file_dir = ('outputs/outputs_dust_reem_Free_wout_lowvalCB/')
+input_file_dir = ('outputs/outputs_dust_reem_Free_wout_lowvalCB/')
 # input_file_dir = ('scripts/input_files/')
-input_file_dir = 'notebooks/'
+# input_file_dir = 'notebooks/'
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -74,8 +74,8 @@ markers = ['.', 'x', '+', '*', '^', '>', '<']
 
 
 # We initialize the class with the input file
-config_data = read_config_file(input_file_dir + 'input_example.yml')
-# config_data = read_config_file(input_file_dir + 'input_data.yml')
+# config_data = read_config_file(input_file_dir + 'input_example.yml')
+config_data = read_config_file(input_file_dir + 'input_data.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 
@@ -240,11 +240,6 @@ ebl_class.logging_prints = True
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print('SSP model: ', config_data['ssp_models'][key]['name'])
-
-    config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-    float(config_data['ssp_models'][key]['dust_reem_params']['f_tir'])
-    config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
-    float(config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'])
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.write_ebl_to_ascii(output_path=input_file_dir, name=key)
