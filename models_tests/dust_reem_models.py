@@ -11,7 +11,7 @@ from fast_interp import interp2d, interp3d
 
 from astropy.io import fits
 from astropy import units as u
-from astropy.constants import c, L_sun
+from astropy.constants import c, L_sun, k_B
 from astropy.constants import h as h_plank
 from astropy.cosmology import FlatLambdaCDM
 
@@ -36,6 +36,21 @@ plt.rc('ytick.minor', size=4, width=1)
 
 os.chdir('..')
 print(os.listdir())
+
+plt.figure()
+lambda_array = np.geomspace(1., 1e3, num=100)
+frew_array = c.value / lambda_array * 1e6 * u.Hz
+print(frew_array)
+
+def bb_plank(T):
+    xx = h_plank*frew_array/k_B/T/u.K
+    return (15. / np.pi**4. / frew_array
+            * xx**4. / (np.exp(xx) - 1.))
+yyy = bb_plank(50.) + bb_plank(150.)
+plt.loglog(lambda_array, yyy)
+print(simpson(yyy, x=frew_array))
+print(bb_plank(50)[-1])
+plt.show()
 f_tir = 3e9
 chary = fits.open('data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits')
 

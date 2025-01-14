@@ -67,12 +67,12 @@ def cosmic_axion_contr(lmu, zz, mass, gayy):
 
 input_file_dir = ('outputs/outputs_dust_reem_Free_wout_lowvalCB/')
 ebl_finke = EBL.readmodel('finke2022')
-ebl_fit_chary = EBL.readascii(
-    file_name='outputs/outputs_dust_final1/SB99_dustFinke3e10.txt',
-    model_name='Chary')
-ebl_fit_bosa = EBL.readascii(
-    file_name='outputs/outputs_dust_final1/SB99_dustFinke_bosa.txt',
-    model_name='Bosa')
+# ebl_fit_chary = EBL.readascii(
+#     file_name='outputs/outputs_dust_final1/SB99_dustFinke3e10.txt',
+#     model_name='Chary')
+# ebl_fit_bosa = EBL.readascii(
+#     file_name='outputs/outputs_dust_final1/SB99_dustFinke_bosa.txt',
+#     model_name='Bosa')
 
 z = np.array([0.03, 0.15, 0.65])
 lmu = np.logspace(-2, 3., int(1e6))
@@ -150,7 +150,7 @@ plt.gca().set_ylabel(r'Optical depth $\tau$')
 plt.savefig('outputs/figures_paper/opt_depths_ax.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/opt_depths_ax.png', bbox_inches='tight')
 
-# plt.show()
+plt.show()
 plt.subplots(1, 3, figsize=(20, 8))
 plt.subplot(131)
 

@@ -326,13 +326,14 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
     if plot_measurs:
         markers = ['>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
         colors_nh = ['lime', '#00A2FF']
+        colors_nh = ['grey', '#00A2FF']
         i = 0
         i_nh = 0
 
         for ni, name in enumerate(names_all_upper):
             data_total = upper_lims_all[upper_lims_all['ref'] == name]
             type_i = np.unique(data_total['type'])
-            color_i = next(ax1._get_lines.prop_cycler)['color']
+            color_i = 'grey' #  next(ax1._get_lines.prop_cycler)['color']
 
             for datatype in type_i:
                 data = data_total[data_total['type'] == datatype]
@@ -345,7 +346,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  label=name,
                                  marker=markers[i % len(markers)],
                                  mfc='white',
-                                 zorder=1e5
+                                 zorder=0, alpha=0.8
                                  )
 
                 elif datatype == 3:
@@ -353,7 +354,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  yerr=[data['nuInu_errn'],
                                        data['nuInu_errp']],
                                  linestyle='', color=color_i,
-                                 label=name,
+                                 label=name, alpha=0.8,
                                  marker=markers[i % len(markers)]
                                  )
 
@@ -363,7 +364,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  marker='*',
                                  markerfacecolor='w',
                                  markersize=28, markeredgewidth=2,
-                                 zorder=1e5, alpha=0.8
+                                 zorder=0, alpha=0.8
                                  )
                     ax1.errorbar(x=data['lambda'], y=data['nuInu'],
                                  linestyle='', color=colors_nh[i_nh],
@@ -371,7 +372,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  marker='*',
                                  markerfacecolor='none',
                                  markersize=28, markeredgewidth=2,
-                                 zorder=1e5
+                                 zorder=0, alpha=0.8
                                  )
                     ax1.errorbar(x=data['lambda'], y=data['nuInu'],
                                  yerr=[data['nuInu_errn'],
@@ -379,7 +380,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  linestyle='', color='k',
                                  marker='.',
                                  mfc='k',
-                                 markersize=8, zorder=5e5
+                                 markersize=8, zorder=0, alpha=0.8
                                  )
                     i_nh += 1
 
@@ -396,18 +397,18 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  label=label_i,
                                  marker=markers[i % len(markers)],
                                  mfc='white',
-                                 uplims=True
+                                 uplims=True, alpha=0.8
                                  )
             i += 1
 
         for ni, name in enumerate(names_all_lower):
             data = lowerlimits_all[lowerlimits_all['ref'] == name]
-            color_i = next(ax1._get_lines.prop_cycler)['color']
+            color_i = 'grey' #next(ax1._get_lines.prop_cycler)['color']
 
             ax1.errorbar(x=data['lambda'], y=data['nuInu'],
                          yerr=[data['nuInu_errn'], data['nuInu_errp']],
                          linestyle='', color=color_i,
-                         label=name,
+                         label=name, alpha=0.8,
                          marker=markers[i % len(markers)]
                          )
             i += 1

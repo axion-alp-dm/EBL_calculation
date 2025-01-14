@@ -171,14 +171,11 @@ ssp_models:
       library: three_grey_body
       T:
         - 44.
-        - 400.
-        - 70.
       fracts:
-        - 0.6
-        - 0.2
+        - 0.
     metall_formula: 'constant'
     metall_params:
-      - 1.363077660454558e-06
+      - 0.02
 #      - 0.1709136894779165
 #      - 1.0750514513578506
 #      - 0.02

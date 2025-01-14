@@ -558,7 +558,6 @@ class EBL_model(object):
         self.logging_info('Initialize cubes: end')
         return
 
-
     def spline_dust_reemission(self, yaml_data):
         """
 
@@ -757,17 +756,19 @@ class EBL_model(object):
             verbose=self._log_prints)[:, :, np.newaxis]
 
         kernel_emiss = self._kernel_emiss * fract_dust_Notabs
+        print(np.min(fract_dust_Notabs), np.min(fract_dust_Notabs))
 
         self.logging_info('SSP emissivity: set dust absorption')
 
         # Dust reemission loading ------------------------------------
-        if yaml_data['dust_reem']:
+        if (yaml_data['dust_reem'] is True and
+                yaml_data['dust_reem_params']['library'] != 'three_grey_body'):
             self.logging_info('Dust reem: enter')
             mean_metall_cube = metall_model(
-                            zz_array=self._shifted_zz_emiss,
-                            metall_model=yaml_data['metall_formula'],
-                            metall_params=yaml_data['metall_params'],
-                            verbose=self._log_prints)
+                zz_array=self._shifted_zz_emiss,
+                metall_model=yaml_data['metall_formula'],
+                metall_params=yaml_data['metall_params'],
+                verbose=self._log_prints)
             self.logging_info('Dust reem: mean metall calc')
 
             lumin_abs = (
@@ -808,12 +809,80 @@ class EBL_model(object):
 
         self.logging_info('SSP emissivity: calculate ssp kernel')
 
-        # Calculate emissivity in units
+            # Calculate emissivity in units
         # [erg s^-1 Hz^-1 Mpc^-3] == [erg Mpc^-3]
         self._emiss_ssp_cube = simpson(
             kernel_emiss, x=self._log_t_ssp_intcube, axis=-1)
 
         self.logging_info('SSP emissivity: integrate emissivity')
+
+        if (yaml_data['dust_reem'] is True and
+                yaml_data['dust_reem_params']['library'] == 'three_grey_body'):
+
+            fract_reem = np.squeeze((1. - fract_dust_Notabs) / fract_dust_Notabs)
+            def bb_plank(T):
+                xx = ((c.h * 10**self._freq_array * u.Hz
+                      / c.k_B / T / u.K).to(1)).value
+                return (15. / np.pi ** 4. / 10**self._freq_array
+                        * xx ** 4. / (np.exp(xx) - 1.))
+
+            norm_shape_reem = np.zeros(len(self._freq_array))
+            if type(yaml_data['dust_reem_params']['T']) == np.float64:
+                array_tt = np.array([yaml_data['dust_reem_params']['T']])
+
+            else:
+                array_tt = np.asarray(yaml_data['dust_reem_params']['T'])
+
+            for nn, tt in enumerate(array_tt):
+                if nn == len(array_tt)-1:
+                    norm_shape_reem += (min(
+                        (1. - sum(yaml_data['dust_reem_params']['fracts'])),
+                        1.)
+                        * bb_plank(array_tt[-1])
+                    )
+                else:
+                    norm_shape_reem += (
+                    yaml_data['dust_reem_params']['fracts'][nn]
+                    * bb_plank(tt))
+            # norm_shape_reem = (
+            #         yaml_data['dust_reem_params']['fracts'][1]
+            #         * bb_plank()
+            #         + (1-yaml_data['dust_reem_params']['fracts'][1]
+            #            - yaml_data['dust_reem_params']['fracts'][0])
+            #         * bb_plank(yaml_data['dust_reem_params']['T2'])
+            #         + yaml_data['dust_reem_params']['fracts'][0]
+            #         * bb_plank(yaml_data['dust_reem_params']['T1']))
+
+            # norm_shape_reem = (
+            #         yaml_data['dust_reem_params']['fracts'][1]
+            #         * bb_plank(70.)
+            #         + (1 - yaml_data['dust_reem_params']['fracts'][1]
+            #            - yaml_data['dust_reem_params']['fracts'][0])
+            #         * bb_plank(yaml_data['dust_reem_params']['T2'])
+            #         + yaml_data['dust_reem_params']['fracts'][0]
+            #         * bb_plank(yaml_data['dust_reem_params']['T1']))
+
+            # norm_shape_reem = (
+            #         yaml_data['dust_reem_params']['fracts']
+            #         * bb_plank(yaml_data['dust_reem_params']['T1'])
+            #         + (1-yaml_data['dust_reem_params']['fracts'])
+            #         * bb_plank(yaml_data['dust_reem_params']['T2']))
+
+            int_emiss_reem = simpson(
+                (fract_reem * self._emiss_ssp_cube
+                 * 10**self._freq_array[:, np.newaxis] * np.log(10)),
+                x=self._freq_array, axis=0)
+
+            self._emiss_ssp_cube = (int_emiss_reem[np.newaxis, :]
+                                     * norm_shape_reem[:, np.newaxis])
+            # import matplotlib.pyplot as plt
+            # plt.figure()
+            # plt.plot(self._freq_array, bb_plank(60.5))
+            # plt.plot(self._freq_array, bb_plank(70.))
+            # plt.plot(self._freq_array, bb_plank(540.))
+            # plt.plot(self._freq_array, norm_shape_reem)
+            # plt.show()
+
 
         # Spline of the emissivity
         log10_emiss = self.log10_safe(self._emiss_ssp_cube)
