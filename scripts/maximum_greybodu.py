@@ -120,14 +120,9 @@ wv_max = [232.6662911331458, 204.46606665791157, 179.68383907677193,
           16.010644613183178, 15.717837177731628, 15.717837177731628,
           15.430384691835645]
 
-plt.figure()
-plt.loglog(tt_array, wv_max)
-print(np.polyfit(np.log10(tt_array), np.log10(wv_max), 1))
-
-plt.figure()
 ebl_class.logging_prints = False
-tt_array = np.linspace(30, 450, num=5)
-
+tt_array = np.geomspace(30, 450, num=50)
+wv_max = []
 for ti in tt_array:
     print()
     config_data['ssp_models']['SB99_Finke_bosa'][
@@ -137,7 +132,30 @@ for ti in tt_array:
 
     ebl_yyy = ebl_class.ebl_ssp_spline(waves_ebl, 0.)
 
-    plt.loglog(waves_ebl, ebl_yyy)
+    wv_max.append(waves_ebl[np.argmax(ebl_yyy)])
+print(wv_max)
+print(np.polyfit(np.log10(tt_array), np.log10(wv_max), 1))
+
+
+plt.figure()
+plt.loglog(tt_array, wv_max)
+print(np.polyfit(np.log10(tt_array), np.log10(wv_max), 1))
+
+plt.figure()
+tt_array = np.linspace(30, 450, num=5)
+
+for nn, ti in enumerate(tt_array):
+    print()
+    cc = plt.cm.CMRmap(nn / float(len(tt_array)))
+    config_data['ssp_models']['SB99_Finke_bosa'][
+        'dust_reem_params']['T'] = ti
+    ebl_class.ebl_ssp_calculation(
+        config_data['ssp_models']['SB99_Finke_bosa'])
+
+    ebl_yyy = ebl_class.ebl_ssp_spline(waves_ebl, 0.)
+
+    plt.loglog(waves_ebl, ebl_yyy, c=cc)
+    plt.axvline(waves_ebl[np.argmax(ebl_yyy)], c=cc)
 
 
 plt.show()

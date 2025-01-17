@@ -756,7 +756,7 @@ class EBL_model(object):
             verbose=self._log_prints)[:, :, np.newaxis]
 
         kernel_emiss = self._kernel_emiss * fract_dust_Notabs
-        print(np.min(fract_dust_Notabs), np.min(fract_dust_Notabs))
+        # print(np.min(fract_dust_Notabs), np.max(fract_dust_Notabs))
 
         self.logging_info('SSP emissivity: set dust absorption')
 
@@ -873,7 +873,7 @@ class EBL_model(object):
                  * 10**self._freq_array[:, np.newaxis] * np.log(10)),
                 x=self._freq_array, axis=0)
 
-            self._emiss_ssp_cube = (int_emiss_reem[np.newaxis, :]
+            self._emiss_ssp_cube += (int_emiss_reem[np.newaxis, :]
                                      * norm_shape_reem[:, np.newaxis])
             # import matplotlib.pyplot as plt
             # plt.figure()

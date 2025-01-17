@@ -152,8 +152,7 @@ ssp_models:
 
   SB99_Finke_bosa:
     dust_abs_models:
-      - kneiske2002
-      - aaa
+      - finke2022
     dust_abs_params:
       fesc_steps_fn22:
         - 0.19026841739819628
@@ -173,9 +172,9 @@ ssp_models:
         - 44.
       fracts:
         - 0.
-    metall_formula: 'constant'
+    metall_formula: 'tanikawa22'
     metall_params:
-      - 0.02
+#      - -1.363077660454558e-06
 #      - 0.1709136894779165
 #      - 1.0750514513578506
 #      - 0.02

@@ -100,14 +100,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
     def fit_igl(lambda_igl, params):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['T1'] = \
-            params[8]
-        config_data['ssp_models'][key]['dust_reem_params']['T2'] = \
-            params[9]
+        config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+            params[8:11].copy()
         config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
-            params[10:12].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['T3'] = \
-            params[12]
+            params[11:].copy()
         # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
         #     params[8]
         # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
@@ -125,14 +121,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['T1'] = \
-            params[8]
-        config_data['ssp_models'][key]['dust_reem_params']['T2'] = \
-            params[9]
+        config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+            params[8:11].copy()
         config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
-            params[10:12].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['T3'] = \
-            params[12]
+            params[11:].copy()
         # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
         #     params[8]
         # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
@@ -161,10 +153,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
             metall_params=params[4:8])
 
 
-    combined_likelihood = (LeastSquares(igl_ebldata['lambda'],
-                                        igl_ebldata['nuInu'],
-                                        igl_ebldata['1 sigma'],
-                                        fit_igl)
+    # combined_likelihood = (LeastSquares(igl_ebldata['lambda'],
+    #                                     igl_ebldata['nuInu'],
+    #                                     igl_ebldata['1 sigma'],
+    #                                     fit_igl)
     #                        + LeastSquares((emiss_data['lambda'],
     #                                        emiss_data['z']),
     #                                       emiss_data['eje'],
@@ -181,12 +173,12 @@ for nkey, key in enumerate(config_data['ssp_models']):
     #                                       (z_data[:, 2]
     #                                        + z_data[:, 3]) / 2.,
     #                                       metall)
-                           )
-    # combined_likelihood = (LeastSquares(waves_finke,
-    #                                     nuInu_finke,
-    #                                     0.1*nuInu_finke,
-    #                                     fit_igl)
     #                        )
+    combined_likelihood = (LeastSquares(waves_finke,
+                                        nuInu_finke,
+                                        0.1*nuInu_finke,
+                                        fit_igl)
+                           )
 
     init_time = time.process_time()
 
@@ -198,10 +190,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
         #  float(config_data['ssp_models'][key]
         #        ['dust_reem_params']['wv_reem_min']),
         #  ],
-        [config_data['ssp_models'][key]['dust_reem_params']['T1']],
-        [config_data['ssp_models'][key]['dust_reem_params']['T2']],
-        config_data['ssp_models'][key]['dust_reem_params']['fracts'],
-        [config_data['ssp_models'][key]['dust_reem_params']['T3']]
+        config_data['ssp_models'][key]['dust_reem_params']['T'],
+        config_data['ssp_models'][key]['dust_reem_params']['fracts']
 
     ))
     print(aaa)
@@ -209,7 +199,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     m = Minuit(combined_likelihood, aaa)
     m.limits = [[0., 5.], [0., 10.], [0., 10.], [0., 10.],
                 [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25],
-                [0, 100], [0, 1500], [0, 1], [0., 1.], [0, 1000]
+                [0, 100], [0, 1500], [0, 1000], [0, 1], [0., 1.]
                 # [7, 11], [3., 10.],
                 # [0., 10.], [0., 10.], [0., 10.], [0., 10.], [0., 10.]
                 ]
@@ -221,6 +211,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     m.fixed[5] = True
     m.fixed[6] = True
     m.fixed[7] = True
+    # m.fixed[10] = True
     # m.fixed[8] = True
     # m.fixed[9] = True
     m.values[7] = 0.02
@@ -243,14 +234,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     outputs.write('Individual chi2 values:\n')
     aaa = np.array(np.array(m.params.to_table()[0])[:, 2], dtype=float)
-    outputs.write(
-        'CB data: ' + str(chi2_measurs(
-            fit_igl(igl_ebldata['lambda'], aaa),
-            igl_ebldata['nuInu'], igl_ebldata['1 sigma'])) + '\n')
     # outputs.write(
     #     'CB data: ' + str(chi2_measurs(
-    #         fit_igl(waves_finke, aaa),
-    #         nuInu_finke, 0.1*nuInu_finke)) + '\n')
+    #         fit_igl(igl_ebldata['lambda'], aaa),
+    #         igl_ebldata['nuInu'], igl_ebldata['1 sigma'])) + '\n')
+    outputs.write(
+        'CB data: ' + str(chi2_measurs(
+            fit_igl(waves_finke, aaa),
+            nuInu_finke, 0.1*nuInu_finke)) + '\n')
     # outputs.write(
     #     'emissivities data: ' + str(chi2_measurs(
     #         fit_emiss((emiss_data['lambda'], emiss_data['z']), aaa),
@@ -291,14 +282,11 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                                      m.params[6].value,
                                                      m.params[7].value]
 
-    config_data['ssp_models'][key]['dust_reem_params']['T1'] = \
-        m.params[8].value
-    config_data['ssp_models'][key]['dust_reem_params']['T2'] = \
-        m.params[9].value
+    config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+        [m.params[8].value, m.params[9].value, m.params[10].value]
+
     config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
-        [m.params[10].value, m.params[11].value]
-    config_data['ssp_models'][key]['dust_reem_params']['T3'] = \
-        m.params[12].value
+        [m.params[11].value, m.params[12].value]
     # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
     #     m.params[9].value
     # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] =\

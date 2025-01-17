@@ -36,7 +36,7 @@ plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
 input_file_dir = ('outputs/outputs_3body_many/')
-# input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-01-09 16:43:54/')
+# input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-01-14 13:47:38/')
 # input_file_dir = ('scripts/input_files/')
 # input_file_dir = 'notebooks/'
 
@@ -397,10 +397,10 @@ def find_peak(T):
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
     print(config_data['ssp_models'][key]['name'])
-    # print('%.2f  %.2f  %.2f'
-    # % (config_data['ssp_models'][key]['dust_reem_params']['T'][0],
-    #       config_data['ssp_models'][key]['dust_reem_params']['T'][1],
-    #       config_data['ssp_models'][key]['dust_reem_params']['T'][2]))
+    print('%.2f  %.2f  %.2f'
+    % (config_data['ssp_models'][key]['dust_reem_params']['T'][0],
+          config_data['ssp_models'][key]['dust_reem_params']['T'][1],
+          config_data['ssp_models'][key]['dust_reem_params']['T'][2]))
     # print('%.2f  %.2f  %.2f'
     # % (find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][0]),
     #    find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][1]),
@@ -416,10 +416,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
     #                           'dust_reem_params']['T'][2]),
     #             c=colors[nkey % len(colors)])
 
-    for tt in config_data['ssp_models'][key][
-                              'dust_reem_params']['T']:
-        plt.axvline(10**3.8414/tt, c=colors[nkey % len(colors)],
-                    ls='--')
+    # for tt in config_data['ssp_models'][key][
+    #                           'dust_reem_params']['T']:
+    #     plt.axvline(10**3.84898/tt, c=colors[nkey % len(colors)],
+    #                 ls='--')
 plt.yscale('log')
 plt.xscale('log')
 plt.xlabel(r'Wavelength ($\mu$m)')
@@ -444,7 +444,7 @@ legend33 = ax_cob.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
                          [config_data['ssp_models'][key]['name']
                           for key in config_data['ssp_models']],
                          title=r'SSP models',  # bbox_to_anchor=(1.04, 0.1),
-                         loc=3
+                         loc=1, ncol=2
                          )
 # axes.add_artist(legend11)
 # axes.add_artist(legend22)
