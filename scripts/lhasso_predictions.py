@@ -133,7 +133,7 @@ plt.plot(xxx, funct_mk501(10**xxx,
 plt.title('Mkr 501 flare 1997')
 plt.xlabel('log10(E) [eV]')
 plt.ylabel('Flux [photons/TeV/cm2/s]')
-plt.show()
+
 # ----------------------------------------------------------------------
 
 xxx_bins = np.linspace(
@@ -141,7 +141,7 @@ xxx_bins = np.linspace(
     mkr501_flux[-1, 0] + 0.5,
     num=1000)
 xxx_means = (xxx_bins[1:] + xxx_bins[:-1])/2.
-integral_kernel = 10**(fit_mkr501[1] + xxx_means*fit_mkr501[0])
+integral_kernel = 10**(fit_powerlaw[1] + xxx_means*fit_powerlaw[0])
 integral_kernel /= u.TeV * u.cm**2 * u.s
 print(np.max(integral_kernel))
 
@@ -210,24 +210,92 @@ plt.ylabel('count number')
 plt.xlabel(r'log$_{10}$(E) [eV]')
 print(count_number)
 
+likelihoods_array = []
 
-from scipy.stats import norm
-e = xxx_means[49]
-pdf_gauss = norm.pdf(x=xxx_means, loc=e - 0., scale=0.2 * e)
+def likelihood_poisson(mu_i_array):
+    mu_i_array[mu_i_array <= 0] = 1e-43
+    return sum(mu_i_array * (np.log10(mu_i_array) - 1.))
+
+zz = 0.034
+
+def funct_mk501(ee_array, N, E0, tau, alpha):
+    opacity = ebl_finke.opt_depth(zz, ee_array*1e-12)
+    return (N * (ee_array/E0)**(-tau)
+            * np.exp(- alpha * opacity)
+            )
+
+
+total_int_time = (110. * u.h).to(u.s)
+
+edisp_obj = EDispGauss(sigma=0.2, bias=0.)
+edisp_obj.fill(e_true_edges=10 ** (xxx_bins - 9.),
+                   e_reco_edges=10 ** (recovered_bins - 9.))
+
+energy_bins_obs = np.linspace(11., 14., num=50)
+energy_means_obs = (energy_bins_obs[1:] + energy_bins_obs[:-1]) / 2.
+
+alpha_array = np.geomspace(1e-14, 1e-12, num=25)
+
 plt.figure()
 
-e_reco_centers = [xxx_means[20], xxx_means[70]]
-pdf = []
-for i, e in enumerate(e_reco_centers):
-    pdf.append(norm.pdf(x=xxx_means,
-                        loc=e - 0.,
-                        scale=0.5 * e))
-    plt.plot(xxx_means, pdf[-1])
+for d in alpha_array:
+    print(d)
 
-pdf_matrix = np.array(pdf).T
-pdf_matrix /= pdf_matrix.sum(axis=0)
-print(simpson(pdf_matrix, x=xxx_means, axis=0))
-print(simpson(pdf_matrix, axis=0))
+    def funct_mk501_inside(ee_array, N, E0, tau):
+        opacity = ebl_finke.opt_depth(zz, ee_array * 1e-12)
+        return (d * (ee_array / E0) ** (-tau) * np.exp(- N * opacity))
+
+
+    popt, pcov = curve_fit(funct_mk501_inside, ydata=mkr501_flux[:, 1],
+                       xdata=10**mkr501_flux[:, 0],
+                       p0=[1., 1e13, 2.57],
+                       bounds=[(0., 0., 0.),
+                               (2., np.inf, 10)])
+
+    integral_kernel = (funct_mk501_inside(10**xxx_means,
+                          popt[0],
+                          popt[1],
+                          popt[2]
+                          ))
+    integral_kernel /= u.TeV * u.cm ** 2 * u.s
+
+    integral_kernel *= spline_eff_area(x=xxx_means) * u.cm ** 2
+
+    integral_kernel *= np.log(10) * 10 ** xxx_means * u.eV
+    integral_kernel = integral_kernel.to(1 / u.s)[:, np.newaxis]
+
+    integral_kernel = integral_kernel * edisp_obj._pdf_matrix
+
+    integral_kernel = simpson(y=integral_kernel, x=xxx_means, axis=0)
+
+    count_number = []
+
+    integral_kernel *= np.log(10) * 10 ** recovered_means
+
+    for i in range(len(energy_bins_obs) - 1):
+        where_bin = ((recovered_means > energy_bins_obs[i])
+                     * (recovered_means < energy_bins_obs[i + 1]))
+
+        if sum(where_bin) > 0:
+            count_number.append(simpson(
+                y=integral_kernel[where_bin],
+                x=recovered_means[where_bin]))
+        else:
+            count_number.append(0.)
+
+    count_number = (count_number * total_int_time).value
+    plt.scatter(energy_means_obs, count_number)
+
+    likelihoods_array.append(likelihood_poisson(count_number))
+
+plt.ylabel('count number')
+plt.xlabel(r'log$_{10}$(E) [eV]')
+
+plt.figure()
+plt.plot(alpha_array, likelihoods_array, marker='.')
+plt.ylabel('poisson likelihood')
+plt.xlabel(r'alpha')
+
 
 
 plt.show()
