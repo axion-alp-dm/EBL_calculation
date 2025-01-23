@@ -83,194 +83,202 @@ edisp_obj.fill(
 edisp_obj.plot()
 
 plt.figure()
-mkr501_flux = np.loadtxt('data/lhasso_characteristics/mkr501.txt')
-plt.scatter(mkr501_flux[:, 0], mkr501_flux[:, 1])
+mkr501_flux = np.loadtxt(
+    'data/lhasso_characteristics/mkr501_flare1997.txt')
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             # yerr=mkr501_flux[:, 2],
+             ls='', marker='o')
 plt.yscale('log')
+plt.xscale('log')
 
 from ebltable.tau_from_model import OptDepth
 from scipy.optimize import curve_fit
 ebl_finke = OptDepth.readmodel(model='finke2022')
 zz = 0.034
-# def funct_mk501(ee_array, N, E0, tau):
-#     return N * (ee_array/E0)**(-tau)
 
-def funct_mk501(ee_array, N, E0, tau, Ecut, alpha):
-    opacity = ebl_finke.opt_depth(zz, ee_array*1e-12)
-    return (N * (ee_array/E0)**(-tau)
-            * np.exp(#-ee_array/Ecut
-                     - alpha * opacity)
-            )
 
-fit_mkr501 = curve_fit(funct_mk501, ydata=mkr501_flux[:, 1],
-                       xdata=10**mkr501_flux[:, 0],
-                       p0=[1e-13, 1e13, 2.57, 1e14, 1.2],
-                       bounds=[(0., 0., 0., 0., 0.),
-                               (np.inf, np.inf, 10, np.inf, 10.)]
+def funct_mk501(ee_array, N, Ecut, E0, tau=1.31):
+    return (N * ee_array ** 2.
+            * ee_array**Ecut * np.exp(-(ee_array/E0)**tau))
+
+# def funct_mk501_inside(ee_array, alpha, N,
+#                        Ecut=-2.03, E0=8.21, tau=1.31):
+#     opacity = ebl_finke.opt_depth(zz, ee_array)
+#     return (N * ee_array ** 2.
+#             * ee_array**Ecut
+#             * np.exp(-(ee_array/E0)**tau - alpha * opacity)
+#             )
+
+
+fit_mkr501 = curve_fit(funct_mk501,
+                       ydata=mkr501_flux[:, 1],
+                       xdata=mkr501_flux[:, 0],
+                       p0=[150, -2., 8.2, 1.3],
                        )
 print(fit_mkr501[0])
 print(np.sqrt(np.diag(fit_mkr501[1])))
-print(fit_mkr501[1])
+print()
 
-fit_powerlaw = np.polyfit(mkr501_flux[:-3, 0],
-                          np.log10(mkr501_flux[:-3, 1]), 1)
-print(fit_powerlaw)
+# fit_mkr501_op = curve_fit(funct_mk501_inside,
+#                        ydata=mkr501_flux[:, 1],
+#                        xdata=mkr501_flux[:, 0],
+#                        p0=[1, 150],
+#                        )
+# print(fit_mkr501_op[0])
+# print(np.sqrt(np.diag(fit_mkr501_op[1])))
+
 
 xxx = np.linspace(0.99*mkr501_flux[0, 0], 1.01*mkr501_flux[-1, 0])
 
-plt.plot(xxx, 10**(fit_powerlaw[1] + xxx*fit_powerlaw[0]),
-         ls='--')
-plt.plot(xxx, funct_mk501(10**xxx,
-                          fit_mkr501[0][0],
-                          fit_mkr501[0][1],
-                          fit_mkr501[0][2],
-                          fit_mkr501[0][3],
-                          fit_mkr501[0][4]
-                          ))
-plt.plot(xxx, funct_mk501(10**xxx,
-                          1e-13, 1e13, 2.57, 1e20, 0.2
-                          ))
+plt.plot(xxx, funct_mk501(xxx, fit_mkr501[0][0], fit_mkr501[0][1],
+                          fit_mkr501[0][2], fit_mkr501[0][3],))
+
+def funct_mk501_norm(ee_array, N):
+    return (funct_mk501(ee_array, N=N, Ecut=-2.03,
+                       E0=8.21, tau=1.31))
+fit_mkr501_norm = curve_fit(funct_mk501_norm,
+                       ydata=mkr501_flux[:, 1],
+                       xdata=mkr501_flux[:, 0],
+                       p0=[150],
+                       )
+plt.plot(xxx, funct_mk501(xxx, fit_mkr501_norm[0][0],
+                          -2.03, 8.21, 1.31), ls='--')
 
 plt.title('Mkr 501 flare 1997')
-plt.xlabel('log10(E) [eV]')
-plt.ylabel('Flux [photons/TeV/cm2/s]')
-
+plt.xlabel('E [TeV]')
+plt.ylabel('E2dN/dE [10−12 erg cm−2 s−1]')
+# plt.show()
 # ----------------------------------------------------------------------
 
 xxx_bins = np.linspace(
     mkr501_flux[0, 0] - 0.5,
     mkr501_flux[-1, 0] + 0.5,
-    num=1000)
+    num=1000) * u.TeV
 xxx_means = (xxx_bins[1:] + xxx_bins[:-1])/2.
-integral_kernel = 10**(fit_powerlaw[1] + xxx_means*fit_powerlaw[0])
-integral_kernel /= u.TeV * u.cm**2 * u.s
+integral_kernel = funct_mk501(xxx_means.value,
+                              N=fit_mkr501_norm[0][0],
+                              Ecut=-2.03, E0=8.21, tau=1.31)
+integral_kernel = integral_kernel * 1e-12 * u.erg * u.cm**-2 * u.s**-1
+integral_kernel = (integral_kernel / xxx_means**2.).to(
+    u.TeV**-1 * u.cm**-2 * u.s**-1)
 print(np.max(integral_kernel))
 
 eff_area = np.loadtxt('data/lhasso_characteristics/'
                       'WCD_eff_area_0to15deg.txt')
 eff_area = eff_area[np.argsort(eff_area[:, 0]), :]
-eff_area [:, 1] = eff_area[:, 1] * (u.m**2).to(u.cm**2)
+eff_area[:, 1] = eff_area[:, 1] * (u.m**2).to(u.cm**2)
 
 spline_eff_area = UnivariateSpline(
-    x=eff_area[:, 0] + 9., y=eff_area[:, 1], s=0, k=1, ext=1
+    x=eff_area[:, 0] - 3., y=np.log10(eff_area[:, 1]),
+    s=0, k=1, ext=1
 )
 
-integral_kernel *= spline_eff_area(x=xxx_means) * u.cm**2
+integral_kernel *= 10**spline_eff_area(x=np.log10(xxx_means.value)) * u.cm**2
 print(integral_kernel[0])
 
-edisp_obj = EDispGauss(sigma=0.2, bias=0.)
 recovered_bins = xxx_bins[:-2]
 recovered_means = xxx_means[:-2]
-edisp_obj.fill(e_true_edges=10**xxx_bins,
-               e_reco_edges=10**recovered_bins)
-plt.figure()
-plt.title('e disp matrix we use in the calculations')
-edisp_obj.plot()
+
 
 edisp_obj = EDispGauss(sigma=0.2, bias=0.)
-edisp_obj.fill(e_true_edges=10**(xxx_bins-9.),
-               e_reco_edges=10**(recovered_bins-9.))
+edisp_obj.fill(e_true_edges=xxx_bins.value,
+               e_reco_edges=recovered_bins.value)
 plt.figure()
 plt.title('e disp matrix we use in the calculations')
 edisp_obj.plot()
 
 
-integral_kernel *= np.log(10) * 10**xxx_means * u.eV
+integral_kernel *= np.log(10) * xxx_means
 integral_kernel = integral_kernel.to(1/u.s)[:, np.newaxis]
 
 integral_kernel = integral_kernel * edisp_obj._pdf_matrix
 
-integral_kernel = simpson(y=integral_kernel, x=xxx_means, axis=0)
+integral_kernel = simpson(y=integral_kernel,
+                          x=np.log10(xxx_means.value), axis=0)
 print(np.max(integral_kernel))
 
-energy_bins_obs = np.linspace(11., 14., num=50)
-energy_means_obs = (energy_bins_obs[1:] + energy_bins_obs[:-1])/2.
-count_number = []
+energy_bins_obs = np.geomspace(3.5, 20., num=20) * u.TeV
+energy_means_obs = np.sqrt(energy_bins_obs[1:] * energy_bins_obs[:-1])
+count_number_best = []
 bbb = 0
 
-integral_kernel *= np.log(10) * 10**recovered_means
+integral_kernel = integral_kernel * np.log(10) * recovered_means
 
 for i in range(len(energy_bins_obs) - 1):
     where_bin = ((recovered_means > energy_bins_obs[i])
                  * (recovered_means < energy_bins_obs[i+1]))
-    bbb += sum(where_bin)
-    if sum(where_bin) > 0:
-        count_number.append(simpson(
-            y=integral_kernel[where_bin], x=recovered_means[where_bin]))
-    else:
-        count_number.append(0.)
 
-print(np.shape(recovered_means), bbb)
+    if sum(where_bin) > 0:
+        count_number_best.append(simpson(
+            y=integral_kernel[where_bin],
+            x=np.log10(recovered_means[where_bin].value)))
+    else:
+        count_number_best.append(0.)
+
 
 total_int_time = (110. * u.h).to(u.s)
-count_number = (count_number * total_int_time).value
+count_number_best = (count_number_best * total_int_time).value
 
 plt.figure()
-plt.scatter(energy_means_obs, count_number)
-plt.ylabel('count number')
-plt.xlabel(r'log$_{10}$(E) [eV]')
-print(count_number)
-
+plt.scatter(energy_means_obs, count_number_best)
+plt.ylabel('Best fit count number')
+plt.xlabel('E [TeV]')
+print(count_number_best)
+# plt.show()
 likelihoods_array = []
 
-def likelihood_poisson(mu_i_array):
-    mu_i_array[mu_i_array <= 0] = 1e-43
-    return sum(mu_i_array * (np.log10(mu_i_array) - 1.))
 
-zz = 0.034
-
-def funct_mk501(ee_array, N, E0, tau, alpha):
-    opacity = ebl_finke.opt_depth(zz, ee_array*1e-12)
-    return (N * (ee_array/E0)**(-tau)
-            * np.exp(- alpha * opacity)
-            )
+def likelihood_poisson(mu_i_array_obs, mu_i_array_asimov):
+    return sum(mu_i_array_asimov * np.log(mu_i_array_obs)
+               - mu_i_array_obs)
 
 
 total_int_time = (110. * u.h).to(u.s)
 
-edisp_obj = EDispGauss(sigma=0.2, bias=0.)
-edisp_obj.fill(e_true_edges=10 ** (xxx_bins - 9.),
-                   e_reco_edges=10 ** (recovered_bins - 9.))
+edisp_obj.fill(e_true_edges=xxx_bins.value,
+               e_reco_edges=recovered_bins.value)
 
-energy_bins_obs = np.linspace(11., 14., num=50)
-energy_means_obs = (energy_bins_obs[1:] + energy_bins_obs[:-1]) / 2.
 
-alpha_array = np.geomspace(1e-14, 1e-12, num=25)
+alpha_array = np.linspace(1., 2., num=500)
+# alpha_array = fit_mkr501[0][-1] * np.array([0.5, 1., 2.])
+nn_array = []
 
-plt.figure()
+fig_counts = plt.figure()
+fig_spectrum = plt.figure()
 
 for d in alpha_array:
-    print(d)
+    def funct_mk501_inside(ee_array, N, Ecut, E0):
+        return funct_mk501(ee_array, N=N, Ecut=Ecut, E0=E0, tau=d)
 
-    def funct_mk501_inside(ee_array, N, E0, tau):
-        opacity = ebl_finke.opt_depth(zz, ee_array * 1e-12)
-        return (d * (ee_array / E0) ** (-tau) * np.exp(- N * opacity))
+    popt, pcov = curve_fit(
+        funct_mk501_inside,
+        ydata=mkr501_flux[:, 1],
+        xdata=mkr501_flux[:, 0],
+        p0=[152, -2, 8.]
+    )
+    nn_array.append(popt)
 
+    integral_kernel = funct_mk501_inside(xxx_means.value,
+                                         popt[0], popt[1], popt[2])
 
-    popt, pcov = curve_fit(funct_mk501_inside, ydata=mkr501_flux[:, 1],
-                       xdata=10**mkr501_flux[:, 0],
-                       p0=[1., 1e13, 2.57],
-                       bounds=[(0., 0., 0.),
-                               (2., np.inf, 10)])
+    integral_kernel = integral_kernel * 1e-12 * u.erg * u.cm**-2 * u.s**-1
+    integral_kernel = (integral_kernel / xxx_means**2.).to(
+        u.TeV**-1 * u.cm**-2 * u.s**-1)
 
-    integral_kernel = (funct_mk501_inside(10**xxx_means,
-                          popt[0],
-                          popt[1],
-                          popt[2]
-                          ))
-    integral_kernel /= u.TeV * u.cm ** 2 * u.s
+    integral_kernel *= (10**spline_eff_area(x=np.log10(xxx_means.value))
+                        * u.cm ** 2)
 
-    integral_kernel *= spline_eff_area(x=xxx_means) * u.cm ** 2
-
-    integral_kernel *= np.log(10) * 10 ** xxx_means * u.eV
+    integral_kernel = integral_kernel * np.log(10) * xxx_means
     integral_kernel = integral_kernel.to(1 / u.s)[:, np.newaxis]
 
     integral_kernel = integral_kernel * edisp_obj._pdf_matrix
 
-    integral_kernel = simpson(y=integral_kernel, x=xxx_means, axis=0)
+    integral_kernel = simpson(y=integral_kernel,
+                              x=np.log10(xxx_means.value), axis=0)
 
     count_number = []
 
-    integral_kernel *= np.log(10) * 10 ** recovered_means
+    integral_kernel = integral_kernel * np.log(10) * recovered_means
 
     for i in range(len(energy_bins_obs) - 1):
         where_bin = ((recovered_means > energy_bins_obs[i])
@@ -279,24 +287,73 @@ for d in alpha_array:
         if sum(where_bin) > 0:
             count_number.append(simpson(
                 y=integral_kernel[where_bin],
-                x=recovered_means[where_bin]))
+                x=np.log10(recovered_means[where_bin].value)))
         else:
             count_number.append(0.)
 
     count_number = (count_number * total_int_time).value
+    plt.figure(fig_counts)
     plt.scatter(energy_means_obs, count_number)
 
-    likelihoods_array.append(likelihood_poisson(count_number))
+    plt.figure(fig_spectrum)
+    plt.loglog(
+        energy_means_obs,
+        funct_mk501(energy_means_obs.value,
+                    N=popt[0], Ecut=popt[1], E0=popt[2], tau=d))
 
+    likelihoods_array.append(
+        likelihood_poisson(count_number, count_number_best))
+
+plt.figure(fig_counts)
+plt.scatter(energy_means_obs, count_number_best, marker='x',
+            zorder=1e3, s=200)
 plt.ylabel('count number')
-plt.xlabel(r'log$_{10}$(E) [eV]')
+plt.xlabel('E [TeV]')
+
+plt.figure(fig_spectrum)
+plt.loglog(energy_means_obs,
+            funct_mk501(energy_means_obs.value,
+                        fit_mkr501[0][0], fit_mkr501[0][1],
+                        fit_mkr501[0][2], fit_mkr501[0][3]),
+            marker='x', ms=20,
+            zorder=1e3)
+plt.ylabel('flux')
+plt.xlabel('E [TeV]')
 
 plt.figure()
 plt.plot(alpha_array, likelihoods_array, marker='.')
 plt.ylabel('poisson likelihood')
 plt.xlabel(r'alpha')
 
+plt.figure()
+plt.plot(alpha_array, nn_array)
 
+plt.ylabel('N param')
+plt.xlabel(r'alpha')
+
+
+plt.figure()
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             # yerr=mkr501_flux[:, 2],
+             ls='', marker='o')
+
+where_alphamin = np.argmax(likelihoods_array)
+plt.plot(xxx, funct_mk501(
+    xxx, N=nn_array[where_alphamin][0], Ecut=nn_array[where_alphamin][1],
+    E0=nn_array[where_alphamin][2], tau=alpha_array[where_alphamin]))
+
+plt.plot(xxx, funct_mk501(xxx, fit_mkr501[0][0], fit_mkr501[0][1],
+                          fit_mkr501[0][2], fit_mkr501[0][3],), ls=':')
+plt.plot(xxx, funct_mk501(xxx, fit_mkr501_norm[0][0],
+                          -2.03, 8.21, 1.31), ls='--')
+
+plt.title(('mk501 with minimum likelihood alpha=%.2f  \narr='
+          % alpha_array[where_alphamin]) + str(nn_array[where_alphamin]))
+plt.ylabel('mk501 spectrum')
+plt.xlabel('E [TeV]')
+
+plt.yscale('log')
+plt.xscale('log')
 
 plt.show()
 

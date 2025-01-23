@@ -153,10 +153,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
             metall_params=params[4:8])
 
 
-    # combined_likelihood = (LeastSquares(igl_ebldata['lambda'],
-    #                                     igl_ebldata['nuInu'],
-    #                                     igl_ebldata['1 sigma'],
-    #                                     fit_igl)
+    combined_likelihood = (LeastSquares(igl_ebldata['lambda'],
+                                        igl_ebldata['nuInu'],
+                                        igl_ebldata['1 sigma'],
+                                        fit_igl)
     #                        + LeastSquares((emiss_data['lambda'],
     #                                        emiss_data['z']),
     #                                       emiss_data['eje'],
@@ -174,10 +174,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
     #                                        + z_data[:, 3]) / 2.,
     #                                       metall)
     #                        )
-    combined_likelihood = (LeastSquares(waves_finke,
-                                        nuInu_finke,
-                                        0.1*nuInu_finke,
-                                        fit_igl)
+    # combined_likelihood = (LeastSquares(waves_finke,
+    #                                     nuInu_finke,
+    #                                     0.1*nuInu_finke,
+    #                                     fit_igl)
                            )
 
     init_time = time.process_time()
@@ -212,8 +212,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
     m.fixed[6] = True
     m.fixed[7] = True
     # m.fixed[10] = True
-    # m.fixed[8] = True
-    # m.fixed[9] = True
+    m.fixed[8] = True
+    m.fixed[9] = True
     m.values[7] = 0.02
     print(m.params)
 
@@ -234,14 +234,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     outputs.write('Individual chi2 values:\n')
     aaa = np.array(np.array(m.params.to_table()[0])[:, 2], dtype=float)
-    # outputs.write(
-    #     'CB data: ' + str(chi2_measurs(
-    #         fit_igl(igl_ebldata['lambda'], aaa),
-    #         igl_ebldata['nuInu'], igl_ebldata['1 sigma'])) + '\n')
     outputs.write(
         'CB data: ' + str(chi2_measurs(
-            fit_igl(waves_finke, aaa),
-            nuInu_finke, 0.1*nuInu_finke)) + '\n')
+            fit_igl(igl_ebldata['lambda'], aaa),
+            igl_ebldata['nuInu'], igl_ebldata['1 sigma'])) + '\n')
+    # outputs.write(
+    #     'CB data: ' + str(chi2_measurs(
+    #         fit_igl(waves_finke, aaa),
+    #         nuInu_finke, 0.1*nuInu_finke)) + '\n')
     # outputs.write(
     #     'emissivities data: ' + str(chi2_measurs(
     #         fit_emiss((emiss_data['lambda'], emiss_data['z']), aaa),

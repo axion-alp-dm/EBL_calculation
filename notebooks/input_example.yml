@@ -169,8 +169,8 @@ ssp_models:
     dust_reem_params:
       library: three_grey_body
       T:
-        - 44.
-        - 400.
+        - 70.
+        - 450.
         - 70.
       fracts:
         - 0.6

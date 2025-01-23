@@ -36,7 +36,7 @@ plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
 input_file_dir = ('outputs/outputs_3body_many/')
-# input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-01-14 13:47:38/')
+# input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-01-23 14:50:15/')
 # input_file_dir = ('scripts/input_files/')
 # input_file_dir = 'notebooks/'
 
@@ -444,7 +444,7 @@ legend33 = ax_cob.legend([plt.Line2D([], [], linewidth=2, linestyle='-',
                          [config_data['ssp_models'][key]['name']
                           for key in config_data['ssp_models']],
                          title=r'SSP models',  # bbox_to_anchor=(1.04, 0.1),
-                         loc=1, ncol=2
+                         loc=4, ncol=2, fontsize=14
                          )
 # axes.add_artist(legend11)
 # axes.add_artist(legend22)
