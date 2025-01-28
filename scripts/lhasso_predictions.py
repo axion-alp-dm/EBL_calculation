@@ -9,6 +9,9 @@ import astropy.units as u
 
 from e_disp_code import EDispGauss
 
+from iminuit import Minuit
+from iminuit.cost import LeastSquares
+
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
 
@@ -83,13 +86,26 @@ edisp_obj.fill(
 edisp_obj.plot()
 
 plt.figure()
+mkr501_flux_1 = np.loadtxt(
+    'data/lhasso_characteristics/mkr501_flare1997_paper1.txt')
+mkr501_flux_1[:, 1] = (mkr501_flux_1[:, 1]
+                       * mkr501_flux_1[:, 0] ** 2. * (u.TeV.to(u.erg))
+                       * 1e12)
+mkr501_flux_1[:, 2] = (mkr501_flux_1[:, 2]
+                       * mkr501_flux_1[:, 0] ** 2. * (u.TeV.to(u.erg))
+                       * 1e12)
 mkr501_flux = np.loadtxt(
-    'data/lhasso_characteristics/mkr501_flare1997.txt')
+    'data/lhasso_characteristics/mkr501_flare1997_table_reanalysis.txt')
 plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
-             # yerr=mkr501_flux[:, 2],
+             yerr=mkr501_flux[:, 2],
+             ls='', marker='o')
+plt.errorbar(mkr501_flux_1[:, 0], mkr501_flux_1[:, 1],
+             yerr=mkr501_flux_1[:, 2],
              ls='', marker='o')
 plt.yscale('log')
 plt.xscale('log')
+
+mkr501_flux = np.concatenate((mkr501_flux, mkr501_flux_1[:, :3]))
 
 from ebltable.tau_from_model import OptDepth
 from scipy.optimize import curve_fit
@@ -101,14 +117,6 @@ def funct_mk501(ee_array, N, Ecut, E0, tau=1.31):
     return (N * ee_array ** 2.
             * ee_array**Ecut * np.exp(-(ee_array/E0)**tau))
 
-# def funct_mk501_inside(ee_array, alpha, N,
-#                        Ecut=-2.03, E0=8.21, tau=1.31):
-#     opacity = ebl_finke.opt_depth(zz, ee_array)
-#     return (N * ee_array ** 2.
-#             * ee_array**Ecut
-#             * np.exp(-(ee_array/E0)**tau - alpha * opacity)
-#             )
-
 
 fit_mkr501 = curve_fit(funct_mk501,
                        ydata=mkr501_flux[:, 1],
@@ -119,16 +127,8 @@ print(fit_mkr501[0])
 print(np.sqrt(np.diag(fit_mkr501[1])))
 print()
 
-# fit_mkr501_op = curve_fit(funct_mk501_inside,
-#                        ydata=mkr501_flux[:, 1],
-#                        xdata=mkr501_flux[:, 0],
-#                        p0=[1, 150],
-#                        )
-# print(fit_mkr501_op[0])
-# print(np.sqrt(np.diag(fit_mkr501_op[1])))
-
-
-xxx = np.linspace(0.99*mkr501_flux[0, 0], 1.01*mkr501_flux[-1, 0])
+xxx = np.linspace(0.99 * min(mkr501_flux[:, 0]),
+                  1.01 * max(mkr501_flux[:, 0]))
 
 plt.plot(xxx, funct_mk501(xxx, fit_mkr501[0][0], fit_mkr501[0][1],
                           fit_mkr501[0][2], fit_mkr501[0][3],))
@@ -354,6 +354,110 @@ plt.xlabel('E [TeV]')
 
 plt.yscale('log')
 plt.xscale('log')
+
+fig_counts = plt.figure()
+fig_spectrum = plt.figure()
+alpha_array = ebl_finke.get_models()
+nn_array = []
+likelihoods_array = []
+
+for d in alpha_array:
+    print(d)
+    ebl_finke = OptDepth.readmodel(model=d)
+    def funct_mk501_inside(ee_array, N, Ecut, E0, tau):
+        opacity = ebl_finke.opt_depth(zz, ee_array)
+        return (funct_mk501(ee_array, N=N, Ecut=Ecut, E0=E0, tau=tau)
+                * np.exp(-opacity))
+
+    combined_likelihood = LeastSquares(
+        mkr501_flux[:, 0], mkr501_flux[:, 1],
+        0.1*mkr501_flux[:, 1], funct_mk501_inside)
+
+    m = Minuit(combined_likelihood,
+               N=152., Ecut=-2.03, E0=8.21, tau=1.31)
+    # m.limits = [[0., 5.], [0., 10.], [0., 10.], [0., 10.]]
+    # m.fixed[0] = True
+    # m.fixed[1] = True
+    # m.fixed[2] = True
+    # m.fixed[3] = True
+
+    m.migrad()  # finds minimum of least_squares function
+    m.hesse()  # accurately
+
+    print(m.params)
+    popt = [*m.values]
+    nn_array.append(popt)
+
+    integral_kernel = funct_mk501_inside(
+        xxx_means.value, popt[0], popt[1], popt[2], popt[3])
+
+    integral_kernel = integral_kernel * 1e-12 * u.erg * u.cm**-2 * u.s**-1
+    integral_kernel = (integral_kernel / xxx_means**2.).to(
+        u.TeV**-1 * u.cm**-2 * u.s**-1)
+
+    integral_kernel *= (10**spline_eff_area(x=np.log10(xxx_means.value))
+                        * u.cm ** 2)
+
+    integral_kernel = integral_kernel * np.log(10) * xxx_means
+    integral_kernel = integral_kernel.to(1 / u.s)[:, np.newaxis]
+
+    integral_kernel = integral_kernel * edisp_obj._pdf_matrix
+
+    integral_kernel = simpson(y=integral_kernel,
+                              x=np.log10(xxx_means.value), axis=0)
+
+    count_number = []
+
+    integral_kernel = integral_kernel * np.log(10) * recovered_means
+
+    for i in range(len(energy_bins_obs) - 1):
+        where_bin = ((recovered_means > energy_bins_obs[i])
+                     * (recovered_means < energy_bins_obs[i + 1]))
+
+        if sum(where_bin) > 0:
+            count_number.append(simpson(
+                y=integral_kernel[where_bin],
+                x=np.log10(recovered_means[where_bin].value)))
+        else:
+            count_number.append(0.)
+
+    count_number = (count_number * total_int_time).value
+    plt.figure(fig_counts)
+    plt.scatter(energy_means_obs, count_number)
+
+    plt.figure(fig_spectrum)
+    plt.loglog(
+        energy_means_obs,
+        funct_mk501_inside(energy_means_obs.value,
+            N=popt[0], Ecut=popt[1], E0=popt[2], tau=popt[3]))
+
+    likelihoods_array.append(
+        likelihood_poisson(count_number, count_number_best))
+
+plt.figure(fig_counts)
+plt.scatter(energy_means_obs, count_number_best, marker='x',
+            zorder=1e3, s=200)
+plt.ylabel('count number')
+plt.xlabel('E [TeV]')
+
+plt.figure(fig_spectrum)
+plt.loglog(energy_means_obs,
+            funct_mk501(energy_means_obs.value,
+                        fit_mkr501[0][0], fit_mkr501[0][1],
+                        fit_mkr501[0][2], fit_mkr501[0][3]),
+            marker='x', ms=20,
+            zorder=1e3)
+plt.ylabel('flux')
+plt.xlabel('E [TeV]')
+
+plt.figure(figsize=(10, 8))
+plt.plot(alpha_array, likelihoods_array, marker='.')
+plt.ylabel('poisson likelihood')
+plt.xlabel(r'ebl model')
+plt.gca().tick_params(axis='x', labelrotation=45)
+
+plt.savefig('likelihoods_models.png',
+                bbox_inches='tight')
 
 plt.show()
 
