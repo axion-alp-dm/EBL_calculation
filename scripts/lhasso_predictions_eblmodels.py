@@ -124,7 +124,7 @@ def calculate_number_counts(flux_spectrum_funct, iminuit_object):
     integral_kernel = flux_spectrum_funct(
         xxx_means.value, *iminuit_object.values)
     integral_kernel = (integral_kernel * 1e-12
-                   * u.erg * u.cm ** -2 * u.s ** -1)
+                       * u.erg * u.cm ** -2 * u.s ** -1)
     integral_kernel = (integral_kernel / xxx_means ** 2.).to(
         u.TeV ** -1 * u.cm ** -2 * u.s ** -1)
 
@@ -139,8 +139,7 @@ def calculate_number_counts(flux_spectrum_funct, iminuit_object):
     integral_kernel = simpson(
         y=integral_kernel, x=np.log10(xxx_means.value), axis=0)
 
-
-    count_number = []
+    count_numb = []
 
     integral_kernel = integral_kernel * np.log(10) * recovered_means
 
@@ -149,23 +148,25 @@ def calculate_number_counts(flux_spectrum_funct, iminuit_object):
                      * (recovered_means < energy_bins_obs[i + 1]))
 
         if sum(where_bin) > 0:
-            count_number.append(simpson(
+            count_numb.append(simpson(
                 y=integral_kernel[where_bin],
                 x=np.log10(recovered_means[where_bin].value)))
         else:
-            count_number.append(0.)
+            count_numb.append(0.)
 
-    count_number = (count_number * total_int_time).value
+    count_numb = (count_numb * total_int_time).value
 
-    return count_number
+    return count_numb
 
 # ----------------------------------------------------------------------
 
 def funct_mk501_mine(ee_array, N, gamma):
-    ebl_finke = EBL.readascii('outputs/dust_reem_different_models/'
-                              '3_grey_bodies.txt',
-                              model_name='mine')
-    opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
+    # ebl_finke = EBL.readascii('outputs/dust_reem_different_models/'
+    #                           '3_grey_bodies.txt',
+    #                           model_name='mine')
+    # opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
+    ebl_finke = OptDepth.readmodel(model='finke2022')
+    opacity = ebl_finke.opt_depth(zz, ee_array)
     return (N * ee_array ** 2.
             * ee_array ** (-gamma)
             * np.exp(-opacity))
@@ -228,11 +229,13 @@ for d in my_ebl:
 
 # ----------------------------------------------------------------------
 
-def funct_mk501(ee_array, N, gamma, Ecut):
-    ebl_finke = EBL.readascii('outputs/dust_reem_different_models/'
-                              '3_grey_bodies.txt',
-                              model_name='mine')
-    opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
+def funct_mk501_cutoff(ee_array, N, gamma, Ecut):
+    # ebl_finke = EBL.readascii('outputs/dust_reem_different_models/'
+    #                           '3_grey_bodies.txt',
+    #                           model_name='mine')
+    # opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
+    ebl_finke = OptDepth.readmodel(model='finke2022')
+    opacity = ebl_finke.opt_depth(zz, ee_array)
     return (N * ee_array ** 2.
             * ee_array ** (-gamma)
             * np.exp(-(ee_array/Ecut) - opacity))
@@ -240,7 +243,7 @@ def funct_mk501(ee_array, N, gamma, Ecut):
 
 combined_likelihood = LeastSquares(
     mkr501_flux[:, 0], mkr501_flux[:, 1],
-    mkr501_flux[:, 2], funct_mk501)
+    mkr501_flux[:, 2], funct_mk501_cutoff)
 
 m_best_fit_mine_cutoff = Minuit(combined_likelihood,
                                 N=211., gamma=2.03, Ecut=18.)
@@ -251,7 +254,7 @@ m_best_fit_mine_cutoff.hesse()
 print(m_best_fit_mine_cutoff.params)
 
 count_number_best_mine_cutoff = calculate_number_counts(
-    funct_mk501, m_best_fit_mine_cutoff)
+    funct_mk501_cutoff, m_best_fit_mine_cutoff)
 
 nn_array_mine_cutoff = []
 nn_errors_mine_cutoff = []
@@ -399,7 +402,7 @@ plt.figure(fig_spectrum)
 ebl_finke = OptDepth.readmodel(model=model_ebl)
 plt.loglog(energy_means_obs,
            funct_mk501(energy_means_obs.value,
-                       *m_best_fit_mine_cutoff.values),
+                       *m_best_fit_mine.values),
            marker='x', ms=20,
            zorder=0)
 plt.ylabel('flux')
@@ -409,7 +412,13 @@ plt.legend(loc=3)
 
 # ----------------------------------------------------------------------
 
-plt.subplots(2, 1, height_ratios=(len(alpha_array), len(my_ebl)*1.5))
+fig, (ax1, ax2) = plt.subplots(
+    2, 1, height_ratios=(len(alpha_array), len(my_ebl)*1.5))
+
+max_value = np.max(likelihoods_array)
+max_value_cutoff = np.max(likelihoods_array_cutoff)
+
+
 
 plt.suptitle(r'$\phi(E) = N \left(\frac{E}{1TeV}\right)^{-\Gamma}'
              r' e^{-E/E_\mathrm{cut} - \tau}$')
@@ -417,23 +426,20 @@ plt.suptitle(r'$\phi(E) = N \left(\frac{E}{1TeV}\right)^{-\Gamma}'
 plt.subplots_adjust(wspace=0, hspace=0)
 
 plt.subplot(211)
-plt.scatter(2. * (likelihoods_array - np.max(likelihoods_array)),
+plt.scatter(2. * (likelihoods_array - max_value),
             alpha_array, marker='.', label='wto/ cutoff', s=400,
             c='b')
-plt.scatter(2. * (likelihoods_array_cutoff
-            - np.max(likelihoods_array_cutoff)),
+plt.scatter(2. * (likelihoods_array_cutoff - max_value_cutoff),
             alpha_array, marker='x', label='w/ cutoff', s=300,
             c='orange')
 
 plt.legend(loc=9)
-plt.subplot(212)
+plt.subplot(212, sharex=ax1)
 
-plt.scatter(2. * (likelihoods_array_mine
-                  - np.max(likelihoods_array_mine)),
+plt.scatter(2. * (likelihoods_array_mine - max_value),
             my_ebl, marker='.', s=400,
             c='b')
-plt.scatter(2. * (likelihoods_array_mine_cutoff
-            - np.max(likelihoods_array_mine_cutoff)),
+plt.scatter(2. * (likelihoods_array_mine_cutoff - max_value_cutoff),
             my_ebl, marker='x', label='w/ cutoff', s=300,
             c='orange')
 

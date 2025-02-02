@@ -35,7 +35,7 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('outputs/outputs_3body_many/')
+input_file_dir = ('outputs/dust_reem_different_models/')
 # input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-01-23 14:50:15/')
 # input_file_dir = ('scripts/input_files/')
 # input_file_dir = 'notebooks/'
@@ -368,58 +368,58 @@ ax_cob.plot(waves_ebl, spline_cuba(waves_ebl),
             c='fuchsia', label='CUBA')
 
 
-from scipy.optimize import newton
-from scipy.integrate import simpson
-from astropy import units as u
-import astropy.constants as c
-def maximum_T(wv_array, T):
-    zz = np.linspace(0, 40, num=500)
-    zzp1 = zz + 1.
-
-    zzp1, wv_array = np.meshgrid(zzp1, wv_array)
-
-    all_inside = (c.h * c.c / c.k_B / T / u.K).to(u.micron).value
-
-    exp_full = np.exp(all_inside * zzp1 / wv_array)
-
-    yyy = (zzp1**2. / np.sqrt(0.7 + 0.3 * zzp1**3.))
-    yyy *= (all_inside * zzp1 * exp_full
-            - 4. * wv_array * (exp_full - 1.))
-    yyy /= (exp_full - 1.)**2.
-
-    yyy[np.isnan(yyy)] = 0.
-
-    return simpson(yyy, x=zz, axis=1)
-
-def find_peak(T):
-    return newton(maximum_T, x0=200, args=[T])
-
-for nkey, key in enumerate(config_data['ssp_models']):
-    print()
-    print(config_data['ssp_models'][key]['name'])
-    print('%.2f  %.2f  %.2f'
-    % (config_data['ssp_models'][key]['dust_reem_params']['T'][0],
-          config_data['ssp_models'][key]['dust_reem_params']['T'][1],
-          config_data['ssp_models'][key]['dust_reem_params']['T'][2]))
-    # print('%.2f  %.2f  %.2f'
-    # % (find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][0]),
-    #    find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][1]),
-    #    find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][2])))
-    #
-    # plt.axvline(find_peak(config_data['ssp_models'][key][
-    #                           'dust_reem_params']['T'][0]),
-    #             c=colors[nkey % len(colors)])
-    # plt.axvline(find_peak(config_data['ssp_models'][key][
-    #                           'dust_reem_params']['T'][1]),
-    #             c=colors[nkey % len(colors)])
-    # plt.axvline(find_peak(config_data['ssp_models'][key][
-    #                           'dust_reem_params']['T'][2]),
-    #             c=colors[nkey % len(colors)])
-
-    # for tt in config_data['ssp_models'][key][
-    #                           'dust_reem_params']['T']:
-    #     plt.axvline(10**3.84898/tt, c=colors[nkey % len(colors)],
-    #                 ls='--')
+# from scipy.optimize import newton
+# from scipy.integrate import simpson
+# from astropy import units as u
+# import astropy.constants as c
+# def maximum_T(wv_array, T):
+#     zz = np.linspace(0, 40, num=500)
+#     zzp1 = zz + 1.
+#
+#     zzp1, wv_array = np.meshgrid(zzp1, wv_array)
+#
+#     all_inside = (c.h * c.c / c.k_B / T / u.K).to(u.micron).value
+#
+#     exp_full = np.exp(all_inside * zzp1 / wv_array)
+#
+#     yyy = (zzp1**2. / np.sqrt(0.7 + 0.3 * zzp1**3.))
+#     yyy *= (all_inside * zzp1 * exp_full
+#             - 4. * wv_array * (exp_full - 1.))
+#     yyy /= (exp_full - 1.)**2.
+#
+#     yyy[np.isnan(yyy)] = 0.
+#
+#     return simpson(yyy, x=zz, axis=1)
+#
+# def find_peak(T):
+#     return newton(maximum_T, x0=200, args=[T])
+#
+# for nkey, key in enumerate(config_data['ssp_models']):
+#     print()
+#     print(config_data['ssp_models'][key]['name'])
+#     print('%.2f  %.2f  %.2f'
+#     % (config_data['ssp_models'][key]['dust_reem_params']['T'][0],
+#           config_data['ssp_models'][key]['dust_reem_params']['T'][1],
+#           config_data['ssp_models'][key]['dust_reem_params']['T'][2]))
+#     # print('%.2f  %.2f  %.2f'
+#     # % (find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][0]),
+#     #    find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][1]),
+#     #    find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][2])))
+#     #
+#     # plt.axvline(find_peak(config_data['ssp_models'][key][
+#     #                           'dust_reem_params']['T'][0]),
+#     #             c=colors[nkey % len(colors)])
+#     # plt.axvline(find_peak(config_data['ssp_models'][key][
+#     #                           'dust_reem_params']['T'][1]),
+#     #             c=colors[nkey % len(colors)])
+#     # plt.axvline(find_peak(config_data['ssp_models'][key][
+#     #                           'dust_reem_params']['T'][2]),
+#     #             c=colors[nkey % len(colors)])
+#
+#     # for tt in config_data['ssp_models'][key][
+#     #                           'dust_reem_params']['T']:
+#     #     plt.axvline(10**3.84898/tt, c=colors[nkey % len(colors)],
+#     #                 ls='--')
 plt.yscale('log')
 plt.xscale('log')
 plt.xlabel(r'Wavelength ($\mu$m)')
