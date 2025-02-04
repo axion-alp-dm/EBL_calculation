@@ -112,14 +112,15 @@ plt.savefig('outputs/lhaaso/mk501flare.png',
             bbox_inches='tight')
 # ----------------------------------------------------------------------
 
-xxx_bins = np.linspace(
-    mkr501_flux[0, 0] - 0.5,
-    mkr501_flux[-1, 0] + 0.5,
+xxx_bins = np.geomspace(
+    min(mkr501_flux[:, 0]) - 0.5,
+    max(mkr501_flux[:, 0]) + 0.5,
     num=1000) * u.TeV
-xxx_means = (xxx_bins[1:] + xxx_bins[:-1]) / 2.
+# xxx_means = (xxx_bins[1:] + xxx_bins[:-1]) / 2.
+xxx_means = np.sqrt(xxx_bins[1:] * xxx_bins[:-1])
 
-recovered_bins = xxx_bins[:-2]
-recovered_means = xxx_means[:-2]
+recovered_bins = xxx_bins.copy()#[:-2]
+recovered_means = xxx_means.copy()#[:-2]
 
 edisp_obj = EDispGauss(sigma=0.2, bias=0.)
 edisp_obj.fill(e_true_edges=xxx_bins.value,
@@ -138,7 +139,7 @@ spline_eff_area = UnivariateSpline(
     s=0, k=1, ext=1
 )
 
-energy_bins_obs = np.geomspace(3.5, 20., num=20) * u.TeV
+energy_bins_obs = np.geomspace(0.5, 21., num=20) * u.TeV
 energy_means_obs = np.sqrt(energy_bins_obs[1:] * energy_bins_obs[:-1])
 
 total_int_time = (110. * u.h).to(u.s)

@@ -88,14 +88,15 @@ plt.savefig('outputs/lhaaso/mk501flare.png',
             bbox_inches='tight')
 # ----------------------------------------------------------------------
 
-xxx_bins = np.linspace(
-    mkr501_flux[0, 0] - 0.5,
-    mkr501_flux[-1, 0] + 0.5,
+xxx_bins = np.geomspace(
+    min(mkr501_flux[:, 0]) - 0.5,
+    max(mkr501_flux[:, 0]) + 0.5,
     num=1000) * u.TeV
-xxx_means = (xxx_bins[1:] + xxx_bins[:-1]) / 2.
+# xxx_means = (xxx_bins[1:] + xxx_bins[:-1]) / 2.
+xxx_means = np.sqrt(xxx_bins[1:] * xxx_bins[:-1])
 
-recovered_bins = xxx_bins[:-2]
-recovered_means = xxx_means[:-2]
+recovered_bins = xxx_bins.copy()#[:-2]
+recovered_means = xxx_means.copy()#[:-2]
 
 edisp_obj = EDispGauss(sigma=0.2, bias=0.)
 edisp_obj.fill(e_true_edges=xxx_bins.value,
@@ -114,7 +115,7 @@ spline_eff_area = UnivariateSpline(
     s=0, k=1, ext=1
 )
 
-energy_bins_obs = np.geomspace(3.5, 20., num=20) * u.TeV
+energy_bins_obs = np.geomspace(0.5, 21., num=20) * u.TeV
 energy_means_obs = np.sqrt(energy_bins_obs[1:] * energy_bins_obs[:-1])
 
 total_int_time = (110. * u.h).to(u.s)
@@ -159,17 +160,23 @@ def calculate_number_counts(flux_spectrum_funct, iminuit_object):
     return count_numb
 
 # ----------------------------------------------------------------------
+fig_counts = plt.figure()
+fig_spectrum = plt.figure()
 
+e_array = np.geomspace(
+    np.min(mkr501_flux[:, 0])*0.5, np.max(mkr501_flux[:, 0])*1.5,
+    num=500)
+
+ebl_finke = EBL.readascii('outputs/dust_reem_different_models/'
+                              '3_grey_bodies.txt',
+                              model_name='mine')
+opacity = ebl_finke.optical_depth(z0=zz, ETeV=e_array)
+opacity = UnivariateSpline(
+        np.log10(e_array), opacity, k=1, s=0)
 def funct_mk501_mine(ee_array, N, gamma):
-    # ebl_finke = EBL.readascii('outputs/dust_reem_different_models/'
-    #                           '3_grey_bodies.txt',
-    #                           model_name='mine')
-    # opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
-    ebl_finke = OptDepth.readmodel(model='finke2022')
-    opacity = ebl_finke.opt_depth(zz, ee_array)
     return (N * ee_array ** 2.
             * ee_array ** (-gamma)
-            * np.exp(-opacity))
+            * np.exp(-opacity(np.log10(ee_array))))
 
 
 combined_likelihood = LeastSquares(
@@ -191,54 +198,11 @@ nn_array_mine = []
 nn_errors_mine = []
 likelihoods_array_mine = []
 
-my_ebl = ['3_grey_bodies.txt',
-          'Chary.txt',
-          'BOSA.txt']
-
-for d in my_ebl:
-    print(d)
-
-    def funct_mk501_inside(ee_array, N, gamma):
-        ebl_finke = EBL.readascii(
-            'outputs/dust_reem_different_models/' + d,
-                              model_name='mine')
-        opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
-        return (N * ee_array ** 2.
-                * ee_array ** (-gamma)
-                * np.exp(-opacity))
-
-
-    combined_likelihood = LeastSquares(
-        mkr501_flux[:, 0], mkr501_flux[:, 1],
-        mkr501_flux[:, 2], funct_mk501_inside)
-
-    m = Minuit(combined_likelihood,
-               N=211., gamma=2.03)
-
-    m.migrad()
-    m.hesse()
-
-    print(m.params)
-    nn_array_mine.append([*m.values])
-    nn_errors_mine.append([*m.errors])
-
-    count_number = calculate_number_counts(funct_mk501_inside, m)
-
-    likelihoods_array_mine.append(
-        likelihood_poisson(count_number, count_number_best_mine))
-
-# ----------------------------------------------------------------------
 
 def funct_mk501_cutoff(ee_array, N, gamma, Ecut):
-    # ebl_finke = EBL.readascii('outputs/dust_reem_different_models/'
-    #                           '3_grey_bodies.txt',
-    #                           model_name='mine')
-    # opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
-    ebl_finke = OptDepth.readmodel(model='finke2022')
-    opacity = ebl_finke.opt_depth(zz, ee_array)
     return (N * ee_array ** 2.
             * ee_array ** (-gamma)
-            * np.exp(-(ee_array/Ecut) - opacity))
+            * np.exp(-(ee_array/Ecut) - opacity(np.log10(ee_array))))
 
 
 combined_likelihood = LeastSquares(
@@ -266,15 +230,45 @@ my_ebl = ['3_grey_bodies.txt',
 
 for d in my_ebl:
     print(d)
+    ebl_finke = EBL.readascii(
+        'outputs/dust_reem_different_models/' + d, model_name='mine')
+    opacity = ebl_finke.optical_depth(z0=zz, ETeV=e_array)
+    opacity = UnivariateSpline(
+        np.log10(e_array), opacity, k=1, s=0)
 
-    def funct_mk501_inside(ee_array, N, gamma, Ecut):
-        ebl_finke = EBL.readascii(
-            'outputs/dust_reem_different_models/' + d,
-                              model_name='mine')
-        opacity = ebl_finke.optical_depth(z0=zz, ETeV=ee_array)
+    def funct_mk501_inside(ee_array, N, gamma):
         return (N * ee_array ** 2.
                 * ee_array ** (-gamma)
-                * np.exp(-(ee_array/Ecut) - opacity))
+                * np.exp(-opacity(np.log10(ee_array))))
+
+
+    combined_likelihood = LeastSquares(
+        mkr501_flux[:, 0], mkr501_flux[:, 1],
+        mkr501_flux[:, 2], funct_mk501_inside)
+
+    m = Minuit(combined_likelihood,
+               N=211., gamma=2.03)
+
+    m.migrad()
+    m.hesse()
+
+    print(m.params)
+    nn_array_mine.append([*m.values])
+    nn_errors_mine.append([*m.errors])
+
+    count_number = calculate_number_counts(funct_mk501_inside, m)
+
+    likelihoods_array_mine.append(
+        likelihood_poisson(count_number, count_number_best_mine))
+
+    # ----------------------------------------------------------------------
+
+    print(d)
+
+    def funct_mk501_inside(ee_array, N, gamma, Ecut):
+        return (N * ee_array ** 2.
+                * ee_array ** (-gamma)
+                * np.exp(-(ee_array/Ecut) - opacity(np.log10(ee_array))))
 
 
     combined_likelihood = LeastSquares(
@@ -298,11 +292,9 @@ for d in my_ebl:
     likelihoods_array_mine_cutoff.append(
         likelihood_poisson(count_number, count_number_best_mine_cutoff))
 
-# ----------------------------------------------------------------------
 
-fig_counts = plt.figure()
-fig_spectrum = plt.figure()
-alpha_array = ebl_finke.get_models()
+# ----------------------------------------------------------------------
+alpha_array = OptDepth.get_models()
 # alpha_array = alpha_array[6:8]
 
 
@@ -313,7 +305,6 @@ likelihoods_array = []
 for d in alpha_array:
     print(d)
     ebl_finke = OptDepth.readmodel(model=d)
-
 
     def funct_mk501_inside(ee_array, N, gamma):
         ebl_finke = OptDepth.readmodel(model=d)
@@ -338,15 +329,16 @@ for d in alpha_array:
     nn_errors.append([*m.errors])
 
     count_number = calculate_number_counts(funct_mk501_inside, m)
-    plt.figure(fig_counts)
-    plt.scatter(energy_means_obs, count_number,
-                label=d)
+    if d in ['finke', 'kneiske', 'dominguez-lower']:
+        plt.figure(fig_counts)
+        plt.scatter(energy_means_obs, count_number,
+                    label=d)
 
-    plt.figure(fig_spectrum)
-    plt.loglog(
-        energy_means_obs,
-        funct_mk501_inside(energy_means_obs.value, *m.values),
-        label=d)
+        plt.figure(fig_spectrum)
+        plt.loglog(
+            energy_means_obs,
+            funct_mk501_inside(energy_means_obs.value, *m.values),
+            label=d)
 
     likelihoods_array.append(
         likelihood_poisson(count_number, count_number_best_mine))
@@ -390,13 +382,28 @@ for d in alpha_array:
     likelihoods_array_cutoff.append(
         likelihood_poisson(count_number, count_number_best_mine_cutoff))
 
+    # if d in ['finke', 'kneiske', 'dominguez-lower']:
+    #     plt.figure(fig_counts)
+    #     plt.scatter(energy_means_obs, count_number,
+    #                 label=d, marker='s')
+    #
+    #     plt.figure(fig_spectrum)
+    #     plt.loglog(
+    #         energy_means_obs,
+    #         funct_mk501_inside(energy_means_obs.value, *m.values),
+    #         label=d, ls='--')
+
 # ----------------------------------------------------------------------
 plt.figure(fig_counts)
 plt.scatter(energy_means_obs, count_number_best_mine_cutoff, marker='x',
             zorder=1e3, s=200)
 plt.ylabel('count number')
 plt.xlabel('E [TeV]')
+plt.xscale('log')
 plt.legend()
+
+plt.savefig('outputs/lhaaso/counts.png',
+            bbox_inches='tight')
 
 plt.figure(fig_spectrum)
 ebl_finke = OptDepth.readmodel(model=model_ebl)
@@ -404,19 +411,44 @@ plt.loglog(energy_means_obs,
            funct_mk501(energy_means_obs.value,
                        *m_best_fit_mine.values),
            marker='x', ms=20,
-           zorder=0)
+           zorder=101, label='Best fit 3 body')
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             yerr=mkr501_flux[:, 2],
+             ls='', marker='o', label='Data', zorder=100)
 plt.ylabel('flux')
 plt.xlabel('E [TeV]')
 
 plt.legend(loc=3)
 
+plt.savefig('outputs/lhaaso/spectrum.png',
+            bbox_inches='tight')
+
+plt.figure()
+xx_ebl = np.geomspace(0.1, 1000., num=150)
+for d in ['kneiske', 'finke', 'dominguez-lower']:
+    ebl_finke = EBL.readmodel(model=d)
+    plt.plot(xx_ebl, ebl_finke.ebl_array(z=zz, lmu=xx_ebl),
+                    label=d)
+
+ebl_finke = EBL.readascii(file_name='outputs/dust_reem_different_models/'
+                              '3_grey_bodies.txt',
+                              model_name='mine')
+plt.plot(xx_ebl, ebl_finke.ebl_array(z=zz, lmu=xx_ebl),
+         label='3 grey body')
+plt.ylabel('ebl intensity')
+plt.xlabel('wavelength [microns]')
+plt.xscale('log')
+plt.legend()
+
+plt.savefig('outputs/lhaaso/ebl_models.png',
+            bbox_inches='tight')
 # ----------------------------------------------------------------------
 
 fig, (ax1, ax2) = plt.subplots(
     2, 1, height_ratios=(len(alpha_array), len(my_ebl)*1.5))
 
-max_value = np.max(likelihoods_array)
-max_value_cutoff = np.max(likelihoods_array_cutoff)
+max_value = np.max(likelihoods_array_mine)
+max_value_cutoff = np.max(likelihoods_array_mine_cutoff)
 
 
 
