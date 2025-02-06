@@ -237,6 +237,74 @@ ax3.set_xlabel('Photon energy (eV)', labelpad=12)
 
 plt.savefig('outputs/figures_paper/cb.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
+
+
+
+list_working_models = {
+    'Model3body': {'label': '3 grey body',
+               'callable_func': 'SB99_3body_fittodata_70K450Kfixed',
+               'color': 'orange'},
+    'ModelChary': {'label': 'Chary templates',
+               'callable_func': 'SB99_dustFinke_2params',
+               'color': 'b'},
+    'ModelBosa': {'label': 'BOSA templates',
+               'callable_func': 'SB99_dustFinke_bosa',
+               'color': 'r'},
+}
+
+# Beginning of figure specifications
+fig, ax1 = plt.subplots(figsize=(10, 6.5))
+
+
+plt.plot(waves_ebl, spline_finke(waves_ebl), label='Finke22',
+         lw=3, c='fuchsia')
+
+
+for ni, working_model_name in enumerate(list_working_models.keys()):
+    model = list_working_models[working_model_name]
+
+    ebl_model = EBL.readascii('outputs/outputs_dust_final1/'
+                              +  model['callable_func']
+                              + '.txt',
+                model_name=working_model_name)
+
+    plt.loglog(waves_ebl, ebl_model.ebl_array(z=0, lmu=waves_ebl),
+               c=model['color'], lw=3,
+               zorder=2/(ni+1),
+               label=model['label']
+               )
+
+ax1.set_xlim(0.1, 1e3)
+ax1.set_ylim(0.9, 120)
+legend22 = plt.legend(loc=1, fontsize=16, ncol=2)
+
+# ax1.add_artist(legend22)
+
+ax1.set_xlabel(r'Wavelength (µm)')
+
+ax1.set_xscale('log')
+ax1.set_yscale('log')
+def tick_function(X):
+    return (h_plank * c / X / u.micron).to(u.eV).value
+def tick_function_2(X):
+    return (h_plank * c / X / u.eV).to(u.micron).value
+
+aaa = tick_function(2.48)
+ax3 = ax1.secondary_xaxis('top',
+                         functions=(tick_function, tick_function_2))
+ax3.tick_params(axis='x', direction='in', pad=0)
+ax3.set_xlabel('Photon energy (eV)', labelpad=12)
+
+
+# We introduce all the EBL measurements
+upper_lims_all, _ = import_cb_data(
+    lambda_min_total=0,
+    lambda_max_total=1e4,
+    ax1=ax1, plot_measurs=True)
+
+plt.savefig('outputs/figures_paper/cb_manydust.pdf', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb_manydust.png', bbox_inches='tight')
+
 plt.show()
 
 

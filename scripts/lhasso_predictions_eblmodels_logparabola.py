@@ -42,7 +42,8 @@ plt.errorbar(mkr501_flux_1[:, 0], mkr501_flux_1[:, 1],
              yerr=mkr501_flux_1[:, 2],
              ls='', marker='o', label='Original analysis')
 
-mkr501_flux = np.concatenate((mkr501_flux, mkr501_flux_1[:, :3]))
+
+mkr501_flux = np.concatenate((mkr501_flux_1[:8, :3], mkr501_flux))
 
 zz = 0.034
 
@@ -100,8 +101,8 @@ plt.ylabel('E2dN/dE [10−12 erg cm−2 s−1]')
 
 plt.yscale('log')
 plt.xscale('log')
-plt.show()
-plt.savefig('outputs/lhaaso/mk501flare.png',
+# plt.show()
+plt.savefig('outputs/lhaaso/mk501flare_logparabola.png',
             bbox_inches='tight')
 # ----------------------------------------------------------------------
 
@@ -188,24 +189,22 @@ ebl_finke = EBL.readascii('outputs/lhaaso/'
                               '3_grey_bodies.txt',
                               model_name='mine')
 opacity = ebl_finke.optical_depth(z0=zz, ETeV=e_array)
-opacity = UnivariateSpline(
+opacity_best = UnivariateSpline(
         np.log10(e_array), opacity, k=1, s=0)
-# def funct_mk501_mine(ee_array, N, gamma):
-#     return (N * ee_array ** 2.
-#             * ee_array ** (-gamma)
-#             * np.exp(-opacity(np.log10(ee_array))))
+
 def funct_mk501_mine(ee_array, phi0, E0, alpha, beta):
     return (phi0 * ee_array ** 2.
             * (ee_array / E0) ** (
                     - alpha - beta * np.log(ee_array/E0))
-            * np.exp(-opacity(np.log10(ee_array))))
+            * np.exp(-opacity_best(np.log10(ee_array))))
+
 
 combined_likelihood = LeastSquares(
     mkr501_flux[:, 0], mkr501_flux[:, 1],
     mkr501_flux[:, 2], funct_mk501_mine)
 
 m_best_fit_mine = Minuit(combined_likelihood,
-                         N=211., gamma=2.0)
+                    phi0=1e-12, E0=430., alpha=5., beta=0.5)
 
 m_best_fit_mine.migrad()
 m_best_fit_mine.hesse()
@@ -241,9 +240,9 @@ likelihoods_array_mine = []
 # count_number_best_mine_cutoff = calculate_number_counts(
 #     funct_mk501_cutoff, m_best_fit_mine_cutoff)
 #
-# nn_array_mine_cutoff = []
-# nn_errors_mine_cutoff = []
-# likelihoods_array_mine_cutoff = []
+nn_array_mine_cutoff = []
+nn_errors_mine_cutoff = []
+likelihoods_array_mine_cutoff = []
 
 my_ebl = ['3_grey_bodies.txt',
           'Chary.txt',
@@ -257,9 +256,10 @@ for d in my_ebl:
     opacity = UnivariateSpline(
         np.log10(e_array), opacity, k=1, s=0)
 
-    def funct_mk501_inside(ee_array, N, gamma):
-        return (N * ee_array ** 2.
-                * ee_array ** (-gamma)
+    def funct_mk501_inside(ee_array, phi0, E0, alpha, beta):
+        return (phi0 * ee_array ** 2.
+                * (ee_array / E0) ** (
+                        - alpha - beta * np.log(ee_array / E0))
                 * np.exp(-opacity(np.log10(ee_array))))
 
 
@@ -268,7 +268,7 @@ for d in my_ebl:
         mkr501_flux[:, 2], funct_mk501_inside)
 
     m = Minuit(combined_likelihood,
-               N=211., gamma=2.03)
+               phi0=1e-12, E0=430., alpha=5., beta=0.5)
 
     m.migrad()
     m.hesse()
@@ -326,20 +326,30 @@ likelihoods_array = []
 for d in alpha_array:
     print(d)
     ebl_finke = OptDepth.readmodel(model=d)
+    opacity = ebl_finke.opt_depth(z=zz, ETeV=e_array)
+    opacity = UnivariateSpline(
+        np.log10(e_array), opacity, k=1, s=0)
 
-    def funct_mk501_inside(ee_array, N, gamma):
-        ebl_finke = OptDepth.readmodel(model=d)
-        opacity = ebl_finke.opt_depth(zz, ee_array)
-        return (N * ee_array ** 2.
-                * ee_array ** (-gamma)
-                * np.exp(-opacity))
+    def funct_mk501_inside(ee_array, phi0, E0, alpha, beta):
+        return (phi0 * ee_array ** 2.
+                * (ee_array / E0) ** (
+                        - alpha - beta * np.log(ee_array / E0))
+                * np.exp(-opacity(np.log10(ee_array))))
+
+    # def funct_mk501_inside(ee_array, N, gamma):
+    #     ebl_finke = OptDepth.readmodel(model=d)
+    #     opacity = ebl_finke.opt_depth(zz, ee_array)
+    #     return (N * ee_array ** 2.
+    #             * ee_array ** (-gamma)
+    #             * np.exp(-opacity))
 
 
     combined_likelihood = LeastSquares(
         mkr501_flux[:, 0], mkr501_flux[:, 1],
         mkr501_flux[:, 2], funct_mk501_inside)
 
-    m = Minuit(combined_likelihood, N=152., gamma=2.03)
+    m = Minuit(combined_likelihood,
+               phi0=1e-12, E0=430., alpha=5., beta=0.5)
 
     m.migrad()
     m.hesse()
@@ -350,15 +360,13 @@ for d in alpha_array:
     nn_errors.append([*m.errors])
 
     count_number = calculate_number_counts(funct_mk501_inside, m)
-    if d in ['finke', 'kneiske', 'dominguez-lower']:
+    if d in ['finke', 'kneiske', 'dominguez-lower', 'inoue']:
         plt.figure(fig_counts)
         plt.scatter(energy_means_obs, count_number,
                     label=d)
 
         plt.figure(fig_spectrum)
-        plt.loglog(
-            energy_means_obs,
-            funct_mk501_inside(energy_means_obs.value, *m.values),
+        plt.loglog(xxx, funct_mk501_inside(xxx, *m.values),
             label=d)
 
     likelihoods_array.append(
@@ -366,9 +374,9 @@ for d in alpha_array:
 
 # ----------------------------------------------------------------------
 
-# nn_array_cutoff = []
-# nn_errors_cutoff = []
-# likelihoods_array_cutoff = []
+nn_array_cutoff = []
+nn_errors_cutoff = []
+likelihoods_array_cutoff = []
 #
 # for d in alpha_array:
 #     print(d)
@@ -423,16 +431,17 @@ plt.xlabel('E [TeV]')
 plt.xscale('log')
 plt.legend()
 
-plt.savefig('outputs/lhaaso/counts.png',
+plt.savefig('outputs/lhaaso/counts_logparabola.png',
             bbox_inches='tight')
 
 plt.figure(fig_spectrum)
 ebl_finke = OptDepth.readmodel(model=model_ebl)
-plt.loglog(energy_means_obs,
-           funct_mk501(energy_means_obs.value,
-                       *m_best_fit_mine.values),
+
+plt.loglog(xxx,
+           funct_mk501_mine(xxx, *m_best_fit_mine.values),
            marker='x', ms=20,
-           zorder=101, label='Best fit 3 body')
+           zorder=0, label='Best fit 3 body')
+
 plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
              yerr=mkr501_flux[:, 2],
              ls='', marker='o', label='Data', zorder=100)
@@ -441,27 +450,26 @@ plt.xlabel('E [TeV]')
 
 plt.legend(loc=3)
 
-plt.savefig('outputs/lhaaso/spectrum.png',
+plt.savefig('outputs/lhaaso/spectrum_logparabola.png',
             bbox_inches='tight')
 
 plt.figure()
-xx_ebl = np.geomspace(0.1, 1000., num=150)
-for d in ['kneiske', 'finke', 'dominguez-lower']:
-    ebl_finke = EBL.readmodel(model=d)
-    plt.plot(xx_ebl, ebl_finke.ebl_array(z=zz, lmu=xx_ebl),
+for d in ['kneiske', 'finke', 'dominguez-lower', 'inoue']:
+    ebl_finke = OptDepth.readmodel(model=d)
+    plt.plot(xxx, ebl_finke.opt_depth(z=zz, ETeV=xxx),
                     label=d)
 
 ebl_finke = EBL.readascii(file_name='outputs/lhaaso/'
                               '3_grey_bodies.txt',
                               model_name='mine')
-plt.plot(xx_ebl, ebl_finke.ebl_array(z=zz, lmu=xx_ebl),
+plt.plot(xxx, ebl_finke.optical_depth(z0=zz, ETeV=xxx),
          label='3 grey body')
-plt.ylabel('ebl intensity')
-plt.xlabel('wavelength [microns]')
+plt.ylabel('opacity at redshift')
+plt.xlabel('energy [TeV]')
 plt.xscale('log')
 plt.legend()
 
-plt.savefig('outputs/lhaaso/ebl_models.png',
+plt.savefig('outputs/lhaaso/ebl_models_logparabola.png',
             bbox_inches='tight')
 # ----------------------------------------------------------------------
 
@@ -476,8 +484,8 @@ max_value = np.max(likelihoods_array_mine)
 
 
 
-plt.suptitle(r'$\phi(E) = N \left(\frac{E}{1TeV}\right)^{-\Gamma}'
-             r' e^{-E/E_\mathrm{cut} - \tau}$')
+plt.suptitle(r'$\phi(E) = \phi_0 \left(\frac{E}{E_0}\right)^{-\alpha '
+             r'- \beta \mathrm{ln}\left(E/E_0\right)} e^{-\tau}$')
 
 plt.subplots_adjust(wspace=0, hspace=0)
 
@@ -503,7 +511,7 @@ plt.xlabel(r'$-2\Delta L$')
 
 plt.margins(y=0.3)
 
-plt.savefig('outputs/lhaaso/likelihoods_models.png',
+plt.savefig('outputs/lhaaso/likelihoods_models_logparabola.png',
             bbox_inches='tight')
 
 
@@ -511,13 +519,13 @@ plt.savefig('outputs/lhaaso/likelihoods_models.png',
 # fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
 #     2, 3, height_ratios=(len(alpha_array), len(my_ebl)*1.5))
 
-fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
-    2, 3, gridspec_kw=gs_kw)
+fig, ax = plt.subplots(2, m.npar, gridspec_kw=gs_kw)
 
-plt.suptitle(r'$\phi(E) = N \left(\frac{E}{1TeV}\right)^{-\Gamma}'
-             r' e^{-E/E_\mathrm{cut} - \tau}$')
+plt.suptitle(r'$\phi(E) = \phi_0 \left(\frac{E}{E_0}\right)^{-\alpha '
+             r'- \beta \mathrm{ln}\left(\frac{E}{E_0}\right)} e^{-\tau}$')
 
 plt.subplots_adjust(wspace=0, hspace=0)
+
 ms = 15
 
 nn_array = np.array(nn_array)
@@ -531,145 +539,90 @@ nn_errors_mine = np.array(nn_errors_mine)
 # nn_errors_mine_cutoff = np.array(nn_errors_mine_cutoff)
 
 arg_max = np.where(np.array(my_ebl) == '3_grey_bodies.txt')[0][0]
+plot_cutoff = False
+logscale_x = [True, False, False, False]
 
-plt.subplot(231)
-ii = 0
-plt.errorbar(nn_array[:, ii], alpha_array,
-             xerr=nn_errors[:, ii],
-             marker='', capsize=3, label='wto/ cutoff', ms=ms,
-             ls='', c='b')
-# plt.errorbar(nn_array_cutoff[:, ii], alpha_array,
-#              xerr=nn_errors_cutoff[:, ii],
-#              marker='', capsize=3, label='w/ cutoff', ms=ms,
-#              ls='', c='orange')
+# xx_labels = m.parameters
+xx_labels = [r'$\phi_0$', r'$E_0$', r'$\alpha$', r'$\beta$']
 
-plt.axvspan(
-    nn_array_mine[arg_max, ii] - nn_errors_mine[arg_max, ii],
-    nn_array_mine[arg_max, ii] + nn_errors_mine[arg_max, ii],
-    color='b', alpha=0.3, zorder=0, lw=0)
-# plt.axvspan(
-#     nn_array_mine_cutoff[arg_max, ii] - nn_errors_mine_cutoff[arg_max, ii],
-#     nn_array_mine_cutoff[arg_max, ii] + nn_errors_mine_cutoff[arg_max, ii],
-#     color='orange', alpha=0.3, zorder=0, lw=0)
+for col in range(m.npar):
 
-plt.legend(bbox_to_anchor=(0.9, 0.85), loc='upper left',
-           bbox_transform=plt.gcf().transFigure)
+    ax[1, col].set_xlabel(xx_labels[col])
 
-plt.tick_params('x', labelbottom=False)
+    minn = np.min((
+        np.min(nn_array[:, col] - nn_errors[:, col]),
+        np.min(nn_array_mine[:, col] - nn_errors_mine[:, col])))
+    maxx = np.max((
+        np.max(nn_array[:, col] + nn_errors[:, col]),
+        np.max(nn_array_mine[:, col] + nn_errors_mine[:, col])))
 
+    if logscale_x[col]:
+        ax[0, col].set_xscale('log')
+        ax[1, col].set_xscale('log')
 
-plt.subplot(232)
-ii = 1
-plt.errorbar(nn_array[:, ii], alpha_array,
-             xerr=nn_errors[:, ii],
-             marker='', capsize=3, label='wto/ cutoff', ms=ms,
-             ls='', c='b')
-# plt.errorbar(nn_array_cutoff[:, ii], alpha_array,
-#              xerr=nn_errors_cutoff[:, ii],
-#              marker='', capsize=3, label='w/ cutoff', ms=ms,
-#              ls='', c='orange')
+        ax[0, col].set_xlim(0.8 * minn, 1.1 * maxx)
+        ax[1, col].set_xlim(0.8 * minn, 1.1 * maxx)
 
-plt.axvspan(
-    nn_array_mine[arg_max, ii] - nn_errors_mine[arg_max, ii],
-    nn_array_mine[arg_max, ii] + nn_errors_mine[arg_max, ii],
-    color='b', alpha=0.3, zorder=0, lw=0)
-# plt.axvspan(
-    # nn_array_mine_cutoff[arg_max, ii] - nn_errors_mine_cutoff[arg_max, ii],
-    # nn_array_mine_cutoff[arg_max, ii] + nn_errors_mine_cutoff[arg_max, ii],
-    # color='orange', alpha=0.3, zorder=0, lw=0)
+    else:
+        aaa = (maxx - minn) * 0.1
+        ax[0, col].set_xlim(minn - aaa, maxx + aaa)
+        ax[1, col].set_xlim(minn - aaa, maxx + aaa)
 
-plt.tick_params('x', labelbottom=False)
-plt.tick_params('y', labelleft=False)
+    ax[1, col].margins(y=0.2)
 
+    ax[0, col].errorbar(nn_array[:, col], alpha_array,
+                        xerr=nn_errors[:, col],
+                        marker='', capsize=3, label='wto/ cutoff', ms=ms,
+                        ls='', c='b')
 
-plt.subplot(233)
-ii = 2
-# plt.errorbar(nn_array_cutoff[:, ii], alpha_array,
-#              xerr=nn_errors_cutoff[:, ii],
-#              marker='', capsize=3, label='w/ cutoff', ms=ms,
-#              ls='', c='orange')
+    ax[1, col].errorbar(nn_array_mine[:, col], my_ebl,
+                        xerr=nn_errors_mine[:, col],
+                        marker='', capsize=3, label='wto/ cutoff', ms=ms,
+                        ls='', c='b')
 
-# plt.axvspan(
-#     nn_array_mine_cutoff[arg_max, ii] - nn_errors_mine_cutoff[arg_max, ii],
-#     nn_array_mine_cutoff[arg_max, ii] + nn_errors_mine_cutoff[arg_max, ii],
-#     color='orange', alpha=0.3, zorder=0, lw=0)
+    ax[0, col].axvspan(
+        nn_array_mine[arg_max, col] - nn_errors_mine[arg_max, col],
+        nn_array_mine[arg_max, col] + nn_errors_mine[arg_max, col],
+        color='b', alpha=0.3, zorder=0, lw=0)
 
-plt.tick_params('x', labelbottom=False)
-plt.tick_params('y', labelleft=False)
+    ax[1, col].axvspan(
+        nn_array_mine[arg_max, col] - nn_errors_mine[arg_max, col],
+        nn_array_mine[arg_max, col] + nn_errors_mine[arg_max, col],
+        color='b', alpha=0.3, zorder=0, lw=0)
 
-plt.xscale('log')
+    if plot_cutoff:
+        ax[0, col].errorbar(nn_array_cutoff[:, col], alpha_array,
+                            xerr=nn_errors_cutoff[:, col],
+                            marker='', capsize=3, label='w/ cutoff', ms=ms,
+                            ls='', c='orange')
 
-plt.subplot(234, sharex=ax1)
-ii = 0
-plt.errorbar(nn_array_mine[:, ii], my_ebl,
-             xerr=nn_errors_mine[:, ii],
-             marker='', capsize=3, label='wto/ cutoff', ms=ms,
-             ls='', c='b')
-# plt.errorbar(nn_array_mine_cutoff[:, ii], my_ebl,
-#              xerr=nn_errors_mine_cutoff[:, ii],
-#              marker='', capsize=3, label='w/ cutoff', ms=ms,
-#              ls='', c='orange')
+        ax[0, col].axvspan(
+            nn_array_mine_cutoff[arg_max, col]
+            - nn_errors_mine_cutoff[arg_max, col],
+            nn_array_mine_cutoff[arg_max, col]
+            + nn_errors_mine_cutoff[arg_max, col],
+            color='orange', alpha=0.3, zorder=0, lw=0)
 
-plt.axvspan(
-    nn_array_mine[arg_max, ii] - nn_errors_mine[arg_max, ii],
-    nn_array_mine[arg_max, ii] + nn_errors_mine[arg_max, ii],
-    color='b', alpha=0.3, zorder=0, lw=0)
-# plt.axvspan(
-#     nn_array_mine_cutoff[arg_max, ii] - nn_errors_mine_cutoff[arg_max, ii],
-#     nn_array_mine_cutoff[arg_max, ii] + nn_errors_mine_cutoff[arg_max, ii],
-#     color='orange', alpha=0.3, zorder=0, lw=0)
+        ax[1, col].errorbar(nn_array_mine_cutoff[:, col], my_ebl,
+                            xerr=nn_errors_mine_cutoff[:, col],
+                            marker='', capsize=3, label='w/ cutoff', ms=ms,
+                            ls='', c='orange')
+        ax[1, col].axvspan(
+            nn_array_mine_cutoff[arg_max, col] - nn_errors_mine_cutoff[
+                arg_max, col],
+            nn_array_mine_cutoff[arg_max, col] + nn_errors_mine_cutoff[
+                arg_max, col],
+            color='orange', alpha=0.3, zorder=0, lw=0)
+    # plt.subplot(2, m.npar, col + 1)
+    # plt.tick_params('x', labelbottom=False)
+    if col > 0:
+        ax[0, col].tick_params('y', labelleft=False)
+        ax[1, col].tick_params('y', labelleft=False)
 
-plt.xlabel(r'$N$')
-
-plt.margins(y=0.2)
-
-plt.subplot(235, sharex=ax2)
-ii = 1
-plt.errorbar(nn_array_mine[:, ii], my_ebl,
-             xerr=nn_errors_mine[:, ii],
-             marker='', capsize=3, label='wto/ cutoff', ms=ms,
-             ls='', c='b')
-# plt.errorbar(nn_array_mine_cutoff[:, ii], my_ebl,
-#              xerr=nn_errors_mine_cutoff[:, ii],
-#              marker='', capsize=3, label='w/ cutoff', ms=ms,
-#              ls='', c='orange')
-
-plt.axvspan(
-    nn_array_mine[arg_max, ii] - nn_errors_mine[arg_max, ii],
-    nn_array_mine[arg_max, ii] + nn_errors_mine[arg_max, ii],
-    color='b', alpha=0.3, zorder=0, lw=0)
-# plt.axvspan(
-#     nn_array_mine_cutoff[arg_max, ii] - nn_errors_mine_cutoff[arg_max, ii],
-#     nn_array_mine_cutoff[arg_max, ii] + nn_errors_mine_cutoff[arg_max, ii],
-#     color='orange', alpha=0.3, zorder=0, lw=0)
-
-plt.tick_params('y', labelleft=False)
-
-plt.xlabel(r'$\Gamma$')
-
-plt.margins(y=0.2)
-
-
-plt.subplot(236, sharex=ax3)
-ii = 2
-# plt.errorbar(nn_array_mine_cutoff[:, ii], my_ebl,
-#              xerr=nn_errors_mine_cutoff[:, ii],
-#              marker='', capsize=3, label='w/ cutoff', ms=ms,
-#              ls='', c='orange')
-
-# plt.axvspan(
-#     nn_array_mine_cutoff[arg_max, ii] - nn_errors_mine_cutoff[arg_max, ii],
-#     nn_array_mine_cutoff[arg_max, ii] + nn_errors_mine_cutoff[arg_max, ii],
-#     color='orange', alpha=0.3, zorder=0, lw=0)
-
-plt.tick_params('y', labelleft=False)
-
-plt.xlabel(r'$E_\mathrm{cut}$')
-plt.xscale('log')
-
-plt.margins(y=0.2)
-
-plt.savefig('outputs/lhaaso/parameters.png',
+    if col == 0:
+        plt.legend(bbox_to_anchor=(0.9, 0.85), loc='upper left',
+                   bbox_transform=plt.gcf().transFigure)
+plt.savefig('outputs/lhaaso/parameters_logparabola.png',
             bbox_inches='tight')
 
 plt.show()

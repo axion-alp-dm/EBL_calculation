@@ -64,8 +64,8 @@ def chi2_measurs(x_model, x_obs, err_obs):
 
 
 config_data = read_config_file(
-    # 'scripts/input_files/input_dust_reem.yml')
-    'notebooks/input_example.yml')
+    'scripts/input_files/input_dust_reem.yml')
+    # 'notebooks/input_example.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 
 # COB measurements that we are going to use
@@ -157,22 +157,22 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                         igl_ebldata['nuInu'],
                                         igl_ebldata['1 sigma'],
                                         fit_igl)
-    #                        + LeastSquares((emiss_data['lambda'],
-    #                                        emiss_data['z']),
-    #                                       emiss_data['eje'],
-    #                                       (emiss_data['eje_n']
-    #                                        + emiss_data['eje_p']) / 2.,
-    #                                       fit_emiss)
-    #                        + LeastSquares(sfr_data[:, 0],
-    #                                       sfr_data[:, 3],
-    #                                       (sfr_data[:, 4]
-    #                                        + sfr_data[:, 5]) / 2.,
-    #                                       sfr)
-    #                        + LeastSquares(z_data[:, 0],
-    #                                       z_data[:, 1],
-    #                                       (z_data[:, 2]
-    #                                        + z_data[:, 3]) / 2.,
-    #                                       metall)
+                           + LeastSquares((emiss_data['lambda'],
+                                           emiss_data['z']),
+                                          emiss_data['eje'],
+                                          (emiss_data['eje_n']
+                                           + emiss_data['eje_p']) / 2.,
+                                          fit_emiss)
+                           + LeastSquares(sfr_data[:, 0],
+                                          sfr_data[:, 3],
+                                          (sfr_data[:, 4]
+                                           + sfr_data[:, 5]) / 2.,
+                                          sfr)
+                           + LeastSquares(z_data[:, 0],
+                                          z_data[:, 1],
+                                          (z_data[:, 2]
+                                           + z_data[:, 3]) / 2.,
+                                          metall)
     #                        )
     # combined_likelihood = (LeastSquares(waves_finke,
     #                                     nuInu_finke,
@@ -198,8 +198,8 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     m = Minuit(combined_likelihood, aaa)
     m.limits = [[0., 5.], [0., 10.], [0., 10.], [0., 10.],
-                [-3., 0.2], [0., 2.], [0.5, 5.], [0.1, 0.25],
-                [0, 100], [0, 1500], [0, 1000], [0, 1], [0., 1.]
+                [-3., 0.2], [0., 2.], [0.5, 5.], [0., 0.25],
+                [0, 100], [0, 1500], [0, 1000], [0.1, 0.5], [0., 0.5]
                 # [7, 11], [3., 10.],
                 # [0., 10.], [0., 10.], [0., 10.], [0., 10.], [0., 10.]
                 ]
@@ -214,7 +214,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
     # m.fixed[10] = True
     m.fixed[8] = True
     m.fixed[9] = True
-    m.values[7] = 0.02
+    # m.values[7] = 0.02
     print(m.params)
 
     m.migrad()  # finds minimum of least_squares function
@@ -242,22 +242,22 @@ for nkey, key in enumerate(config_data['ssp_models']):
     #     'CB data: ' + str(chi2_measurs(
     #         fit_igl(waves_finke, aaa),
     #         nuInu_finke, 0.1*nuInu_finke)) + '\n')
-    # outputs.write(
-    #     'emissivities data: ' + str(chi2_measurs(
-    #         fit_emiss((emiss_data['lambda'], emiss_data['z']), aaa),
-    #         emiss_data['eje'],
-    #         (emiss_data['eje_n'] + emiss_data['eje_p']) / 2.))
-    #     + '\n')
-    # outputs.write(
-    #     'sfr data: ' + str(chi2_measurs(
-    #         sfr(sfr_data[:, 0], aaa),
-    #         sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.))
-    #     + '\n')
-    # outputs.write(
-    #     'metallicity data: ' + str(chi2_measurs(
-    #         metall(z_data[:, 0], aaa),
-    #         z_data[:, 1], (z_data[:, 2] + z_data[:, 3]) / 2.))
-    #     + '\n')
+    outputs.write(
+        'emissivities data: ' + str(chi2_measurs(
+            fit_emiss((emiss_data['lambda'], emiss_data['z']), aaa),
+            emiss_data['eje'],
+            (emiss_data['eje_n'] + emiss_data['eje_p']) / 2.))
+        + '\n')
+    outputs.write(
+        'sfr data: ' + str(chi2_measurs(
+            sfr(sfr_data[:, 0], aaa),
+            sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.))
+        + '\n')
+    outputs.write(
+        'metallicity data: ' + str(chi2_measurs(
+            metall(z_data[:, 0], aaa),
+            z_data[:, 1], (z_data[:, 2] + z_data[:, 3]) / 2.))
+        + '\n')
     outputs.write('\n\n\n')
     outputs.close()
 

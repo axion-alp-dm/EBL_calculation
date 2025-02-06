@@ -326,7 +326,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
     if plot_measurs:
         markers = ['>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
         colors_nh = ['lime', '#00A2FF']
-        colors_nh = ['grey', '#00A2FF']
+        colors_nh = ['grey', 'white']
         i = 0
         i_nh = 0
 
@@ -359,29 +359,30 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  )
 
                 elif datatype == 2:
-                    ax1.errorbar(x=data['lambda'], y=data['nuInu'],
-                                 linestyle='', color='w',
-                                 marker='*',
-                                 markerfacecolor='w',
-                                 markersize=28, markeredgewidth=2,
-                                 zorder=0, alpha=0.8
-                                 )
-                    ax1.errorbar(x=data['lambda'], y=data['nuInu'],
-                                 linestyle='', color=colors_nh[i_nh],
-                                 label=name,
-                                 marker='*',
-                                 markerfacecolor='none',
-                                 markersize=28, markeredgewidth=2,
-                                 zorder=0, alpha=0.8
-                                 )
-                    ax1.errorbar(x=data['lambda'], y=data['nuInu'],
-                                 yerr=[data['nuInu_errn'],
-                                       data['nuInu_errp']],
-                                 linestyle='', color='k',
-                                 marker='.',
-                                 mfc='k',
-                                 markersize=8, zorder=0, alpha=0.8
-                                 )
+                    if i_nh == 0:
+                        ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+                                     linestyle='', color='w',
+                                     marker='*',
+                                     markerfacecolor='w',
+                                     markersize=28, markeredgewidth=2,
+                                     zorder=0, alpha=0.8
+                                     )
+                        ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+                                     linestyle='', color=colors_nh[i_nh],
+                                     label=name,
+                                     marker='*',
+                                     markerfacecolor='none',
+                                     markersize=28, markeredgewidth=2,
+                                     zorder=0, alpha=0.8
+                                     )
+                        ax1.errorbar(x=data['lambda'], y=data['nuInu'],
+                                     yerr=[data['nuInu_errn'],
+                                           data['nuInu_errp']],
+                                     linestyle='', color='k',
+                                     marker='.',
+                                     mfc='k',
+                                     markersize=8, zorder=0, alpha=0.8
+                                     )
                     i_nh += 1
 
                 elif datatype == 0:

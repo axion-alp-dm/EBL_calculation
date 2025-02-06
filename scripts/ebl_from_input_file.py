@@ -35,8 +35,9 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('outputs/dust_reem_different_models/')
-# input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-01-23 14:50:15/')
+# input_file_dir = ('outputs/outputs_dust_final1/')
+input_file_dir = ('outputs/outputs_3body_many/')
+# input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-02-06 09:12:03/')
 # input_file_dir = ('scripts/input_files/')
 # input_file_dir = 'notebooks/'
 
@@ -150,20 +151,21 @@ plt.ylabel(
            r'{\sigma_\mathrm{i}}$')
 # plt.show()
 
-fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
+fig_emiss_z, axes_emiss_z = plt.subplots(4, 3, figsize=(12, 16))
 
 z_array = np.linspace(1e-9, 10., num=100)
 
 for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                0.44, 0.55, 0.79,
-                               1.22, 2.2, 3.6]):
-    plt.subplot(3, 3, n_lambda + 1)
+                               1.22, 2.2, 3.6,
+                               4.5, 5.8, 8.0]):
+    plt.subplot(4, 3, n_lambda + 1)
     emissivity_data(z_min=None, z_max=None,
                     lambda_min=ll - 0.05, lambda_max=ll + 0.05,
                     take1ref=None, plot_fig=True)
 
-    if n_lambda != 8:
-        plt.annotate(r'%r$\,\mu m$' % ll, xy=(5, 1e35), fontsize=28)
+    # if n_lambda != 8:
+    plt.annotate(r'%r$\,\mu m$' % ll, xy=(5, 1e35), fontsize=28)
 
     plt.xlim(min(z_array), max(z_array))
     plt.ylim(1e33, 3e35)
@@ -172,33 +174,33 @@ for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
 
 handles_emiss, labels_emiss = [], []
 
-plt.subplot(3, 3, 8)
+plt.subplot(4, 3, 11)
 plt.xlabel(r'redshift z', fontsize=34)
 
-plt.subplot(3, 3, 4)
+plt.subplot(4, 3, 4)
 plt.ylabel(r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
            fontsize=40)
 
-plt.subplot(3, 3, 9)
-plt.annotate(r'3.6$\,\mu m$', xy=(6, 1e34), fontsize=28)
+# plt.subplot(3, 3, 9)
+# plt.annotate(r'3.6$\,\mu m$', xy=(6, 1e34), fontsize=28)
 
-ax = [plt.subplot(3, 3, i) for i in [2, 3, 5, 6, 8, 9]]
+ax = [plt.subplot(4, 3, i) for i in [2, 3, 5, 6, 8, 9, 11, 12]]
 for a in ax:
     a.set_yticklabels([])
 
-ax = [plt.subplot(3, 3, i + 1) for i in range(6)]
+ax = [plt.subplot(4, 3, i + 1) for i in range(9)]
 for a in ax:
     a.set_xticklabels([])
 
-ax = [plt.subplot(3, 3, i + 1) for i in range(6, 8)]
+ax = [plt.subplot(4, 3, i + 1) for i in range(9, 12)]
 for a in ax:
     a.set_xticks([0, 2, 4, 6, 8])
 
-ax = [plt.subplot(3, 3, i) for i in range(1, 7)]
+ax = [plt.subplot(4, 3, i) for i in range(1, 10)]
 for a in ax:
     a.set_xticks([0, 2, 4, 6, 8, 10])
 
-a = plt.subplot(3, 3, 9)
+a = plt.subplot(4, 3, 12)
 a.set_xticks([0, 2, 4, 6, 8, 10])
 
 # SFRs FOR SSP MODELS ------------------------------
@@ -286,15 +288,16 @@ for nkey, key in enumerate(config_data['ssp_models']):
     plt.figure(fig_emiss_z)
     for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                    0.44, 0.55, 0.79,
-                                   1.22, 2.2, 3.6]):
-        plt.subplot(3, 3, n_lambda + 1)
+                                   1.22, 2.2, 3.6,
+                                   4.5, 5.8, 8.0]):
+        plt.subplot(4, 3, n_lambda + 1)
 
         plt.plot(z_array,
                  (c.value / (ll * 1e-6))
                  * ebl_class.emiss_ssp_spline(
                      ll * np.ones(len(z_array)), z_array)
                  * 1e-7,
-                 linestyle='-', marker=markers[nkey],
+                 linestyle='-', #marker=markers[nkey],
                  color=colors[nkey % len(colors)], lw=2)
 
     labels_emiss.append(
@@ -422,7 +425,7 @@ ax_cob.plot(waves_ebl, spline_cuba(waves_ebl),
 #     #                 ls='--')
 plt.yscale('log')
 plt.xscale('log')
-plt.xlabel(r'Wavelength ($\mu$m)')
+plt.xlabel(r'Wavelength (µm)')
 plt.ylabel(r'$\nu I_{\nu}$ (nW / m$^2$ sr)')
 
 # legend11 = plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left",

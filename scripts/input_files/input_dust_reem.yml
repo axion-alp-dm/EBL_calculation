@@ -1,247 +1,82 @@
-axion_params:
-  axion_gayy: 5e-10
-  axion_mass: 1.0
+# COSMOLOGY CONSTANTS (flat LCDM assumed)
 cosmology_params:
-  cosmo:
-  - 0.7
-  - 0.3
-  - 0.7
-  omegaBar: 0.0453
+  cosmo: [ .7, .3, .7 ]   # [h_0, omega_matter, omega_L]
+  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
+
+# WAVELENGTH ARRAY FOR EBL [microns]
+wavelength_array:
+  wv_min: 1e-2
+  wv_max: 1e5
+  wv_steps: 700
+
+# REDSHIFT ARRAY FOR MRF (ebl at any redshift)
+redshift_array:
+  z_min: 0.
+  z_max: 10.
+  z_steps: 100
+
+# Maximum redshift at which populations shine
+z_intmax: 40.
+
+# INTEGRATION TIME STEP
+t_intsteps: 201
+
+# PRINT LOGGING OF OUR PROCESSES
+log_prints: True
+
+# AXION DECAY BEING CONSIDERED
+axion_params:
+  axion_mass:  1      # [eV]
+  axion_gamma: 5e-23  # [s**-1]
+
+# INTRA HALO LIGHT PARAMETERS
 ihl_params:
   A_ihl: -3.23
   alpha: 1
-log_prints: true
-redshift_array:
-  zmax: 10.0
-  zmin: 0.
-  zsteps: 100
-ssp_models:
-#  SB99_dustFinke_bosa:
-#    args_metall:
-#      - -0.542121168976453
-#      - 0.008154222671585984
-#      - 2.266468189061395
-#      - 0.02
-#    cut_popstar: 6
-#    dust_abs_models:
-#      - finke2022_2
-#    dust_abs_params:
-#      params_ab18:
-#        - 1.52
-#        - 0.35
-#        - 4.12
-#        - 5.89
-#    file_name: /kroupa_
-#    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-#    name: 'Our model bosa'
-#    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params:
-#      - 0.013107341038317264
-#      - 2.420045114675467
-#      - 3.2990898078661317
-#      - 6.658375996690348
-#    ssp_type: SB99
-#
-#    dust_reem: True
-#    dust_reem_params:
-#      library: bosa
-#      f_tir: 3e10
-#      library_path: 'outputs/dust_reem/Z.fits'
-#      wv_reem_min: 3.5  #[microns]
 
-#  SB99_dustFinke3e8:
-#    args_metall:
-#      - -0.542121168976453
-#      - 0.008154222671585984
-#      - 2.266468189061395
-#      - 0.02
-#    cut_popstar: 6
-#    dust_abs_models:
-#      - finke2022_2
-#    dust_abs_params:
-#      params_ab18:
-#        - 1.52
-#        - 0.35
-#        - 4.12
-#        - 5.89
-#    file_name: /kroupa_
-#    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-#    name: 'Our model 3e8'
-#    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params:
-#      - 0.013107341038317264
-#      - 2.420045114675467
-#      - 3.2990898078661317
-#      - 6.658375996690348
-#    ssp_type: SB99
-#
-#    dust_reem: True
-#    dust_reem_params:
-#      library: chary2001
-#      f_tir: 3e8
-#      library_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
-#      wv_reem_min: 3.5  #[microns]
-#
-#  SB99_dustFinke3e9:
-#    args_metall:
-#      - -0.542121168976453
-#      - 0.008154222671585984
-#      - 2.266468189061395
-#      - 0.02
-#    cut_popstar: 6
-#    dust_abs_models:
-#      - finke2022_2
-#    dust_abs_params:
-#      params_ab18:
-#        - 1.52
-#        - 0.35
-#        - 4.12
-#        - 5.89
-#    file_name: /kroupa_
-#    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-#    name: 'Our model 3e9'
-#    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params:
-#      - 0.013107341038317264
-#      - 2.420045114675467
-#      - 3.2990898078661317
-#      - 6.658375996690348
-#    ssp_type: SB99
-#
-#    dust_reem: True
-#    dust_reem_params:
-#      library: chary2001
-#      f_tir: 3e9
-#      library_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
-#      wv_reem_min: 3.5  #[microns]
-#
-  SB99_dustFinke3e10:
-    args_metall:
-    - -0.1471761899784707
-    - 0.2071788662445679
-    - 0.8192717258725136
-    - 0.02
-    cut_popstar: 6
+ssp_models:
+  SB99_Finke_3grey:
     dust_abs_models:
-      - finke2022_2
+      - finke2022
     dust_abs_params:
-      params_ab18:
+      fesc_steps_fn22:
+        - 0.19026841739819628
+        - 0.21769647479187074
+        - 0.24664564616751203
+        - 0.4405596977469474
+        - 0.702267829157408
+      params_fermi18:
         - 1.52
         - 0.35
         - 4.12
         - 5.89
-    file_name: /kroupa_
-    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-    name: 'Our model'
-    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-    sfr_params:
-    - 0.014993792486187919
-    - 2.253688983734503
-    - 3.3471172482977747
-    - 6.562562437553788
-    ssp_type: SB99
-
-    dust_reem: True
+    dust_reem: true
     dust_reem_params:
-      library: chary2001
-      f_tir: 9.69
-      library_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
-      wv_reem_min: 5.45  #[microns]
-#
-#  SB99_dustFinke3e8:
-#    args_metall:
-#      - -0.542121168976453
-#      - 0.008154222671585984
-#      - 2.266468189061395
-#      - 0.02
-#    cut_popstar: 6
-#    dust_abs_models:
-#      - finke2022_2
-#    dust_abs_params:
-#      params_ab18:
-#        - 1.52
-#        - 0.35
-#        - 4.12
-#        - 5.89
-#    file_name: /kroupa_
-#    metall_formula: 'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-#    name: 'Our model'
-#    path_SSP: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
-#    sfr: 'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])'
-#    sfr_params:
-#      - 0.013107341038317264
-#      - 2.420045114675467
-#      - 3.2990898078661317
-#      - 6.658375996690348
-#    ssp_type: SB99
-#
-#    dust_reem: True
-#    dust_reem_params:
-#      library: chary2001
-#      f_tir: 8.3
-#      library_path: 'data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits'
-#      wv_reem_min: 3.5  #[microns]
-
-#  SB99_dustKneiske3e8:
-#    args_metall:
-#      - -0.542121168976453
-#      - 0.008154222671585984
-#      - 2.266468189061395
-#      - 0.02
-#    cut_popstar: 6
-#    dust_abs_models:
-#      - kneiske2002
-#      -
-#    dust_abs_params:
-#      params_ab18:
-#        - 1.52
-#        - 0.35
-#        - 4.12
-#        - 5.89
-#    file_name: /kroupa_
-#    metall_formula:  'lambda zz, args : np.ones(np.shape(zz)) * args[3]' #'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-#    name: 'kneiske 3e8'
-#    path_SSP: '/home/porrassa/Desktop/EBL_ModelCode/a3p2-master/data/ssp/Devesh_starburst99/final run.spectrum'
-#    sfr: 'lambda x, ci : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))'
-#    sfr_params: [0.15, 1.1, 3.4, 0.]
-#    ssp_type: generic
-#
-#    dust_reem: True
-#    f_tir: 3e8
-
-
-#  SB99_Raue:
-#    args_metall:
-#    - -0.542121168976453
-#    - 0.008154222671585984
-#    - 2.266468189061395
-#    - 0.02
-#    cut_popstar: 6
-#    dust_abs_models:
-#    - ''
-#    - ''
-##    - finke2022_2
-#    dust_abs_params:
-#      params_ab18:
-#      - 1.52
-#      - 0.35
-#      - 4.12
-#      - 5.89
-#    file_name: /kroupa_
-#    metall_formula: 'lambda zz, args : np.ones(np.shape(zz)) * args[3]' #'lambda zz, args :10 ** (args[0] - args[1] * zz ** args[2]) * args[3]'
-#    name: 'Raue'
-#    path_SSP: data/ssp_synthetic_spectra/spectra_with_dust_reem.txt
-#    sfr: 'lambda x, ci : ci[0]*((x+1)/(ci[1]+1))**(ci[2]*(x<=ci[1]) - ci[3]*(x>ci[1]))'
-#    sfr_params: [0.15, 1.1, 3.4, 0.]
-#    ssp_type: generic
-#    dust_reem: False
-t_intsteps: 201
-wavelength_array:
-  lfsteps: 700
-  lmax: 1e5
-  lmin: 1e-2
-z_intmax: 40.0
+      library: three_grey_body
+      T:
+        - 70.
+        - 450.
+        - 70.
+      fracts:
+        - 0.6
+        - 0.2
+    metall_formula: 'tanikawa22'
+    metall_params:
+      - -1.363077660454558e-06
+      - 0.1709136894779165
+      - 1.0750514513578506
+      - 0.02
+    name: Bosa quasi fit
+    sfr_formula: 'madau14'
+    sfr_params:
+      - 0.015915657766652082
+      - 2.303543288627401
+      - 3.287937285946092
+      - 6.633075702961276
+    ssp:
+      file_name: /kroupa_
+      ignore_rows: 6
+      path_ssp: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
+      ssp_type: SB99
+      total_stellar_mass: 6
+      L_lambda: True
