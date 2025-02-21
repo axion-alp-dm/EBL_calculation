@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 import scipy.optimize
 from scipy.integrate import simpson
@@ -21,7 +22,9 @@ if os.path.basename(os.getcwd()) == 'scripts':
 
 def likelihood_poisson(mu_i_array_obs, mu_i_array_asimov):
     return sum(mu_i_array_asimov * np.log(mu_i_array_obs)
-               - mu_i_array_obs)
+               - mu_i_array_obs
+               # - np.log(scipy.special.factorial(mu_i_array_asimov))
+               )
 
 # ----------------------------------------------------------------------
 plt.figure()
@@ -139,9 +142,9 @@ energy_means_obs = np.sqrt(energy_bins_obs[1:] * energy_bins_obs[:-1])
 total_int_time = (110. * u.h).to(u.s)
 
 
-def calculate_number_counts(flux_spectrum_funct, iminuit_object):
+def calculate_number_counts(flux_spectrum_funct, iminuit_object_values):
     integral_kernel = flux_spectrum_funct(
-        xxx_means.value, *iminuit_object.values)
+        xxx_means.value, *iminuit_object_values)
     integral_kernel = (integral_kernel * 1e-12
                        * u.erg * u.cm ** -2 * u.s ** -1)
     integral_kernel = (integral_kernel / xxx_means ** 2.).to(
@@ -213,7 +216,7 @@ m_best_fit_mine.hesse()
 print(m_best_fit_mine.params)
 
 count_number_best_mine = calculate_number_counts(
-    funct_mk501_mine, m_best_fit_mine)
+    funct_mk501_mine, m_best_fit_mine.values)
 
 nn_array_mine = []
 nn_errors_mine = []
@@ -239,7 +242,7 @@ likelihoods_array_mine = []
 # print(m_best_fit_mine_cutoff.params)
 #
 # count_number_best_mine_cutoff = calculate_number_counts(
-#     funct_mk501_cutoff, m_best_fit_mine_cutoff)
+#     funct_mk501_cutoff, m_best_fit_mine_cutoff.values)
 #
 nn_array_mine_cutoff = []
 nn_errors_mine_cutoff = []
@@ -278,7 +281,8 @@ my_ebl = ['3_grey_bodies.txt',
 #     nn_array_mine.append([*m.values])
 #     nn_errors_mine.append([*m.errors])
 #
-#     count_number = calculate_number_counts(funct_mk501_inside, m)
+#     count_number = calculate_number_counts(funct_mk501_inside,
+#     m.values)
 #
 #     likelihoods_array_mine.append(
 #         likelihood_poisson(count_number, count_number_best_mine))
@@ -309,7 +313,7 @@ my_ebl = ['3_grey_bodies.txt',
     # nn_array_mine_cutoff.append([*m.values])
     # nn_errors_mine_cutoff.append([*m.errors])
     #
-    # count_number = calculate_number_counts(funct_mk501_inside, m)
+    # count_number = calculate_number_counts(funct_mk501_inside, m.values)
     #
     # likelihoods_array_mine_cutoff.append(
     #     likelihood_poisson(count_number, count_number_best_mine_cutoff))
@@ -360,46 +364,59 @@ for d in alpha_array:
     nn_array.append([*m.values])
     nn_errors.append([*m.errors])
 
-    count_number = calculate_number_counts(funct_mk501_inside, m)
+    count_number = calculate_number_counts(funct_mk501_inside, m.values)
     print(count_number)
+    likelihood_asimov = likelihood_poisson(count_number, count_number)
+    print(likelihood_asimov)
     likelihoods_arr_one = []
-    figg, axgg = plt.subplots()
-    plt.figure()
+    fig, ax = plt.subplots()
     plt.xscale('log')
     plt.scatter(energy_means_obs, count_number, marker='x', zorder=20)
+    init_time = time.process_time()
 
-    for nn in range(1000):
+
+
+    for nn in range(100):
         rng = np.random.default_rng()
         poiss = rng.poisson(lam=count_number)
-        likelihoods_arr_one.append(likelihood_poisson(poiss, count_number))
-        if nn%250==0:
-            print(poiss)
-            print(count_number * np.log(poiss) - poiss)
-            print(likelihoods_arr_one[-1])
-            print()
-            plt.scatter(energy_means_obs, poiss)
+        # print(poiss)
 
-            axgg.scatter(poiss, count_number * np.log(poiss) - poiss)
+        for aa in np.geomspace(0.99 * m.params['phi0'].value,
+                               1.01 * m.params['phi0'].value, num=5):
+            for bb in np.geomspace(0.99 * m.params['E0'].value,
+                                   1.01 * m.params['E0'].value, num=5):
+                for cc in np.linspace(0.99 * m.params['alpha'].value,
+                               1.01 * m.params['alpha'].value, num=5):
+                    for dd in np.linspace(0.99 * m.params['beta'].value,
+                               1.01 * m.params['beta'].value, num=5):
+                        count_number_loop = calculate_number_counts(
+                            funct_mk501_inside, [aa, bb, cc, dd])
+                        likelihoods_arr_one.append(
+                            likelihood_poisson(count_number_loop, poiss))
+                        # print(aa, bb, cc, dd, likelihoods_arr_one[-1])
+                        # print([aa, bb, cc, dd])
+                        # print(count_number_loop)
+                        # print(likelihoods_arr_one[-1])
+                        # print()
+            # print(aa)
 
+        if nn%5==0:
+            print('%i: %.2fs' % (nn,
+                                 time.process_time() - init_time))
+            init_time = time.process_time()
+            colorr = next(ax._get_lines.prop_cycler)['color']
+            plt.scatter(energy_means_obs, poiss, c=colorr)
+            plt.plot(energy_means_obs, calculate_number_counts(
+            funct_mk501_inside, m.values), c=colorr)
 
     plt.figure()
-    plt.hist(likelihoods_arr_one, bins=20)
+    plt.hist(likelihoods_arr_one, bins=50)
     plt.axvline(np.max(likelihoods_arr_one) - 2.71, c='k',
                 label='Max ln(L) - 2.71')
+    plt.axvline(likelihood_asimov,
+                ls='--', c='r', label='Asimov dataset')
     plt.xlabel(r'$ln(L)$')
-    plt.legend()
-    plt.figure()
-    plt.hist(np.max(likelihoods_arr_one) - likelihoods_arr_one, bins=20)
-
-    plt.axvline(2.71, c='k', label='2.71')
-
-    perc95 = np.percentile(
-        np.max(likelihoods_arr_one) - likelihoods_arr_one, 95)
-    plt.axvline(perc95, label='5 and 95 percentiles')
-    perc95 = np.percentile(
-        np.max(likelihoods_arr_one) - likelihoods_arr_one, 5)
-    plt.axvline(perc95)
-    plt.xlabel(r'$\Delta ln(L)$')
+    plt.yscale('log')
     plt.legend()
     plt.show()
 
@@ -449,7 +466,7 @@ likelihoods_array_cutoff = []
 #     nn_array_cutoff.append([*m.values])
 #     nn_errors_cutoff.append([*m.errors])
 #
-#     count_number = calculate_number_counts(funct_mk501_inside, m)
+#     count_number = calculate_number_counts(funct_mk501_inside, m.values)
 #
 #     likelihoods_array_cutoff.append(
 #         likelihood_poisson(count_number, count_number_best_mine_cutoff))
