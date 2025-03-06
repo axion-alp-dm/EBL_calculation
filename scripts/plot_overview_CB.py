@@ -256,11 +256,44 @@ list_working_models = {
 fig, ax1 = plt.subplots(figsize=(10, 6.5))
 
 
-plt.plot(waves_ebl, spline_finke(waves_ebl), label='Finke22',
-         lw=3, c='fuchsia')
+# We introduce all the EBL measurements
+upper_lims_all, _ = import_cb_data(
+    lambda_min_total=0,
+    lambda_max_total=1e4,
+    ax1=ax1, plot_measurs=True)
+
+legend11 = plt.legend(loc=2, fontsize=10, ncol=2,
+                      bbox_to_anchor=(1.03, 1.))
+handles, labels = ax1.get_legend_handles_labels()
+handles = [h[0] for h in handles]
+for i in range(len(labels)):
+    if labels[i].__contains__('LORRI'):
+        print(handles[i].get_c())
+        handles[i] = (plt.Line2D([], [], linestyle='',
+                                 color=handles[i].get_c(), markerfacecolor='w',
+                                 marker='*', markersize=16),
+                      plt.Line2D([], [], linestyle='',
+                                 color='k', markerfacecolor='k',
+                                 marker='.', markersize=6)
+                      )
+legend11 = plt.legend(handles, labels,
+                      handler_map={tuple: HandlerTuple(ndivide=1)},
+                      # title='Measurements',
+                      ncol=2, loc=2,
+                      fontsize=10,
+                      bbox_to_anchor=(1.03, 1.02))
+
+legend22 = plt.legend([plt.Line2D([], [], linestyle='-',
+                                 color='r', lw=3),],
+                      ['BOSA template'],
+                      loc=1, fontsize=16)
+ax1.add_artist(legend11)
+
+# plt.plot(waves_ebl, spline_finke(waves_ebl), label='Finke22',
+#          lw=3, c='fuchsia')
 
 
-for ni, working_model_name in enumerate(list_working_models.keys()):
+for ni, working_model_name in enumerate(['ModelBosa']):
     model = list_working_models[working_model_name]
 
     ebl_model = EBL.readascii('outputs/outputs_dust_final1/'
@@ -276,7 +309,6 @@ for ni, working_model_name in enumerate(list_working_models.keys()):
 
 ax1.set_xlim(0.1, 1e3)
 ax1.set_ylim(0.9, 120)
-legend22 = plt.legend(loc=1, fontsize=16, ncol=2)
 
 # ax1.add_artist(legend22)
 
@@ -295,12 +327,6 @@ ax3 = ax1.secondary_xaxis('top',
 ax3.tick_params(axis='x', direction='in', pad=0)
 ax3.set_xlabel('Photon energy (eV)', labelpad=12)
 
-
-# We introduce all the EBL measurements
-upper_lims_all, _ = import_cb_data(
-    lambda_min_total=0,
-    lambda_max_total=1e4,
-    ax1=ax1, plot_measurs=True)
 
 plt.savefig('outputs/figures_paper/cb_manydust.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb_manydust.png', bbox_inches='tight')

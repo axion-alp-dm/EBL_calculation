@@ -334,6 +334,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
             data_total = upper_lims_all[upper_lims_all['ref'] == name]
             type_i = np.unique(data_total['type'])
             color_i = 'grey' #  next(ax1._get_lines.prop_cycler)['color']
+            color_i = next(ax1._get_lines.prop_cycler)['color']
 
             for datatype in type_i:
                 data = data_total[data_total['type'] == datatype]
@@ -405,6 +406,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
         for ni, name in enumerate(names_all_lower):
             data = lowerlimits_all[lowerlimits_all['ref'] == name]
             color_i = 'grey' #next(ax1._get_lines.prop_cycler)['color']
+            color_i = next(ax1._get_lines.prop_cycler)['color']
 
             ax1.errorbar(x=data['lambda'], y=data['nuInu'],
                          yerr=[data['nuInu_errn'], data['nuInu_errp']],
