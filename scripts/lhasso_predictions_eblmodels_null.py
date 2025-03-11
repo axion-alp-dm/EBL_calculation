@@ -133,10 +133,18 @@ likelihoods_asimov_mine = {}
 
 xx_array = np.geomspace(0.5, 25.)
 
-my_ebl = ['BOSA.txt', 'Chary.txt', '3_grey_bodies.txt']
-aaa_str = '_vs_3body'
+# aaa_str = '_vs_bosa'
+# my_ebl = ['3_grey_bodies.txt', 'Chary.txt', 'BOSA.txt']
 
-param_names = ['$\phi_0$', '$\Gamma$']
+# aaa_str = '_vs_chary'
+# my_ebl = ['3_grey_bodies.txt', 'BOSA.txt', 'Chary.txt']
+
+aaa_str = '_vs_3body'
+my_ebl = ['Chary.txt', 'BOSA.txt', '3_grey_bodies.txt']
+
+# name_model = '_PWandEXPandEBL'
+name_model = 'logParabola'
+param_names = ['$\phi_0$', '$\Gamma$', '$E_0$', '$E_\mathrm{cut}$']
 
 opacities_array = {}
 for d in my_ebl:
@@ -163,26 +171,31 @@ for nd, d in enumerate(my_ebl):
 
     opacity = opacities_array[d]
 
-    # def funct_mk501_inside(ee_array, phi0, E0, alpha, beta):
-    #     return (phi0 * ee_array ** 2.
-    #             * (ee_array / E0) ** (
-    #                     - alpha - beta * np.log(ee_array / E0))
-    #             * np.exp(-opacity(np.log10(ee_array))))
-    def funct_mk501_inside(ee_array, phi0, alpha):
+    def funct_mk501_inside(ee_array, phi0, E0, gamma, beta):
         return (phi0 * ee_array ** 2.
-                * ee_array ** (-alpha)
-                * np.exp(-opacity(np.log10(ee_array)))
-                )
+                * (ee_array / E0) ** (
+                        - gamma - beta * np.log(ee_array / E0))
+                * np.exp(-opacity(np.log10(ee_array))))
+    # def funct_mk501_inside(ee_array, phi0, gamma):
+    #     return (phi0 * ee_array ** 2.
+    #             * ee_array ** (-gamma)
+    #             * np.exp(-opacity(np.log10(ee_array)))
+    #             )
+    # def funct_mk501_inside(ee_array, phi0, gamma, E0, Ecut):
+    #     return (phi0 * ee_array ** 2.
+    #             * (ee_array/E0) ** (-gamma)
+    #             * np.exp(-(ee_array/Ecut) - opacity(np.log10(ee_array)))
+    #             )
 
 
     combined_likelihood = LeastSquares(
         mkr501_flux[:, 0], mkr501_flux[:, 1],
         mkr501_flux[:, 2], funct_mk501_inside)
 
-    # m = Minuit(combined_likelihood,
-    #            phi0=1e-12, E0=8.1, alpha=2., beta=0.)
     m = Minuit(combined_likelihood,
-               phi0=120, alpha=2.5)
+               phi0=1e-12, E0=800.1, gamma=2., beta=0.)
+    # m = Minuit(combined_likelihood,
+    #            phi0=120, gamma=2.5, E0=1., Ecut=8.)
 
     # m.fixed['beta'] = True
     m.migrad()
@@ -215,22 +228,31 @@ for nd, d in enumerate(my_ebl):
 
     opacity = opacities_array[d]
 
-    # def funct_mk501_inside(ee_array, phi0, E0, alpha, beta):
+    # def funct_mk501_inside(ee_array, phi0, E0, gamma, beta):
     #     return (phi0 * ee_array ** 2.
     #             * (ee_array / E0) ** (
-    #                     - alpha - beta * np.log(ee_array / E0))
+    #                     - gamma - beta * np.log(ee_array / E0))
     #             * np.exp(-opacity(np.log10(ee_array))))
-    def funct_mk501_inside(ee_array, phi0, alpha):
+    # def funct_mk501_inside(ee_array, phi0, gamma):
+    #     return (phi0 * ee_array ** 2.
+    #             * ee_array ** (-gamma)
+    #             * np.exp(-opacity(np.log10(ee_array)))
+    #             )
+    def funct_mk501_inside(ee_array, phi0, gamma, E0, Ecut):
         return (phi0 * ee_array ** 2.
-                * ee_array ** (-alpha)
-                * np.exp(-opacity(np.log10(ee_array))))
+                * (ee_array / E0) ** (-gamma)
+                * np.exp(-(ee_array / Ecut) - opacity(np.log10(ee_array)))
+                )
 
-    # def cost_funct(phi0, E0, alpha, beta):
+    # def cost_funct(phi0, E0, gamma, beta):
     #     expected_counts = calculate_number_counts(
-    #         funct_mk501_inside, [phi0, E0, alpha, beta])
-    def cost_funct(phi0, alpha):
+    #         funct_mk501_inside, [phi0, E0, gamma, beta])
+    # def cost_funct(phi0, gamma):
+    #     expected_counts = calculate_number_counts(
+    #         funct_mk501_inside, [phi0, gamma])
+    def cost_funct(phi0, gamma, E0, Ecut):
         expected_counts = calculate_number_counts(
-            funct_mk501_inside, [phi0, alpha])
+            funct_mk501_inside, [phi0, gamma, E0, Ecut])
 
         poiss_like = -likelihood_poisson(
             mu_i_array_expected=expected_counts,
@@ -243,21 +265,23 @@ for nd, d in enumerate(my_ebl):
     #     cost_funct,
     #     phi0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
     #     E0=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
-    #     alpha=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
+    #     gamma=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
     #     # beta=likelihoods_asimov_mine[d]['asimov']['params_values'][3]
     #     beta=0.
     # )
     m_p = Minuit(
         cost_funct,
         phi0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
-        alpha=likelihoods_asimov_mine[d]['asimov']['params_values'][1]
+        gamma=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
+        E0=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
+        Ecut=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
     )
 
     # m_p.fixed['beta'] = True
 
     # m_p.limits['phi0'] = (1e-15, 1e-8)
     # m_p.limits['E0'] = (0., None)
-    m_p.limits['alpha'] = (0., 10.)
+    m_p.limits['gamma'] = (0., 10.)
     # m_p.limits['beta'] = (0., 1.)
 
     m_p.migrad()
@@ -265,9 +289,9 @@ for nd, d in enumerate(my_ebl):
     print(m_p.params)
     print(m_p.fval)
 
-    ax_spectrum.plot(xx_array,
-                        funct_mk501_inside(xx_array, *m_p.values),
-                        label=d + ' logL min' + aaa_str, c=colors[nd], ls='--')
+    # ax_spectrum.plot(xx_array,
+    #                     funct_mk501_inside(xx_array, *m_p.values),
+    #                     label=d + ' logL min' + aaa_str, c=colors[nd], ls='--')
     ax_counts.plot(energy_means_obs, calculate_number_counts(
             funct_mk501_inside, [*m_p.values]), c=colors[nd], ls='--',
                    label=d + ' logL min' + aaa_str)
@@ -285,19 +309,19 @@ plt.legend()
 plt.title('Mkr 501 flare 1997')
 plt.xlabel('E [TeV]')
 plt.ylabel('E2dN/dE [10−12 erg cm−2 s−1]')
-plt.savefig('outputs/lhaaso/spctra_ours_PWandEBL' + aaa_str + '.png',
+plt.savefig('outputs/lhaaso/spctra_ours' + name_model + aaa_str + '.png',
             bbox_inches='tight')
 plt.figure(fig_counts)
 plt.xscale('log')
 plt.legend()
 plt.xlabel('E [TeV]')
 plt.ylabel('Count number')
-plt.savefig('outputs/lhaaso/counts_ours_PWandEBL' + aaa_str + '.png',
+plt.savefig('outputs/lhaaso/counts_ours' + name_model + aaa_str + '.png',
             bbox_inches='tight')
 print(likelihoods_asimov_mine)
 
 with open(
-        'outputs/lhaaso/asimov_dict_PWandEBL' + aaa_str + '_short.yaml', 'w'
+        'outputs/lhaaso/asimov_dict' + name_model + aaa_str + '_short.yaml', 'w'
 ) as file:
     yaml.dump(likelihoods_asimov_mine, file)
 
@@ -327,31 +351,40 @@ for nn in range(1000):
         opacity = opacities_array[d]
 
 
-        # def funct_mk501_inside(ee_array, phi0, E0, alpha, beta):
+        # def funct_mk501_inside(ee_array, phi0, E0, gamma, beta):
         #     return (phi0 * ee_array ** 2.
         #             * (ee_array / E0) ** (
-        #                     - alpha - beta * np.log(ee_array / E0))
+        #                     - gamma - beta * np.log(ee_array / E0))
         #             * np.exp(-opacity(np.log10(ee_array))))
 
-        def funct_mk501_inside(ee_array, phi0, alpha):
+        # def funct_mk501_inside(ee_array, phi0, gamma):
+        #     return (phi0 * ee_array ** 2.
+        #             * ee_array ** (-gamma)
+        #             * np.exp(-opacity(np.log10(ee_array)))
+        #             )
+        def funct_mk501_inside(ee_array, phi0, gamma, E0, Ecut):
             return (phi0 * ee_array ** 2.
-                    * ee_array ** (-alpha)
-                    * np.exp(-opacity(np.log10(ee_array))))
+                    * (ee_array / E0) ** (-gamma)
+                    * np.exp(-(ee_array / Ecut) - opacity(np.log10(ee_array)))
+                    )
 
 
-        # def cost_funct(phi0, E0, alpha, beta):
+        # def cost_funct(phi0, E0, gamma, beta):
         #
         #     expected_counts = calculate_number_counts(
-        #         funct_mk501_inside, [phi0, E0, alpha, beta])
+        #         funct_mk501_inside, [phi0, E0, gamma, beta])
         #
         #     poiss_like = -likelihood_poisson(
         #         mu_i_array_expected=expected_counts,
         #         n_i_array_obs=poiss)
         #
         #     return poiss_like
-        def cost_funct(phi0, alpha):
+        # def cost_funct(phi0, gamma):
+        #     expected_counts = calculate_number_counts(
+        #         funct_mk501_inside, [phi0, gamma])
+        def cost_funct(phi0, gamma, E0, Ecut):
             expected_counts = calculate_number_counts(
-                funct_mk501_inside, [phi0, alpha])
+                funct_mk501_inside, [phi0, gamma, E0, Ecut])
 
             poiss_like = -likelihood_poisson(
                 mu_i_array_expected=expected_counts,
@@ -363,14 +396,14 @@ for nn in range(1000):
         m_p = Minuit(
             cost_funct,
             phi0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
-            # E0=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
-            alpha=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
-            # beta=likelihoods_asimov_mine[d]['asimov']['params_values'][3]
-            )
+            gamma=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
+            E0=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
+            Ecut=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
+        )
 
         # m_p.limits['phi0'] = (1e-15, None)
-        # m_p.limits['E0'] = (0., None)
-        m_p.limits['alpha'] = (0., 10.)
+        m_p.limits['Ecut'] = (0., 100.)
+        m_p.limits['gamma'] = (0., 10.)
         # m_p.limits['beta'] = (0., 1.)
 
         m_p.migrad()
@@ -383,11 +416,13 @@ for nn in range(1000):
             [*m_p.errors])
 
     if nn % 100 == 0:
-        print('%i Time: %.2fs' % (nn, time.process_time() - init_time))
+        print('%i Time: %.2fmin'
+              % (nn, (time.process_time() - init_time)/60.))
         init_time = time.process_time()
 
-        with open('outputs/lhaaso/asimov_dict_PWandEBL' + aaa_str + '.yaml', 'w') as file:
+        with open('outputs/lhaaso/asimov_dict' + name_model + aaa_str + '.yaml',
+                  'w') as file:
             yaml.dump(likelihoods_asimov_mine, file)
 
-with open('outputs/lhaaso/asimov_dict_PWandEBL' + aaa_str + '.yaml', 'w') as file:
+with open('outputs/lhaaso/asimov_dict' + name_model + aaa_str + '.yaml', 'w') as file:
     yaml.dump(likelihoods_asimov_mine, file)
