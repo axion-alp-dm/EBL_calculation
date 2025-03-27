@@ -133,18 +133,21 @@ likelihoods_asimov_mine = {}
 
 xx_array = np.geomspace(0.5, 25.)
 
-# aaa_str = '_vs_bosa'
-# my_ebl = ['3_grey_bodies.txt', 'Chary.txt', 'BOSA.txt']
+aaa_str = '_vs_bosa'
+my_ebl = ['3_grey_bodies.txt', 'Chary.txt', 'BOSA.txt']
 
 # aaa_str = '_vs_chary'
 # my_ebl = ['3_grey_bodies.txt', 'BOSA.txt', 'Chary.txt']
 
-aaa_str = '_vs_3body'
-my_ebl = ['Chary.txt', 'BOSA.txt', '3_grey_bodies.txt']
+# aaa_str = '_vs_3body'
+# my_ebl = ['Chary.txt', 'BOSA.txt', '3_grey_bodies.txt']
 
 # name_model = '_PWandEXPandEBL'
-name_model = 'logParabola'
-param_names = ['$\phi_0$', '$\Gamma$', '$E_0$', '$E_\mathrm{cut}$']
+# name_model = 'logParabola'
+# param_names = ['$\phi_0$', '$\Gamma$', '$E_0$', '$E_\mathrm{cut}$']
+
+name_model = '_2PL'
+param_names = ['$\phi_0$', '$\Gamma_1$', '$\Gamma_2$', '$E_\mathrm{break}$']
 
 opacities_array = {}
 for d in my_ebl:
@@ -171,11 +174,11 @@ for nd, d in enumerate(my_ebl):
 
     opacity = opacities_array[d]
 
-    def funct_mk501_inside(ee_array, phi0, E0, gamma, beta):
-        return (phi0 * ee_array ** 2.
-                * (ee_array / E0) ** (
-                        - gamma - beta * np.log(ee_array / E0))
-                * np.exp(-opacity(np.log10(ee_array))))
+    # def funct_mk501_inside(ee_array, phi0, E0, gamma, beta):
+    #     return (phi0 * ee_array ** 2.
+    #             * (ee_array / E0) ** (
+    #                     - gamma - beta * np.log(ee_array / E0))
+    #             * np.exp(-opacity(np.log10(ee_array))))
     # def funct_mk501_inside(ee_array, phi0, gamma):
     #     return (phi0 * ee_array ** 2.
     #             * ee_array ** (-gamma)
@@ -186,18 +189,33 @@ for nd, d in enumerate(my_ebl):
     #             * (ee_array/E0) ** (-gamma)
     #             * np.exp(-(ee_array/Ecut) - opacity(np.log10(ee_array)))
     #             )
+    def funct_mk501_inside(xx, N0, gamma1, gamma2, Ebreak, fi):
+        return (N0 * xx ** 2.
+                * xx ** (-gamma1)
+                * (1. + (xx / Ebreak) ** fi) ** ((gamma1 - gamma2) / fi)
+                * np.exp(-opacity(np.log10(xx)))
+                )
 
 
     combined_likelihood = LeastSquares(
         mkr501_flux[:, 0], mkr501_flux[:, 1],
         mkr501_flux[:, 2], funct_mk501_inside)
 
-    m = Minuit(combined_likelihood,
-               phi0=1e-12, E0=800.1, gamma=2., beta=0.)
+    # m = Minuit(combined_likelihood,
+    #            phi0=1e-12, E0=800.1, gamma=2., beta=0.)
     # m = Minuit(combined_likelihood,
     #            phi0=120, gamma=2.5, E0=1., Ecut=8.)
+    m = Minuit(combined_likelihood,
+               N0=200, gamma1=2., gamma2=2.45, Ebreak=2.1, fi=2.)
 
     # m.fixed['beta'] = True
+    m.limits['gamma1'] = (0., 10.)
+    m.limits['gamma2'] = (0., 10.)
+    m.limits['fi'] = (0., 10.)
+    m.limits['Ebreak'] = (1., 10.)
+
+    m.fixed['fi'] = True
+
     m.migrad()
     m.hesse()
 
@@ -238,10 +256,16 @@ for nd, d in enumerate(my_ebl):
     #             * ee_array ** (-gamma)
     #             * np.exp(-opacity(np.log10(ee_array)))
     #             )
-    def funct_mk501_inside(ee_array, phi0, gamma, E0, Ecut):
-        return (phi0 * ee_array ** 2.
-                * (ee_array / E0) ** (-gamma)
-                * np.exp(-(ee_array / Ecut) - opacity(np.log10(ee_array)))
+    # def funct_mk501_inside(ee_array, phi0, gamma, E0, Ecut):
+    #     return (phi0 * ee_array ** 2.
+    #             * (ee_array / E0) ** (-gamma)
+    #             * np.exp(-(ee_array / Ecut) - opacity(np.log10(ee_array)))
+    #             )
+    def funct_mk501_inside(xx, N0, gamma1, gamma2, Ebreak, fi):
+        return (N0 * xx ** 2.
+                * xx ** (-gamma1)
+                * (1. + (xx / Ebreak) ** fi) ** ((gamma1 - gamma2) / fi)
+                * np.exp(-opacity(np.log10(xx)))
                 )
 
     # def cost_funct(phi0, E0, gamma, beta):
@@ -250,9 +274,12 @@ for nd, d in enumerate(my_ebl):
     # def cost_funct(phi0, gamma):
     #     expected_counts = calculate_number_counts(
     #         funct_mk501_inside, [phi0, gamma])
-    def cost_funct(phi0, gamma, E0, Ecut):
+    # def cost_funct(phi0, gamma, E0, Ecut):
+    #     expected_counts = calculate_number_counts(
+    #         funct_mk501_inside, [phi0, gamma, E0, Ecut])
+    def cost_funct(N0, gamma1, gamma2, Ebreak, fi):
         expected_counts = calculate_number_counts(
-            funct_mk501_inside, [phi0, gamma, E0, Ecut])
+            funct_mk501_inside, [N0, gamma1, gamma2, Ebreak, fi])
 
         poiss_like = -likelihood_poisson(
             mu_i_array_expected=expected_counts,
@@ -269,20 +296,35 @@ for nd, d in enumerate(my_ebl):
     #     # beta=likelihoods_asimov_mine[d]['asimov']['params_values'][3]
     #     beta=0.
     # )
+    # m_p = Minuit(
+    #     cost_funct,
+    #     phi0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
+    #     gamma=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
+    #     E0=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
+    #     Ecut=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
+    # )
     m_p = Minuit(
         cost_funct,
-        phi0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
-        gamma=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
-        E0=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
-        Ecut=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
+        N0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
+        gamma1=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
+        gamma2=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
+        Ebreak=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
+        fi=likelihoods_asimov_mine[d]['asimov']['params_values'][4]
     )
 
     # m_p.fixed['beta'] = True
 
     # m_p.limits['phi0'] = (1e-15, 1e-8)
     # m_p.limits['E0'] = (0., None)
-    m_p.limits['gamma'] = (0., 10.)
+    # m_p.limits['gamma'] = (0., 10.)
     # m_p.limits['beta'] = (0., 1.)
+
+    m_p.limits['gamma1'] = (0., 10.)
+    m_p.limits['gamma2'] = (0., 10.)
+    m_p.limits['fi'] = (0., 10.)
+    m_p.limits['Ebreak'] = (1., 10.)
+
+    m_p.fixed['fi'] = True
 
     m_p.migrad()
     m_p.hesse()
@@ -362,10 +404,16 @@ for nn in range(1000):
         #             * ee_array ** (-gamma)
         #             * np.exp(-opacity(np.log10(ee_array)))
         #             )
-        def funct_mk501_inside(ee_array, phi0, gamma, E0, Ecut):
-            return (phi0 * ee_array ** 2.
-                    * (ee_array / E0) ** (-gamma)
-                    * np.exp(-(ee_array / Ecut) - opacity(np.log10(ee_array)))
+        # def funct_mk501_inside(ee_array, phi0, gamma, E0, Ecut):
+        #     return (phi0 * ee_array ** 2.
+        #             * (ee_array / E0) ** (-gamma)
+        #             * np.exp(-(ee_array / Ecut) - opacity(np.log10(ee_array)))
+        #             )
+        def funct_mk501_inside(xx, N0, gamma1, gamma2, Ebreak, fi):
+            return (N0 * xx ** 2.
+                    * xx ** (-gamma1)
+                    * (1. + (xx / Ebreak) ** fi) ** ((gamma1 - gamma2) / fi)
+                    * np.exp(-opacity(np.log10(xx)))
                     )
 
 
@@ -382,9 +430,12 @@ for nn in range(1000):
         # def cost_funct(phi0, gamma):
         #     expected_counts = calculate_number_counts(
         #         funct_mk501_inside, [phi0, gamma])
-        def cost_funct(phi0, gamma, E0, Ecut):
+        # def cost_funct(phi0, gamma, E0, Ecut):
+        #     expected_counts = calculate_number_counts(
+        #         funct_mk501_inside, [phi0, gamma, E0, Ecut])
+        def cost_funct(N0, gamma1, gamma2, Ebreak, fi):
             expected_counts = calculate_number_counts(
-                funct_mk501_inside, [phi0, gamma, E0, Ecut])
+                    funct_mk501_inside, [N0, gamma1, gamma2, Ebreak, fi])
 
             poiss_like = -likelihood_poisson(
                 mu_i_array_expected=expected_counts,
@@ -393,18 +444,34 @@ for nn in range(1000):
             return poiss_like
 
 
-        m_p = Minuit(
-            cost_funct,
-            phi0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
-            gamma=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
-            E0=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
-            Ecut=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
-        )
+        # m_p = Minuit(
+        #     cost_funct,
+        #     phi0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
+        #     gamma=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
+        #     E0=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
+        #     Ecut=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
+        # )
 
         # m_p.limits['phi0'] = (1e-15, None)
-        m_p.limits['Ecut'] = (0., 100.)
-        m_p.limits['gamma'] = (0., 10.)
+        # m_p.limits['Ecut'] = (0., 100.)
+        # m_p.limits['gamma'] = (0., 10.)
         # m_p.limits['beta'] = (0., 1.)
+
+        m_p = Minuit(
+            cost_funct,
+            N0=likelihoods_asimov_mine[d]['asimov']['params_values'][0],
+            gamma1=likelihoods_asimov_mine[d]['asimov']['params_values'][1],
+            gamma2=likelihoods_asimov_mine[d]['asimov']['params_values'][2],
+            Ebreak=likelihoods_asimov_mine[d]['asimov']['params_values'][3],
+            fi=likelihoods_asimov_mine[d]['asimov']['params_values'][4]
+        )
+
+        m_p.limits['gamma1'] = (0., 10.)
+        m_p.limits['gamma2'] = (0., 10.)
+        m_p.limits['fi'] = (0., 10.)
+        m_p.limits['Ebreak'] = (1., 10.)
+
+        m_p.fixed['fi'] = True
 
         m_p.migrad()
         m_p.hesse()
