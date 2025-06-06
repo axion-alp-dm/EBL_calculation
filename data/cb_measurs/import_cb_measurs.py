@@ -177,7 +177,7 @@ def dictionary_datatype(obs_type,
 
 
 def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
-                   plot_measurs=False, ax1=None):
+                   plot_measurs=False, ax1=None, obs_not_taken=None):
     # Datapoints we use in the study
     upper_lims_cob = dictionary_datatype(
         obs_type='UL',
@@ -319,6 +319,11 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
         (lowerlimits_all['nuInu_errn']
          + lowerlimits_all['nuInu_errp']) / 2., name='1 sigma', index=4)
 
+    if obs_not_taken is not None:
+        for str_ii in obs_not_taken:
+            upper_lims_all = upper_lims_all[upper_lims_all['ref'] != str_ii]
+            lowerlimits_all = lowerlimits_all[lowerlimits_all['ref'] != str_ii]
+
     names_all_lower, index = np.unique(lowerlimits_all['ref'],
                                        return_index=True)
     names_all_lower = names_all_lower[np.argsort(index)]
@@ -334,7 +339,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
             data_total = upper_lims_all[upper_lims_all['ref'] == name]
             type_i = np.unique(data_total['type'])
             color_i = 'grey' #  next(ax1._get_lines.prop_cycler)['color']
-            color_i = next(ax1._get_lines.prop_cycler)['color']
+            # color_i = next(ax1._get_lines.prop_cycler)['color']
 
             for datatype in type_i:
                 data = data_total[data_total['type'] == datatype]
@@ -344,7 +349,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  yerr=[data['nuInu_errn'],
                                        data['nuInu_errp']],
                                  linestyle='', color=color_i,
-                                 label=name,
+                                 # label=name,
                                  marker=markers[i % len(markers)],
                                  mfc='white',
                                  zorder=0, alpha=0.8
@@ -355,7 +360,8 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  yerr=[data['nuInu_errn'],
                                        data['nuInu_errp']],
                                  linestyle='', color=color_i,
-                                 label=name, alpha=0.8,
+                                 # label=name,
+                                 alpha=0.8,
                                  marker=markers[i % len(markers)]
                                  )
 
@@ -370,7 +376,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                      )
                         ax1.errorbar(x=data['lambda'], y=data['nuInu'],
                                      linestyle='', color=colors_nh[i_nh],
-                                     label=name,
+                                     # label=name,
                                      marker='*',
                                      markerfacecolor='none',
                                      markersize=28, markeredgewidth=2,
@@ -396,7 +402,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  y=data['nuInu_errn'],
                                  yerr=data['nuInu_errn'] * 0.4,
                                  linestyle='', color=color_i,
-                                 label=label_i,
+                                 # label=label_i,
                                  marker=markers[i % len(markers)],
                                  mfc='white',
                                  uplims=True, alpha=0.8

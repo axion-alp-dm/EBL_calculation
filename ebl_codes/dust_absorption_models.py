@@ -201,7 +201,7 @@ def fermi2018(z_array, params_dust=None, verbose=True):
 
     :param z_array: float or array
         Redshift values to compute dust absorption.
-    :param params_ab18: array or None
+    :param params_fermi18: array or None
         Parameters following the fitting of the paper.
         Order: [m_d, n_d, p_d, q_d]
     """
@@ -210,7 +210,7 @@ def fermi2018(z_array, params_dust=None, verbose=True):
     except:
         params_fermi18 = [1.49, 0.64, 3.4, 3.54]
         if verbose:
-            print('   -> Default parameters for params_ab18 chosen: ',
+            print('   -> Default parameters for params_fermi18 chosen: ',
                   params_fermi18)
 
     return (-0.4 * params_fermi18[0]

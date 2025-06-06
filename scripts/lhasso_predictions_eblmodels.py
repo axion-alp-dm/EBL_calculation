@@ -44,6 +44,10 @@ plt.errorbar(mkr501_flux_1[:, 0], mkr501_flux_1[:, 1],
 
 mkr501_flux = np.concatenate((mkr501_flux, mkr501_flux_1[:, :3]))
 
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             yerr=mkr501_flux[:, 2],
+             ls='', marker='+', label='Total')
+
 zz = 0.034
 
 e_array = np.geomspace(

@@ -42,7 +42,22 @@ mkr501_flux_1[:, 2] = (mkr501_flux_1[:, 2]
 mkr501_flux = np.loadtxt(
     'data/lhasso_characteristics/mkr501_flare1997_table_reanalysis.txt')
 
+plt.figure()
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             yerr=mkr501_flux[:, 2],
+             ls='', marker='o', label='Reanalysis')
+plt.errorbar(mkr501_flux_1[:, 0], mkr501_flux_1[:, 1],
+             yerr=mkr501_flux_1[:, 2],
+             ls='', marker='o', label='Original analysis')
+
 mkr501_flux = np.concatenate((mkr501_flux_1[:8, :3], mkr501_flux))
+
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             yerr=mkr501_flux[:, 2],
+             ls='', marker='+', label='Total')
+plt.show()
+
+
 
 # mkr501_flux[:, 1] *= 100.
 
@@ -134,13 +149,13 @@ likelihoods_asimov_mine = {}
 xx_array = np.geomspace(0.5, 25.)
 
 aaa_str = '_vs_bosa'
-my_ebl = ['3_grey_bodies.txt', 'Chary.txt', 'BOSA.txt']
+my_ebl = ['2bb.txt', 'chary.txt', 'bosa.txt']
 
 # aaa_str = '_vs_chary'
-# my_ebl = ['3_grey_bodies.txt', 'BOSA.txt', 'Chary.txt']
+# my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
 
 # aaa_str = '_vs_3body'
-# my_ebl = ['Chary.txt', 'BOSA.txt', '3_grey_bodies.txt']
+# my_ebl = ['chary.txt', 'bosa.txt', '2bb.txt']
 
 # name_model = '_PWandEXPandEBL'
 # name_model = 'logParabola'
@@ -152,7 +167,7 @@ param_names = ['$\phi_0$', '$\Gamma_1$', '$\Gamma_2$', '$E_\mathrm{break}$']
 opacities_array = {}
 for d in my_ebl:
     ebl_finke = EBL.readascii(
-            'outputs/lhaaso/' + d, model_name='mine')
+            'outputs/lhaaso_new/' + d, model_name='mine')
     opacityy = ebl_finke.optical_depth(z0=zz, ETeV=e_array)
     opacities_array[d] = UnivariateSpline(
             np.log10(e_array), opacityy, k=1, s=0)
@@ -351,19 +366,19 @@ plt.legend()
 plt.title('Mkr 501 flare 1997')
 plt.xlabel('E [TeV]')
 plt.ylabel('E2dN/dE [10−12 erg cm−2 s−1]')
-plt.savefig('outputs/lhaaso/spctra_ours' + name_model + aaa_str + '.png',
+plt.savefig('outputs/lhaaso_new/spectra_ours' + name_model + aaa_str + '.png',
             bbox_inches='tight')
 plt.figure(fig_counts)
 plt.xscale('log')
 plt.legend()
 plt.xlabel('E [TeV]')
 plt.ylabel('Count number')
-plt.savefig('outputs/lhaaso/counts_ours' + name_model + aaa_str + '.png',
+plt.savefig('outputs/lhaaso_new/counts_ours' + name_model + aaa_str + '.png',
             bbox_inches='tight')
 print(likelihoods_asimov_mine)
 
 with open(
-        'outputs/lhaaso/asimov_dict' + name_model + aaa_str + '_short.yaml', 'w'
+        'outputs/lhaaso_new/asimov_dict' + name_model + aaa_str + '_short.yaml', 'w'
 ) as file:
     yaml.dump(likelihoods_asimov_mine, file)
 
@@ -487,9 +502,11 @@ for nn in range(1000):
               % (nn, (time.process_time() - init_time)/60.))
         init_time = time.process_time()
 
-        with open('outputs/lhaaso/asimov_dict' + name_model + aaa_str + '.yaml',
+        with open('outputs/lhaaso_new/asimov_dict' + name_model + aaa_str +
+                  '.yaml',
                   'w') as file:
             yaml.dump(likelihoods_asimov_mine, file)
 
-with open('outputs/lhaaso/asimov_dict' + name_model + aaa_str + '.yaml', 'w') as file:
+with open('outputs/lhaaso_new/asimov_dict' + name_model + aaa_str + '.yaml',
+          'w') as file:
     yaml.dump(likelihoods_asimov_mine, file)

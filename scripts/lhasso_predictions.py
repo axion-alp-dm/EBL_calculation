@@ -111,7 +111,7 @@ from ebltable.tau_from_model import OptDepth
 from scipy.optimize import curve_fit
 ebl_finke = OptDepth.readmodel(model='finke2022')
 zz = 0.034
-
+plt.show()
 
 def funct_mk501(ee_array, N, Ecut, E0, tau=1.31):
     return (N * ee_array ** 2.

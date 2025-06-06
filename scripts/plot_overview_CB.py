@@ -241,62 +241,56 @@ plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
 
 
 list_working_models = {
+    'ModelBosa': {'label': 'BOSA',
+               'callable_func': 'SB99_dustFinke_bosa',
+               'color': 'b'},
+    'ModelChary': {'label': 'Chary',
+               'callable_func': 'SB99_dustFinke_2params',
+               'color': 'orange'},
     'Model3body': {'label': '3 grey body',
                'callable_func': 'SB99_3body_fittodata_70K450Kfixed',
-               'color': 'orange'},
-    'ModelChary': {'label': 'Chary templates',
-               'callable_func': 'SB99_dustFinke_2params',
-               'color': 'b'},
-    'ModelBosa': {'label': 'BOSA templates',
-               'callable_func': 'SB99_dustFinke_bosa',
-               'color': 'r'},
+               'color': 'g'},
 }
 
 # Beginning of figure specifications
 fig, ax1 = plt.subplots(figsize=(10, 6.5))
 
-
 # We introduce all the EBL measurements
-upper_lims_all, _ = import_cb_data(
+upper_lims_all, igl_ebldata = import_cb_data(
     lambda_min_total=0,
     lambda_max_total=1e4,
-    ax1=ax1, plot_measurs=True)
+    ax1=ax1, plot_measurs=True,
+obs_not_taken=['ALMA (Fujimoto+ ‘16)',
+               'SCUBA-2 (Hsu+ ‘16)',
+               'ISO/ISOCAM (Clements+ ‘99)'])
 
-legend11 = plt.legend(loc=2, fontsize=10, ncol=2,
-                      bbox_to_anchor=(1.03, 1.))
+
 handles, labels = ax1.get_legend_handles_labels()
 handles = [h[0] for h in handles]
-for i in range(len(labels)):
-    if labels[i].__contains__('LORRI'):
-        print(handles[i].get_c())
-        handles[i] = (plt.Line2D([], [], linestyle='',
-                                 color=handles[i].get_c(), markerfacecolor='w',
-                                 marker='*', markersize=16),
-                      plt.Line2D([], [], linestyle='',
-                                 color='k', markerfacecolor='k',
-                                 marker='.', markersize=6)
-                      )
+
 legend11 = plt.legend(handles, labels,
-                      handler_map={tuple: HandlerTuple(ndivide=1)},
-                      # title='Measurements',
-                      ncol=2, loc=2,
-                      fontsize=10,
-                      bbox_to_anchor=(1.03, 1.02))
+                      ncol=1, loc=6,
+                      fontsize=14,
+                      bbox_to_anchor=(1.03, 0.5))
 
-legend22 = plt.legend([plt.Line2D([], [], linestyle='-',
-                                 color='r', lw=3),],
-                      ['BOSA template'],
-                      loc=1, fontsize=16)
-ax1.add_artist(legend11)
+handles_lines = []
+labels_lines = []
 
-# plt.plot(waves_ebl, spline_finke(waves_ebl), label='Finke22',
-#          lw=3, c='fuchsia')
-
-
-for ni, working_model_name in enumerate(['ModelBosa']):
+list_working_models = {
+    'ModelBosa': {'label': 'BOSA',
+               'callable_func': 'bosa',
+               'color': 'b'},
+    'ModelChary': {'label': 'Chary',
+               'callable_func': 'chary',
+               'color': 'orange'},
+    'Model3body': {'label': '3 grey body',
+               'callable_func': '2bb',
+               'color': 'g'},
+}
+for ni, working_model_name in enumerate(list_working_models.keys()):
     model = list_working_models[working_model_name]
 
-    ebl_model = EBL.readascii('outputs/outputs_dust_final1/'
+    ebl_model = EBL.readascii('outputs/outputs_dust_final_new/'
                               +  model['callable_func']
                               + '.txt',
                 model_name=working_model_name)
@@ -304,18 +298,28 @@ for ni, working_model_name in enumerate(['ModelBosa']):
     plt.loglog(waves_ebl, ebl_model.ebl_array(z=0, lmu=waves_ebl),
                c=model['color'], lw=3,
                zorder=2/(ni+1),
-               label=model['label']
+               label=model['label'],#  ls=':'
                )
+    handles_lines.append(plt.Line2D(
+        [], [], color=model['color'], lw=3))
+    labels_lines.append(model['label'])
+
+
 
 ax1.set_xlim(0.1, 1e3)
-ax1.set_ylim(0.9, 120)
+ax1.set_ylim(0.8, 20)
 
-# ax1.add_artist(legend22)
+legend22 = plt.legend(handles_lines, labels_lines,
+                      loc=8, fontsize=18,
+                      ncol=3)
+legend22.set_zorder(0)
+ax1.add_artist(legend11)
+ax1.add_artist(legend22)
 
 ax1.set_xlabel(r'Wavelength (µm)')
 
 ax1.set_xscale('log')
-ax1.set_yscale('log')
+# ax1.set_yscale('log')
 def tick_function(X):
     return (h_plank * c / X / u.micron).to(u.eV).value
 def tick_function_2(X):

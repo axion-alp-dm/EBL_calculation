@@ -7,7 +7,7 @@ cosmology_params:
 wavelength_array:
   wv_min: 1e-2
   wv_max: 1e5
-  wv_steps: 700
+  wv_steps: 200
 
 # REDSHIFT ARRAY FOR MRF (ebl at any redshift)
 redshift_array:
@@ -27,7 +27,7 @@ log_prints: True
 # AXION DECAY BEING CONSIDERED
 axion_params:
   axion_mass:  1      # [eV]
-  axion_gamma: 5e-23  # [s**-1]
+  axion_gamma: 5e-10  # [s**-1]
 
 # INTRA HALO LIGHT PARAMETERS
 ihl_params:
@@ -45,21 +45,29 @@ ssp_models:
         - 0.24664564616751203
         - 0.4405596977469474
         - 0.702267829157408
+      lambda_steps_fn22:
+        - 0.15
+        - 0.167
+        - 0.218
+        - 0.422
+        - 2.
       params_fermi18:
         - 1.52
         - 0.35
         - 4.12
         - 5.89
-    dust_reem: true
+    dust_reem: false
     dust_reem_params:
       library: three_grey_body
       T:
         - 70.
         - 450.
-        - 70.
       fracts:
-        - 0.6
-        - 0.2
+        - 1.
+        - 4.
+#    dust_reem_params:
+#      library: bosa
+#      file_path: outputs/dust_reem/Z.fits
     metall_formula: 'tanikawa22'
     metall_params:
       - -1.363077660454558e-06

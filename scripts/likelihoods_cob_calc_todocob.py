@@ -1,0 +1,318 @@
+# IMPORTS --------------------------------------------#
+import os
+import yaml
+import time
+import sys
+import numpy as np
+
+print(sys.path)
+sys.path.append('/home/porrassa/Desktop/EBL_ModelCode/EBL_calculation/')
+
+from ebl_codes.sfr_models import sfr_model
+from ebl_codes.metall_models import metall_model
+from ebl_codes.EBL_class import EBL_model
+
+from data.emissivity_measurs.emissivity_read_data import emissivity_data
+from data.cb_measurs.import_cb_measurs import import_cb_data
+from data.sfr_measurs.sfr_read import *
+from data.metallicity_measurs.import_metall import import_met_data
+
+from astropy import units as u
+from astropy.constants import h as h_plank
+from astropy.constants import c
+
+from iminuit import Minuit
+from iminuit.cost import LeastSquares
+
+from ebltable.ebl_from_model import EBL
+
+
+# ebl_f = EBL.readmodel('finke2022')
+# waves_finke = np.geomspace(6, 1000, num=100)
+# nuInu_finke = ebl_f.ebl_array(np.array([0.]), waves_finke)
+
+# Check that the working directory is correct for the paths
+if os.path.basename(os.getcwd()) == 'scripts':
+    os.chdir("..")
+direct_name = str('outputs_dust_cob_fitted'
+                  + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
+                  )
+print(direct_name)
+
+# If the directory for outputs is not present, create it.
+if not os.path.exists("outputs/"):
+    os.makedirs("outputs/")
+if not os.path.exists('outputs/' + direct_name):
+    os.makedirs('outputs/' + direct_name)
+
+
+# Configuration file reading and data input/output ---------#
+def read_config_file(ConfigFile):
+    with open(ConfigFile, 'r') as stream:
+        try:
+            parsed_yaml = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    return parsed_yaml
+
+
+def chi2_upperlims(x_model, x_obs, err_obs):
+    return sum(((x_obs - x_model) / err_obs) ** 2. * (x_obs < x_model))
+
+
+def chi2_measurs(x_model, x_obs, err_obs):
+    return sum(((x_obs - x_model) / err_obs) ** 2.)
+
+
+config_data = read_config_file(
+    # 'scripts/input_files/input_data_cob_fitted.yml')
+    'scripts/input_files/input_example2.yml')
+ebl_class = EBL_model.input_yaml_data_into_class(config_data)
+
+# COB measurements that we are going to use
+upper_lims_ebldata, igl_ebldata = import_cb_data(
+    lambda_min_total=0.1, lambda_max_total=1e5,
+    plot_measurs=False)
+
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ISO/ISOCAM (Clements+ ‘99)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'SCUBA-2 (Hsu+ ‘16)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ALMA (Fujimoto+ ‘16)']
+
+print(np.shape(igl_ebldata))
+
+# Metallicity evolution data
+z_data = import_met_data()
+print(np.shape(z_data))
+
+# FIGURE: sfr fit ------------------------------------------------
+sfr_data = sfr_data_dict()
+print(np.shape(sfr_data))
+# FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
+
+emiss_data = emissivity_data(lambda_max=1e5)
+freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
+print(np.shape(emiss_data))
+# MINIMIZATION OF CHI2 OF SSPs
+for nkey, key in enumerate(config_data['ssp_models']):
+    print()
+    print('SSP model: ', config_data['ssp_models'][key]['name'])
+
+
+    def fit_igl(lambda_igl, params):
+        config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
+        config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
+        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+        #     params[8]
+        # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+        #     params[9]
+        # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = \
+        #     params[10:15].copy()
+        #
+        # config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+        #     params[15:17].copy()
+        # config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+        #     params[17]
+
+
+        return ebl_class.ebl_ssp_individualData(
+            yaml_data=config_data['ssp_models'][key],
+            x_data=lambda_igl)
+
+
+    def fit_emiss(x_all, params):
+        lambda_emiss, z_emiss = x_all
+
+        config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
+        config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
+        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+        #     params[8]
+        # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+        #     params[9]
+        # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = \
+        #     params[10:15].copy()
+        #
+        # config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+        #     params[15:17].copy()
+        # config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+        #     params[17]
+
+        ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
+
+        return (c.value / lambda_emiss * 1e6
+                * ebl_class.emiss_ssp_spline(lambda_emiss, z_emiss)
+                * 1e-7)
+
+
+    def sfr(x, params):
+        return sfr_model(
+            zz_array=x,
+            sfr_model=config_data['ssp_models'][key]['sfr_formula'],
+            sfr_params=params[0:4])
+
+
+    def metall(x, params):
+        return metall_model(
+            zz_array=x,
+            metall_model=config_data['ssp_models'][key]['metall_formula'],
+            metall_params=params[4:8])
+
+
+    combined_likelihood = (LeastSquares(igl_ebldata['lambda'],
+                                        igl_ebldata['nuInu'],
+                                        igl_ebldata['1 sigma'],
+                                        fit_igl)
+                           + LeastSquares((emiss_data['lambda'],
+                                           emiss_data['z']),
+                                          emiss_data['eje'],
+                                          (emiss_data['eje_n']
+                                           + emiss_data['eje_p']) / 2.,
+                                          fit_emiss)
+                           + LeastSquares(sfr_data[:, 0],
+                                          sfr_data[:, 3],
+                                          (sfr_data[:, 4]
+                                           + sfr_data[:, 5]) / 2.,
+                                          sfr)
+                           + LeastSquares(z_data[:, 0],
+                                          z_data[:, 1],
+                                          (z_data[:, 2]
+                                           + z_data[:, 3]) / 2.,
+                                          metall)
+    #                        )
+    # combined_likelihood = (LeastSquares(waves_finke,
+    #                                     nuInu_finke,
+    #                                     0.1*nuInu_finke,
+    #                                     fit_igl)
+                           )
+
+    init_time = time.process_time()
+
+    aaa = np.concatenate((
+        config_data['ssp_models'][key]['sfr_params'],
+        config_data['ssp_models'][key]['metall_params'],
+        # [config_data['ssp_models'][key]['dust_reem_params']['f_tir']],
+        # [config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min']],
+        # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'],
+        # config_data['ssp_models'][key]['dust_reem_params']['T'],
+        # config_data['ssp_models'][key]['dust_reem_params']['fracts']
+
+    ))
+    print(aaa)
+
+    m = Minuit(combined_likelihood, aaa)
+    m.limits = [[0., 5.], [0., 10.], [0., 10.], [0., 10.],
+                [-3., 0.2], [0., 2.], [0.5, 5.], [0., 0.25],
+                # [7, 11], [3., 10.],
+                # [0., 1.], [0., 1.], [0., 1.], [0., 1.], [0., 1.],
+                # [10, 1000], [10, 450],# [10, 450],
+                # [0., 1.]
+                ]
+
+    # BOSA
+    m.fixed[7] = True
+
+    # # Chary
+    # for i in range(7, 25, 1):
+    #     m.fixed[i] = True
+
+    # # 2BB
+    # for i in range(7, 10, 1):
+    #     m.fixed[i] = True
+    # m.fixed[15] = True
+
+    print(m.params)
+
+    m.migrad()  # finds minimum of least_squares function
+    m.hesse()  # accurately computes uncertainties
+
+    outputs = open('outputs/' + direct_name + '/z_fits_info.txt', 'a+')
+    outputs.write(str(key) + '\n')
+    outputs.write('SSP model: '
+                  + str(config_data['ssp_models'][key]['name'])
+                  + '\n')
+    outputs.write(str(m.params) + '\n')
+    outputs.write(str(m.values) + '\n')
+    outputs.write(str(m.covariance) + '\n')
+    outputs.write(f"$\\chi^2$/$n_\\mathrm{{dof}}$ "
+                  f"= {m.fval:.1f} / {m.ndof:.0f} "
+                  f"= {m.fmin.reduced_chi2:.1f}" + '\n')
+
+    outputs.write('Individual chi2 values:\n')
+    aaa = np.array(np.array(m.params.to_table()[0])[:, 2], dtype=float)
+    outputs.write(
+        'CB data: ' + str(chi2_measurs(
+            fit_igl(igl_ebldata['lambda'], aaa),
+            igl_ebldata['nuInu'], igl_ebldata['1 sigma'])) + '\n')
+    # outputs.write(
+    #     'CB data: ' + str(chi2_measurs(
+    #         fit_igl(waves_finke, aaa),
+    #         nuInu_finke, 0.1*nuInu_finke)) + '\n')
+    outputs.write(
+        'emissivities data: ' + str(chi2_measurs(
+            fit_emiss((emiss_data['lambda'], emiss_data['z']), aaa),
+            emiss_data['eje'],
+            (emiss_data['eje_n'] + emiss_data['eje_p']) / 2.))
+        + '\n')
+    outputs.write(
+        'sfr data: ' + str(chi2_measurs(
+            sfr(sfr_data[:, 0], aaa),
+            sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.))
+        + '\n')
+    outputs.write(
+        'metallicity data: ' + str(chi2_measurs(
+            metall(z_data[:, 0], aaa),
+            z_data[:, 1], (z_data[:, 2] + z_data[:, 3]) / 2.))
+        + '\n')
+    outputs.write(('Fit time: %.2fs' % (time.process_time() - init_time)))
+    outputs.write('\n\n\n\n')
+    outputs.close()
+
+    print(m.params)
+    print(m.values)
+    print(m.covariance)
+    print(f"$\\chi^2$/$n_\\mathrm{{dof}}$ "
+          f"= {m.fval:.1f} / {m.ndof:.0f} = {m.fmin.reduced_chi2:.1f}")
+
+    print('Fit: %.2fs' % (time.process_time() - init_time))
+    init_time = time.process_time()
+
+    print(config_data['ssp_models'][key]['sfr_params'])
+
+    config_data['ssp_models'][key]['sfr_params'] = [
+        m.params[0].value, m.params[1].value,
+        m.params[2].value, m.params[3].value]
+
+    config_data['ssp_models'][key]['metall_params'] = [
+        m.params[4].value, m.params[5].value,
+        m.params[6].value, m.params[7].value]
+
+    # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+    #     float(m.params[8].value)
+    # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+    #     float(m.params[9].value)
+    # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = [
+    #     m.params[10].value, m.params[11].value,
+    #     m.params[12].value, m.params[13].value, m.params[14].value]
+    #
+    # config_data['ssp_models'][key]['dust_reem_params']['T'] = [
+    #     m.params[15].value, m.params[16].value]
+    # config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+    #     float(m.params[17].value)
+
+
+    ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
+
+    np.save('outputs/' + direct_name + '/' + key + 'spline',
+            ebl_class.ebl_ssp_spline)
+    ebl_class.write_ebl_to_ascii(output_path='outputs/' + direct_name,
+                                 name=key)
+
+    ccc = []
+    for i in range(len(aaa) ** 2):
+        ccc.append(float(m.covariance.flatten()[i]))
+    config_data['ssp_models'][key]['cov_matrix'] = ccc
+    print('\n\n')
+
+outputs = open('outputs/' + direct_name + '/input_data.yml', 'w')
+yaml.dump(config_data, outputs,
+          default_flow_style=False, allow_unicode=True)
+outputs.close()

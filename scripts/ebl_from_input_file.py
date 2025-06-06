@@ -8,7 +8,9 @@ from scipy.interpolate import UnivariateSpline, RegularGridInterpolator
 
 from ebl_codes.metall_models import metall_model
 from ebl_codes.sfr_models import sfr_model
+from ebl_codes.dust_absorption_models import calculate_dust
 from ebl_codes.EBL_class import EBL_model
+
 from astropy.constants import c
 
 from data.cb_measurs.import_cb_measurs import import_cb_data
@@ -35,9 +37,9 @@ plt.rc('ytick.major', size=7, width=1.5, right=True)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-# input_file_dir = ('outputs/outputs_dust_final1/')
-input_file_dir = ('outputs/outputs_3body_many/')
-# input_file_dir = ('outputs/outputs_dust_reem_3greybody 2025-02-06 09:12:03/')
+input_file_dir = ('outputs/outputs_dust_final_new/')
+# input_file_dir = ('outputs/outputs_3body_many/')
+# input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints_dustfree 2024-11-22 10:24:12/')
 # input_file_dir = ('scripts/input_files/')
 # input_file_dir = 'notebooks/'
 
@@ -76,8 +78,9 @@ markers = ['.', 'x', '+', '*', '^', '>', '<']
 
 
 # We initialize the class with the input file
-# config_data = read_config_file(input_file_dir + 'input_example.yml')
 config_data = read_config_file(input_file_dir + 'input_data.yml')
+# config_data = read_config_file(input_file_dir + 'input_example2.yml')
+# config_data = read_config_file(input_file_dir + 'input_data_cob_fitted.yml')
 ebl_class = EBL_model.input_yaml_data_into_class(config_data,
                                                  log_prints=True)
 
@@ -93,19 +96,31 @@ plt.ylabel('Z')
 # FIGURE: COB FOR DIFFERENT MODELS -------------------------------------
 fig_cob, ax_cob = plt.subplots(figsize=(10, 8))
 
-waves_ebl = np.logspace(-1, 3, num=500)
+waves_ebl = np.logspace(-1, 3, num=205)
 freq_array_ebl = c.value / (waves_ebl * 1e-6)
 
 
 # Axion component calculation
-# ebl_class.ebl_axion_calculation(
-#     axion_mass=float(config_data['axion_params']['axion_mass']),
-#     axion_gayy=float(config_data['axion_params']['axion_gayy'])
-#     )
-# plt.plot(waves_ebl,
-#          10 ** ebl_class.ebl_axion_spline(freq_array_ebl, 0., grid=False),
-#          linestyle=models[3], color='k')
 
+wv_alp, int_alp = ebl_class.ebl_axion_calculation(
+    wavelength=waves_ebl, zz_array=0.,
+    axion_mass=float(config_data['axion_params']['axion_mass']),
+    axion_gayy=float(config_data['axion_params']['axion_gamma'])
+    )
+plt.loglog(wv_alp, int_alp,
+         linestyle=models[3], color='k', marker='.')
+
+
+wv_alp, int_alp = ebl_class.ebl_axion_calculation(
+    wavelength=waves_ebl, zz_array=0.,
+    axion_mass=float(config_data['axion_params']['axion_mass']),
+    axion_gayy=float(config_data['axion_params']['axion_gamma']),
+    factor=0.5)
+plt.loglog(wv_alp, int_alp,
+         linestyle=models[3], color='r', marker='.')
+
+plt.axvline(2.47968397/config_data['axion_params']['axion_mass'])
+# plt.show()
 # Intrahalo component calculation
 # ebl_class.ebl_intrahalo_calculation(float(
 #                                       config_data['ihl_params']['A_ihl']),
@@ -126,7 +141,8 @@ plt.scatter(x=emiss_data['lambda'], y=emiss_data['z'],
 plt.xscale('log')
 plt.yscale('log')
 
-fig_emiss_lambda, (ax_emiss_lambda0, ax_emiss_lambda1) = plt.subplots(2, 1)
+fig_emiss_lambda, (ax_emiss_lambda0, ax_emiss_lambda1) = plt.subplots(
+    2, 1, figsize=(10, 14))
 plt.subplot(211)
 for nz, zz in enumerate(np.unique(emiss_data['z'])):
     ax_emiss_lambda0.scatter(x=emiss_data['lambda'][emiss_data['z'] == zz],
@@ -143,6 +159,9 @@ plt.subplot(212, sharex=ax_emiss_lambda0)
 
 ax_emiss_lambda1.set_xscale('log')
 # ax_emiss_lambda1.set_yscale('log')
+
+plt.axhline(1, c='grey', zorder=0)
+plt.axhline(-1, c='grey', zorder=0)
 
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(
@@ -237,9 +256,14 @@ handles_ssp1 = []
 labels_ssp2 = []
 handles_ssp2 = []
 
+fig_dustabs, ax_dustabs = plt.subplots()
+wv_dustabs = np.logspace(-2, 1, num=5000)
+zz_dustabs = np.array([0, 2, 4, 6])
+color_dustabs = []
 
 print('%.3f' %(memory_usage_psutil()))
-ebl_class.logging_prints = False
+# ebl_class.logging_prints = False
+
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
@@ -247,6 +271,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
     ebl_class.write_ebl_to_ascii(output_path=input_file_dir, name=key)
+
     print(ebl_class.ebl_ssp_spline(0.608, 0.),
           21.98 - ebl_class.ebl_ssp_spline(0.608, 0.))
     print('%.3f' % (memory_usage_psutil()))
@@ -258,6 +283,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
                 lw=2,
                 # markersize=16, marker=markers[nkey]
                 )
+
 
 
 
@@ -342,7 +368,7 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     xx_amstrongs,
                     ebl_class.ssp_lumin_spline(
                         wv_array=xx_amstrongs, age_array=age,
-                        metall_array=met),
+                        metall_array=np.log10(met)),
                     linestyle=linstyles_ssp[len(previous_ssp) - 1],
                     color=color_ssp[i],
                     alpha=float(n_met) / len(list_met) * 1.1
@@ -352,6 +378,40 @@ for nkey, key in enumerate(config_data['ssp_models']):
                     handles_ssp1.append(
                         plt.Line2D([], [], linewidth=2, linestyle='-',
                                    color=color_ssp[i]))
+
+    plt.figure(fig_dustabs)
+
+    for ni, ii in enumerate(zz_dustabs):
+        if ni == 0:
+            color_dustabs.append(plt.cm.CMRmap(ni / float(len(zz_dustabs))))
+
+            plt.plot(wv_dustabs,
+                     calculate_dust(
+                         wv_array=wv_dustabs,
+                         models=config_data['ssp_models'][key][
+                             'dust_abs_models'],
+                         z_array=zz_dustabs[ni],
+                         dust_params=config_data['ssp_models'][key][
+                             'dust_abs_params'],
+                         verbose=False),
+                     ls=linstyles_ssp[nkey], c=color_dustabs[ni],
+                     alpha=0.5, label=key)
+
+        else:
+            color_dustabs.append(plt.cm.CMRmap(ni / float(len(zz_dustabs))))
+            plt.plot(wv_dustabs,
+                     calculate_dust(
+                         wv_array=wv_dustabs,
+                         models=config_data['ssp_models'][key][
+                             'dust_abs_models'],
+                         z_array=zz_dustabs[ni],
+                         dust_params=config_data['ssp_models'][key][
+                             'dust_abs_params'],
+                         verbose=False),
+                     ls=linstyles_ssp[nkey], c=color_dustabs[ni],
+                     alpha=0.5)
+
+
 print('%.3f' %(memory_usage_psutil()))
 plt.figure(fig_cob)
 import_cb_data(plot_measurs=True, ax1=ax_cob, lambda_max_total=1000)
@@ -371,58 +431,6 @@ ax_cob.plot(waves_ebl, spline_cuba(waves_ebl),
             c='fuchsia', label='CUBA')
 
 
-# from scipy.optimize import newton
-# from scipy.integrate import simpson
-# from astropy import units as u
-# import astropy.constants as c
-# def maximum_T(wv_array, T):
-#     zz = np.linspace(0, 40, num=500)
-#     zzp1 = zz + 1.
-#
-#     zzp1, wv_array = np.meshgrid(zzp1, wv_array)
-#
-#     all_inside = (c.h * c.c / c.k_B / T / u.K).to(u.micron).value
-#
-#     exp_full = np.exp(all_inside * zzp1 / wv_array)
-#
-#     yyy = (zzp1**2. / np.sqrt(0.7 + 0.3 * zzp1**3.))
-#     yyy *= (all_inside * zzp1 * exp_full
-#             - 4. * wv_array * (exp_full - 1.))
-#     yyy /= (exp_full - 1.)**2.
-#
-#     yyy[np.isnan(yyy)] = 0.
-#
-#     return simpson(yyy, x=zz, axis=1)
-#
-# def find_peak(T):
-#     return newton(maximum_T, x0=200, args=[T])
-#
-# for nkey, key in enumerate(config_data['ssp_models']):
-#     print()
-#     print(config_data['ssp_models'][key]['name'])
-#     print('%.2f  %.2f  %.2f'
-#     % (config_data['ssp_models'][key]['dust_reem_params']['T'][0],
-#           config_data['ssp_models'][key]['dust_reem_params']['T'][1],
-#           config_data['ssp_models'][key]['dust_reem_params']['T'][2]))
-#     # print('%.2f  %.2f  %.2f'
-#     # % (find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][0]),
-#     #    find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][1]),
-#     #    find_peak(config_data['ssp_models'][key]['dust_reem_params']['T'][2])))
-#     #
-#     # plt.axvline(find_peak(config_data['ssp_models'][key][
-#     #                           'dust_reem_params']['T'][0]),
-#     #             c=colors[nkey % len(colors)])
-#     # plt.axvline(find_peak(config_data['ssp_models'][key][
-#     #                           'dust_reem_params']['T'][1]),
-#     #             c=colors[nkey % len(colors)])
-#     # plt.axvline(find_peak(config_data['ssp_models'][key][
-#     #                           'dust_reem_params']['T'][2]),
-#     #             c=colors[nkey % len(colors)])
-#
-#     # for tt in config_data['ssp_models'][key][
-#     #                           'dust_reem_params']['T']:
-#     #     plt.axvline(10**3.84898/tt, c=colors[nkey % len(colors)],
-#     #                 ls='--')
 plt.yscale('log')
 plt.xscale('log')
 plt.xlabel(r'Wavelength (µm)')
@@ -470,10 +478,24 @@ legend22 = plt.legend(handles_ssp2, labels_ssp2,
 ax_ssp.add_artist(legend11)
 ax_ssp.add_artist(legend22)
 
-np.savetxt('outputs/data_pegasemetall.txt',
-           np.column_stack((
-               waves_ebl,
-               ebl_class.ebl_ssp_spline(waves_ebl, 0.))))
+plt.figure(fig_dustabs)
+
+plt.ylabel('Escape fraction of photons')
+plt.xlabel(r'Wavelength ($\mu$m)')
+
+aa = plt.legend()
+bb = plt.legend([plt.Line2D([], [], linewidth=2,
+                       linestyle='-', color=color_dustabs[i])
+                 for i in range(len(zz_dustabs))],
+                zz_dustabs, title='Redshift')
+ax_dustabs.add_artist(aa)
+ax_dustabs.add_artist(bb)
+
+plt.xscale('log')
+
+plt.ylim(0., 1.2)
+plt.xlim(0.05, 10)
+
 
 # Save the figures
 fig_cob.savefig(input_file_dir + '/ebl_bare' + '.png',

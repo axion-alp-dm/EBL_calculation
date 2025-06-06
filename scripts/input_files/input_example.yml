@@ -1,0 +1,108 @@
+# COSMOLOGY CONSTANTS (flat LCDM assumed)
+cosmology_params:
+  cosmo: [ .7, .3, .7 ]   # [h_0, omega_matter, omega_L]
+  omegaBar: 0.0453 # omega baryons of our model (this model = 0.0222/0.7**2.)
+
+# WAVELENGTH ARRAY FOR EBL [microns]
+wavelength_array:
+  wv_min: 1e-2
+  wv_max: 1e5
+  wv_steps: 700
+
+# REDSHIFT ARRAY FOR MRF (ebl at any redshift)
+redshift_array:
+  z_min: 0.
+  z_max: 10.
+  z_steps: 100
+
+# Maximum redshift at which populations shine
+z_intmax: 40.
+
+# INTEGRATION TIME STEP
+t_intsteps: 201
+
+# PRINT LOGGING OF OUR PROCESSES
+log_prints: True
+
+# AXION DECAY BEING CONSIDERED
+axion_params:
+  axion_mass:  1      # [eV]
+  axion_gamma: 5e-23  # [s**-1]
+
+# INTRA HALO LIGHT PARAMETERS
+ihl_params:
+  A_ihl: -3.23
+  alpha: 1
+
+ssp_models:
+  SB99_Finke_3bb:
+    name: 'Our model'
+
+    ssp:
+      path_ssp: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
+      ssp_type: SB99
+      file_name: /kroupa_
+      ignore_rows: 6
+      total_stellar_mass: 6
+      L_lambda: True
+
+    dust_abs_models: ['finke2022']
+    dust_abs_params:
+      params_fermi18: [ 1.52, 0.35, 4.12, 5.89 ]
+      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
+      lambda_steps_fn22:
+        - 0.15
+        - 0.167
+        - 0.218
+        - 0.422
+        - 2.
+
+    metall_formula: tanikawa22
+    metall_params: [ -0.147, 0.207, 0.819, 0.02]
+
+    sfr_formula: madau14
+    sfr_params: [ 0.0150, 2.254, 3.347, 6.56 ]
+
+    dust_reem: True
+    dust_reem_params:
+      T:
+#      - 70.0
+      - 450.0
+      - 40.
+      fracts:
+      - 0.15
+#      - 0.15
+      library: three_grey_body
+
+
+#  pegase_Finke_bosa:
+#    name: 'Our model'
+#
+#    ssp:
+#      path_ssp: data/ssp_synthetic_spectra/pegase3/spectra_Kroupa/
+#      ssp_type: pegase3
+#
+#    dust_abs_models: ['finke2022']
+#    dust_abs_params:
+#      params_fermi18: [ 1.52, 0.35, 4.12, 5.89 ]
+#      fesc_steps_fn22: [0.188, 0.218, 0.293, 0.393, 0.857]
+#
+#      lambda_steps_fn22:
+#      - 0.15
+#      - 0.167
+#      - 0.218
+#      - 0.422
+#      - 2.0
+#
+#    metall_formula: tanikawa22
+#    metall_params: [ -0.147, 0.207, 0.819, 0.02]
+#
+#    sfr_formula: madau14
+#    sfr_params: [ 0.0150, 2.254, 3.347, 6.56 ]
+#
+#    dust_reem: True
+#    dust_reem_params:
+#      library: bosa
+#      file_path: 'outputs/dust_reem/Z.fits'
+#      f_tir: 9.68  # [dex]
+#      wv_reem_min: 5.33  # [microns]

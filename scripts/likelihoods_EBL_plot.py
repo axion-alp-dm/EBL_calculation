@@ -6,7 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import UnivariateSpline
-
+from ebl_codes.metall_models import metall_model
+from ebl_codes.sfr_models import sfr_model
+from ebl_codes.dust_absorption_models import calculate_dust
 from ebl_codes.EBL_class import EBL_model
 
 from data.emissivity_measurs.emissivity_read_data import emissivity_data
@@ -61,8 +63,17 @@ ebl_class = EBL_model.input_yaml_data_into_class(config_data)
 waves_ebl = np.logspace(-1, 3, num=300)
 freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
 
-colors = ['b', 'tab:orange']
-f_color = ['dodgerblue', 'C1']
+
+colors = {
+    'bosa': 'b',
+    'chary': 'orange',
+    '2bb':'g',
+}
+f_color = {
+    'bosa': 'dodgerblue',
+    'chary': 'C1',
+    '2bb':'green',
+}
 
 ebl = {}
 for m in EBL.get_models():
@@ -96,7 +107,7 @@ import_cb_data(
 fig_sfr = plt.figure(figsize=(12, 9))
 axes_sfr = fig_sfr.gca()
 
-x_sfr = np.linspace(0, 10)
+x_sfr = np.linspace(0, 10, num=100)
 
 sfr_data = sfr_data_dict()
 plot_sfr_data(sfr_data)
@@ -114,10 +125,12 @@ handles_sfr, labels_sfr = [], []
 plt.yscale('log')
 
 plt.xlim(0, 10)
+plt.ylim(1e-3, 0.5)
 
 plt.xlabel('redshift z')
 plt.ylabel(r'$\rho_{\star}$ (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
+# FIGURE: Z IN DIFFERENT REDSHIFTS ------------------
 
 fig_Z, ax_met = plt.subplots(figsize=(9, 9))
 plt.yscale('log')
@@ -130,55 +143,61 @@ plt.ylabel('Z')
 
 
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
-fig_emiss_z, axes_emiss_z = plt.subplots(3, 3, figsize=(12, 12))
+fig_emiss_z, axes_emiss_z = plt.subplots(4, 3, figsize=(12, 16))
 
 z_array = np.linspace(0, 10)
 
 for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                0.44, 0.55, 0.79,
-                               1.22, 2.2, 3.6]):
-    plt.subplot(3, 3, n_lambda + 1)
+                               1.22, 2.2, 3.6,
+                               4.5, 5.8, 8.0]):
+    plt.subplot(4, 3, n_lambda + 1)
     emissivity_data(z_min=None, z_max=None,
                     lambda_min=ll - 0.05, lambda_max=ll + 0.05,
                     take1ref=None, plot_fig=True)
 
-    if n_lambda != 8:
-        plt.annotate(r'%r$\,\mu m$' % ll, xy=(5, 1e35), fontsize=28)
+    plt.annotate(r'%r$\,\mu m$' % ll, xy=(5, 1e35), fontsize=28)
 
     plt.xlim(min(z_array), max(z_array))
     plt.ylim(1e33, 3e35)
 
     plt.yscale('log')
 
+fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
+
 handles_emiss, labels_emiss = [], []
 
-plt.subplot(3, 3, 8)
+plt.subplot(4, 3, 11)
 plt.xlabel(r'redshift z', fontsize=34)
 
-plt.subplot(3, 3, 4)
-plt.ylabel(r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
-           fontsize=40)
+plt.subplot(4, 3, 4)
+# plt.ylabel(r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
+#            fontsize=40)
+plt.text(-0.45, 0.,
+         r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
+         horizontalalignment='center',
+         verticalalignment='center', transform=axes_emiss_z[1, 0].transAxes,
+         rotation=90, fontsize=40)
+# plt.subplot(3, 3, 9)
+# plt.annotate(r'3.6$\,\mu m$', xy=(6, 1e34), fontsize=28)
 
-plt.subplot(3, 3, 9)
-plt.annotate(r'3.6$\,\mu m$', xy=(6, 1e34), fontsize=28)
-
-ax = [plt.subplot(3, 3, i) for i in [2, 3, 5, 6, 8, 9]]
+ax = [plt.subplot(4, 3, i) for i in [2, 3, 5, 6, 8, 9, 11, 12]]
 for a in ax:
     a.set_yticklabels([])
 
-ax = [plt.subplot(3, 3, i + 1) for i in range(6)]
+ax = [plt.subplot(4, 3, i + 1) for i in range(9)]
 for a in ax:
     a.set_xticklabels([])
 
-ax = [plt.subplot(3, 3, i + 1) for i in range(6, 8)]
+ax = [plt.subplot(4, 3, i + 1) for i in range(9, 12)]
 for a in ax:
     a.set_xticks([0, 2, 4, 6, 8])
 
-ax = [plt.subplot(3, 3, i) for i in range(1, 7)]
+ax = [plt.subplot(4, 3, i) for i in range(1, 10)]
 for a in ax:
     a.set_xticks([0, 2, 4, 6, 8, 10])
 
-a = plt.subplot(3, 3, 9)
+a = plt.subplot(4, 3, 12)
 a.set_xticks([0, 2, 4, 6, 8, 10])
 
 emiss_data = emissivity_data()
@@ -187,28 +206,53 @@ freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
 
 for nkey, key in enumerate(config_data['ssp_models']):
 
-    values_sfr = config_data['ssp_models'][key]['sfr_params']
-    values_metall = config_data['ssp_models'][key]['metall_params']
-    values_sfr = np.concatenate((
-        values_sfr, values_metall,
-        [config_data['ssp_models'][key]['dust_reem_params']['f_tir']]))
-    # values_sfr = [config_data['ssp_models'][key]['dust_reem_params']['f_tir']]
+    if key == 'bosa':
+        values_sfr = np.concatenate((
+            config_data['ssp_models'][key]['sfr_params'],
+            config_data['ssp_models'][key]['metall_params']))
+    else:
+        values_sfr = np.concatenate((
+            config_data['ssp_models'][key]['sfr_params'],
+            config_data['ssp_models'][key]['metall_params'],
+            [config_data['ssp_models'][key]['dust_reem_params']['f_tir']],
+            [config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min']],
+            config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'],
+            config_data['ssp_models'][key]['dust_abs_params']['lambda_steps_fn22'],
+            config_data['ssp_models'][key]['dust_abs_params']['params_fermi18'],
+            config_data['ssp_models'][key]['dust_reem_params']['T'],
+            config_data['ssp_models'][key]['dust_reem_params']['fracts']
+
+        ))
     print(values_sfr)
     values_cov = config_data['ssp_models'][key]['cov_matrix']
     values_cov = np.array(values_cov).reshape(
         int(np.sqrt(np.shape(values_cov))),
         int(np.sqrt(np.shape(values_cov))))
-    # values_cov = [0.000635]
 
     ebl_class.ebl_ssp_calculation(config_data['ssp_models'][key])
 
 
     def fit_igl(lambda_igl, params):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
-        config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
-            params[8].copy()
-        )
+        config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
+
+        if key != 'bosa':
+            config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+                params[8]
+            config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+                params[9]
+            config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = \
+                params[10:15].copy()
+            config_data['ssp_models'][key]['dust_abs_params']['lambda_steps_fn22'] = \
+                params[15:20].copy()
+            config_data['ssp_models'][key]['dust_abs_params']['params_fermi18'] = \
+                params[20:24].copy()
+
+            config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+                params[24:26].copy()
+            config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+                params[26]
+
         return ebl_class.ebl_ssp_individualData(
             yaml_data=config_data['ssp_models'][key],
             x_data=lambda_igl)
@@ -216,111 +260,119 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
     def fit_emiss(x_all, params):
         lambda_emiss, z_emiss = x_all
-        freq_emissions = np.log10(c.value / lambda_emiss * 1e6)
+        freq_emissions = (c.value / lambda_emiss * 1e6)
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
-        config_data['ssp_models'][key]['args_metall'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = (
-            params[8].copy()
-        )
+        config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
+
+        if key != 'bosa':
+            config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+                params[8]
+            config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+                params[9]
+            config_data['ssp_models'][key]['dust_abs_params'][
+                'fesc_steps_fn22'] = \
+                params[10:15].copy()
+            config_data['ssp_models'][key]['dust_abs_params']['lambda_steps_fn22'] = \
+                params[15:20].copy()
+            config_data['ssp_models'][key]['dust_abs_params']['params_fermi18'] = \
+                params[20:24].copy()
+
+            config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+                params[24:26].copy()
+            config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+                params[26]
 
         ebl_class.emiss_ssp_calculation(config_data['ssp_models'][key])
 
-        return 10 ** (freq_emissions
-                      + ebl_class.emiss_ssp_spline(freq_emissions,
-                                                   z_emiss)
-                      - 7)
+        return (ebl_class.emiss_ssp_spline(
+                     lambda_emiss, z_emiss) * freq_emissions * 1e-7)
 
 
     def sfr(x, params):
-        return ebl_class.sfr_function(
-            config_data['ssp_models'][key]['sfr'], x,
-            params[0:4]
-            # config_data['ssp_models'][key]['sfr_params']
-        )
+        return sfr_model(
+            zz_array=x,
+            sfr_model=config_data['ssp_models'][key]['sfr_formula'],
+            sfr_params=params[0:4])
 
 
     def metall(x, params):
-        return ebl_class.metall_mean(
-            function_input=config_data['ssp_models'][key]['metall_formula'],
+        return metall_model(
             zz_array=x,
-            args=#config_data['ssp_models'][key]['args_metall']
-            params[4:8]
-        )
+            metall_model=config_data['ssp_models'][key]['metall_formula'],
+            metall_params=params[4:8])
 
     # FIGURE: cob fit
     axes_ebl.plot(waves_ebl,
-                  10 ** ebl_class.ebl_ssp_spline(freq_array_ebl, 0.,
-                                                 grid=False),
-                  color=colors[nkey], lw=2)
+                  ebl_class.ebl_ssp_spline(waves_ebl, 0.),
+                  color=colors[key], lw=2)
 
     labels_cob.append(config_data['ssp_models'][key]['name'])
     handles_cob.append(plt.Line2D([], [], linewidth=2,
                                   linestyle='-',
-                                  color=colors[nkey]))
+                                  color=colors[key]))
 
-    y, y_cov = propagate(lambda pars:
-                         fit_igl(waves_ebl, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
-                          facecolor=f_color[nkey], alpha=0.5)
-    print(y)
-    print(yerr_prop)
-    print()
+    # y, y_cov = propagate(lambda pars:
+    #                      fit_igl(waves_ebl, pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # axes_ebl.fill_between(waves_ebl, y - yerr_prop, y + yerr_prop,
+    #                       facecolor=f_color[key], alpha=0.3)
+    print(key, 'cb')
 
     # FIGURE: SFR
     plt.figure(fig_sfr)
     axes_sfr.plot(x_sfr, sfr(x_sfr, values_sfr), '-',
-                  color=colors[nkey], lw=2)
+                  color=colors[key], lw=2)
 
     labels_sfr.append(config_data['ssp_models'][key]['name'])
     handles_sfr.append(plt.Line2D([], [], linewidth=3,
                                   linestyle='-',
-                                  color=colors[nkey]))
+                                  color=colors[key]))
 
-    y, y_cov = propagate(lambda pars:
-                         sfr(x_sfr, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
-                     facecolor=f_color[nkey], alpha=0.5)
-    print(y)
-    print(yerr_prop)
+    # y, y_cov = propagate(lambda pars:
+    #                      sfr(x_sfr, pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+    #                  facecolor=f_color[key], alpha=0.3)
+    print(key, 'sfr')
 
     # Fig Z
     plt.figure(fig_Z)
-    plt.plot(x_sfr, metall(x_sfr, params=values_sfr))
+    plt.plot(x_sfr, metall(x_sfr, params=values_sfr),
+             color=colors[key],
+             label=config_data['ssp_models'][key]['name'])
 
-    y, y_cov = propagate(lambda pars:
-                         metall(x_sfr, pars),
-                         values_sfr, values_cov)
-    yerr_prop = np.diag(y_cov) ** 0.5
-    plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
-                     facecolor=f_color[nkey], alpha=0.5)
-    print(y)
-    print(yerr_prop)
+    # y, y_cov = propagate(lambda pars:
+    #                      metall(x_sfr, pars),
+    #                      values_sfr, values_cov)
+    # yerr_prop = np.diag(y_cov) ** 0.5
+    # plt.fill_between(x_sfr, y - yerr_prop, y + yerr_prop,
+    #                  facecolor=f_color[key], alpha=0.3)
+    print(key, 'Z')
+
 
     # FIGURE: emissivities fit
     plt.figure(fig_emiss_z)
     for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                    0.44, 0.55, 0.79,
-                                   1.22, 2.2, 3.6]):
-        plt.subplot(3, 3, n_lambda + 1)
+                                   1.22, 2.2, 3.6,
+                                   4.5, 5.8, 8.0]):
+        plt.subplot(4, 3, n_lambda + 1)
 
         plt.plot(z_array,
-                 (c.value / (ll * 1e-6))
-                 * 10 ** ebl_class.emiss_ssp_spline(
-                     np.log10(c.value / ll * 1e6) * np.ones(
-                         len(z_array)),
+                 (c.value / (ll * 1e-6)
+                  * ebl_class.emiss_ssp_spline(
+                     ll * np.ones(len(z_array)),
                      z_array)
-                 * 1e-7,
-                 linestyle='-', color=colors[nkey], lw=2)
+                  * 1e-7),
+                 linestyle='-', color=colors[key], lw=2)
 
     labels_emiss.append(config_data['ssp_models'][key]['name'])
     handles_emiss.append(plt.Line2D([], [], linewidth=2,
                                     linestyle='-',
-                                    color=colors[nkey]))
+                                    color=colors[key]))
 
     # y, y_cov = propagate(lambda pars:
     #                      fit_emiss((ll * np.ones(len(z_array)), z_array),
@@ -328,9 +380,9 @@ for nkey, key in enumerate(config_data['ssp_models']):
     #                      values_sfr, values_cov)
     # yerr_prop = np.diag(y_cov) ** 0.5
     # plt.fill_between(z_array, y - yerr_prop, y + yerr_prop,
-    #                  facecolor=f_color[nkey], alpha=0.5)
+    #                  facecolor=f_color[key], alpha=0.3)
 
-    # print(yerr_prop)
+    print(key, 'emiss')
 
 # -------------------------------------------------------------
 plt.figure(fig_ebl)
@@ -351,12 +403,15 @@ plt.legend(handles_cob, labels_cob,
            loc=8,
            title=r'Models')
 
+plt.figure(fig_Z)
+plt.legend(handles_sfr, labels_sfr,
+           title='Models', loc=3, bbox_to_anchor=(0.01, 0.),
+                     fontsize=26, title_fontsize=28)
 
 plt.figure(fig_sfr)
 
-axes_sfr.plot(x_sfr, ebl_class.sfr_function(
-    'lambda x, ci : ci[0] * (1 + x)**ci[1] / (1 + ((1+x)/ci[2])**ci[3])',
-    x_sfr, [0.015, 2.7, 2.9, 5.6]),
+axes_sfr.plot(x_sfr, sfr_model(
+    zz_array=x_sfr, sfr_model='madau14'),
               color='k', linestyle='--', lw=2)
 
 labels_sfr.append('MD14')
@@ -366,15 +421,16 @@ handles_sfr.append(plt.Line2D([], [], linewidth=2,
 
 legend2 = plt.legend(handles_sfr, labels_sfr,
                      loc=3, bbox_to_anchor=(0.01, 0.),
-                     fontsize=26, title='Models',title_fontsize=28
+                     fontsize=26, title='Models', title_fontsize=28
                      )
 axes_sfr.add_artist(legend2)
 
 
 plt.figure(fig_emiss_z)
-plt.subplot(3, 3, 9)
+plt.subplot(4, 3, 2)
 plt.legend(handles_emiss, labels_emiss,
-           loc=1, fontsize=24)
+           loc=8, fontsize=24, bbox_to_anchor=(0.5, 1.1),
+           ncol=3)
 
 # Save the figures
 fig_ebl.savefig(direct_name + '/ebl' + '.png',
