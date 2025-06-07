@@ -27,10 +27,10 @@ plt.rc('legend', fontsize=18)
 plt.rc('figure', titlesize=all_size)
 plt.rc('xtick', top=False, direction='in')
 plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
-plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
-plt.rc('xtick.minor', size=7, width=1.5)
-plt.rc('ytick.minor', size=7, width=1.5)
+plt.rc('xtick.major', size=7, width=1.5, top=True, pad=10)
+plt.rc('ytick.major', size=7, width=1.5, right=True, pad=10)
+plt.rc('xtick.minor', size=5, width=1.)
+plt.rc('ytick.minor', size=5, width=1.)
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -65,7 +65,7 @@ colors = {'bosa.txt': 'tab:blue',
           'chary.txt': 'darkorange'}
 
 labelss = {'bosa.txt': 'BOSA',
-          '2bb.txt': '3 grey body',
+          '2bb.txt': '2 black body',
           'chary.txt': 'Chary'}
 
 xx_array = np.geomspace(0.5, 25.)
@@ -101,6 +101,23 @@ for d in my_ebl:
     opacities_array[d] = UnivariateSpline(
             np.log10(e_array), opacityy, k=1, s=0)
 
+# -------------HEGRA spectrum fits 2 subfigs ---------------------------
+# ----------------------------------------------------------------------
+
+fig_spectrum2, ax_spectrum2 = plt.subplots(1, 2, figsize=(12, 4.5))
+fig_spectrum2.subplots_adjust(hspace=0., wspace=0.)
+plt.subplot(121)
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             yerr=mkr501_flux[:, 2], ls='', marker='.',
+             capsize=3, capthick=1.5,
+             color='b',
+             ms=5, zorder=20)
+plt.subplot(122)
+plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
+             yerr=mkr501_flux[:, 2], ls='', marker='.',
+             capsize=3, capthick=1.5,
+             color='b',
+             ms=5, zorder=20)
 
 fig_spectrum, ax_spectrum = plt.subplots(figsize=(5, 4.5))
 plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
@@ -140,6 +157,11 @@ for nd, d in enumerate(my_ebl):
     ax_spectrum.plot(xx_array,
                      funct_mk501_inside(xx_array, *m.values),
                      label=labelss[d], c=colors[d], lw=1)
+
+
+    ax_spectrum2[0].plot(xx_array,
+                     funct_mk501_inside(xx_array, *m.values),
+                     c=colors[d], lw=1)
 
 print('\nPL1 + CPL12 + EBL absorption')
 for nd, d in enumerate(my_ebl):
@@ -181,6 +203,11 @@ for nd, d in enumerate(my_ebl):
                      c=colors[d],
                      ls=':', lw=1)
 
+    ax_spectrum2[1].plot(xx_array,
+                     funct_mk501_inside(xx_array, *m.values),
+                     c=colors[d],
+                     label=labelss[d], lw=1)
+
 plt.xscale('log')
 plt.yscale('log')
 
@@ -212,6 +239,75 @@ plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum.png',
 plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum.pdf',
             bbox_inches='tight')
 
+
+plt.figure(fig_spectrum2)
+plt.subplot(121)
+plt.xscale('log')
+plt.yscale('log')
+
+plt.xlim(0.5, 23)
+plt.ylim(1, 200)
+
+plt.xlabel('E [TeV]')
+plt.ylabel(r'$E^2dN/dE$ [10$^{−12}$ erg cm$^{−2}$ s$^{−1}$]',
+           size=20)
+
+plt.text(x=1, y=10, s='PL + EBL')
+
+plt.subplot(122)
+plt.xscale('log')
+plt.yscale('log')
+
+plt.xlim(0.5, 23)
+plt.ylim(1, 200)
+
+plt.tick_params('y', labelleft=False)
+
+plt.text(x=1, y=10, s='BPL + EBL')
+plt.xlabel('E [TeV]')
+
+legend22 = plt.legend(loc=2, bbox_to_anchor=(1.01, 0.95))
+# handles, labels = ax_spectrum2[1].get_legend_handles_labels()
+# handles = [mpatches.Patch(color=handles[i].get_c(), alpha=0.8)
+#            for i in range(len(handles))]
+# legend22 = plt.legend(handles, labels, loc=6, handlelength=0.9)
+
+# handles = (plt.Line2D([], [], linestyle='-', color='k'),
+#            plt.Line2D([], [], linestyle=':', color='k')
+#                       )
+# legend11 = plt.legend(handles, ['PL + EBL', 'BPL + EBL'],
+#                       loc=3,
+#                       # fontsize=11.5,
+#                       )
+
+# ax_spectrum2.add_artist(legend11)
+# ax_spectrum2.add_artist(legend22)
+
+
+plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum2.png',
+            bbox_inches='tight')
+plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum2.pdf',
+            bbox_inches='tight')
+plt.show()
+
+all_size = 24
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams['axes.labelsize'] = all_size
+plt.rcParams['lines.markersize'] = 10
+plt.rc('font', size=all_size)
+plt.rc('axes', titlesize=all_size)
+plt.rc('axes', labelsize=all_size)
+plt.rc('xtick', labelsize=all_size)
+plt.rc('ytick', labelsize=all_size)
+plt.rc('legend', fontsize=18)
+plt.rc('figure', titlesize=all_size)
+plt.rc('xtick', top=False, direction='in')
+plt.rc('ytick', right=True, direction='in')
+plt.rc('xtick.major', size=10, width=2, top=True, pad=10)
+plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
+plt.rc('xtick.minor', size=7, width=1.5)
+plt.rc('ytick.minor', size=7, width=1.5)
 # -------------- Histograms --------------------------------------------
 # Power law + EBL cutoff
 aaa = 'PL'
