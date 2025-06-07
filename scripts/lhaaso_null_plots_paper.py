@@ -47,26 +47,26 @@ def read_config_file(ConfigFile):
 
 
 # bbb = '_vs_bosa'
-# vert_lines_against = 'BOSA.txt'
-# my_ebl = ['BOSA.txt', '3_grey_bodies.txt', 'Chary.txt']
+# vert_lines_against = 'bosa.txt'
+# my_ebl = ['bosa.txt', '2bb.txt', 'chary.txt']
 #
-bbb = '_vs_chary'
-vert_lines_against = 'Chary.txt'
-my_ebl = ['Chary.txt', 'BOSA.txt', '3_grey_bodies.txt']
+# bbb = '_vs_chary'
+# vert_lines_against = 'chary.txt'
+# my_ebl = ['chary.txt', 'bosa.txt', '2bb.txt']
 #
-# bbb = '_vs_3body'
-# vert_lines_against = '3_grey_bodies.txt'
-# my_ebl = ['3_grey_bodies.txt', 'BOSA.txt', 'Chary.txt']
+bbb = '_vs_2bb'
+vert_lines_against = '2bb.txt'
+my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
 
 
 hatches = ['/', '', '']
-colors = {'BOSA.txt': 'tab:blue',
-          '3_grey_bodies.txt': 'tab:green',
-          'Chary.txt': 'darkorange'}
+colors = {'bosa.txt': 'tab:blue',
+          '2bb.txt': 'tab:green',
+          'chary.txt': 'darkorange'}
 
-labels = {'BOSA.txt': 'BOSA',
-          '3_grey_bodies.txt': '3 grey body',
-          'Chary.txt': 'Chary'}
+labelss = {'bosa.txt': 'BOSA',
+          '2bb.txt': '3 grey body',
+          'chary.txt': 'Chary'}
 
 xx_array = np.geomspace(0.5, 25.)
 
@@ -96,7 +96,7 @@ e_array = np.geomspace(
 opacities_array = {}
 for d in my_ebl:
     ebl_finke = EBL.readascii(
-            'outputs/lhaaso/' + d, model_name='mine')
+            'outputs/lhaaso_new/' + d, model_name='mine')
     opacityy = ebl_finke.optical_depth(z0=zz, ETeV=e_array)
     opacities_array[d] = UnivariateSpline(
             np.log10(e_array), opacityy, k=1, s=0)
@@ -139,7 +139,7 @@ for nd, d in enumerate(my_ebl):
 
     ax_spectrum.plot(xx_array,
                      funct_mk501_inside(xx_array, *m.values),
-                     label=labels[d], c=colors[d], lw=1)
+                     label=labelss[d], c=colors[d], lw=1)
 
 print('\nPL1 + CPL12 + EBL absorption')
 for nd, d in enumerate(my_ebl):
@@ -207,22 +207,22 @@ ax_spectrum.add_artist(legend22)
 plt.xlabel('E [TeV]')
 plt.ylabel(r'$E^2dN/dE$ [10$^{−12}$ erg cm$^{−2}$ s$^{−1}$]')
 
-plt.savefig('outputs/lhaaso/fit_to_hegra_spectrum.png',
+plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso/fit_to_hegra_spectrum.pdf',
+plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum.pdf',
             bbox_inches='tight')
-'''
+
 # -------------- Histograms --------------------------------------------
 # Power law + EBL cutoff
-aaa = 'PWandEBL'
-spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma} e^{-\tau}$'
+aaa = 'PL'
+spectral_shape = r'PL + EBL'
 bins_hist = [np.linspace(190, 220., num=40),
              np.linspace(2.04, 2.25, num=40)]
 
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
 
 fig_hist, ax_hist = plt.subplots(1, 2, figsize=(12, 4))
@@ -232,10 +232,12 @@ plt.title(spectral_shape)
 
 fig_cum, ax_cum = plt.subplots(1, 2, figsize=(12, 4))
 plt.subplot(121)
-plt.title(spectral_shape)
-# plt.text(s=spectral_shape,
-#          x=0.6, y=1.05, color='k', ha='right',
-#          transform=ax_cum[0].transAxes)
+# plt.title(spectral_shape)
+plt.text(s=spectral_shape,
+         x=0.6, y=1.05, color='k', ha='right',
+         transform=ax_cum[0].transAxes)
+
+yy_positions = 1.1
 
 for ni, i in enumerate(my_ebl):
 
@@ -249,7 +251,7 @@ for ni, i in enumerate(my_ebl):
 
     plt.hist(hist_distr,
              alpha=0.4, color=colors[i],
-             bins=30, label=labels[i], hatch=hatches[ni],
+             bins=30, label=labelss[i], hatch=hatches[ni],
               histtype='stepfilled')
 
     plt.axvline(asimov_vert_line, ls='-', color=colors[i])
@@ -258,7 +260,7 @@ for ni, i in enumerate(my_ebl):
     plt.subplot(121)
     nn = plt.hist(hist_distr,
                   alpha=0.4, color=colors[i],
-                  bins=30, label=labels[i], hatch=hatches[ni], cumulative=True,
+                  bins=30, label=labelss[i], hatch=hatches[ni], cumulative=True,
                   density=True, histtype='stepfilled')
     bins = np.array(nn[0])
     nn = nn[1]
@@ -281,30 +283,26 @@ for ni, i in enumerate(my_ebl):
         plt.xlim(0, 141)
         plt.plot(xx_plot, stats.chi2.cdf(x=xx_plot, df=m_p.values),
                  c=colors[i])
-    #     plt.text(s='Fit to cdf:\ndf=%.4f +- %.4f\np-value=%.4f'
-    #                % (m_p.values[0], m_p.errors[0], -m_p.fval),
-    #              x=0.8, y=1.02, color='k',
-    #              transform=ax_cum[0].transAxes,
-    #              fontsize=18, horizontalalignment='center')
-    #
-    # else:
-    #     xx_int = np.linspace(asimov_vert_line, 150, num=500)
-    #     int_result = simpson(y=stats.chi2.pdf(x=xx_int, df=m_p.values),
-    #                          x=xx_int)
-    #     plt.text(s='%.4f' % (1 - int_result),
-    #              x=asimov_vert_line + 3., y=yy_positions, color=colors[i])
-    #     yy_positions += 0.1
+        plt.text(s='Fit to cdf:\ndf=%.4f +- %.4f\np-value=%.4f'
+                   % (m_p.values[0], m_p.errors[0], -m_p.fval),
+                 x=0.8, y=1.02, color='k',
+                 transform=ax_cum[0].transAxes,
+                 fontsize=18, horizontalalignment='center')
+
+    else:
+        xx_int = np.linspace(asimov_vert_line, 150, num=500)
+        int_result = simpson(y=stats.chi2.pdf(x=xx_int, df=m_p.values),
+                             x=xx_int)
+        plt.text(s='%.4f' % (1 - int_result),
+                 x=asimov_vert_line + 3., y=yy_positions, color=colors[i])
+        yy_positions += 0.1
 
     plt.axvline(asimov_vert_line, ls='-', color=colors[i])
 
 
 # # 2 Power law + EBL cutoff
 aaa = '2PL'
-spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma_1}' \
-                 r' \left[1 + \left(\frac{E}{E_\mathrm{' \
-                 r'break}}\right)^{f_i}\right]^{(' \
-                 r'\Gamma_1-\Gamma_2)/f_i}' \
-                 r' e^{-\tau}$'
+spectral_shape = r'BPL + EBL'
 bins_hist = [np.linspace(190., 340., num=40),
              np.linspace(1.2, 2.1, num=30),
              np.linspace(2.1, 3.4, num=50),
@@ -313,7 +311,7 @@ bins_hist = [np.linspace(190., 340., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
 plt.figure(fig_hist)
 plt.subplot(122)
@@ -321,10 +319,10 @@ plt.title(spectral_shape)
 
 plt.figure(fig_cum)
 plt.subplot(122)
-plt.title(spectral_shape)
-# plt.text(s=spectral_shape,
-#          x=0.6, y=1.05, color='k', ha='right',
-#          transform=ax_cum[1].transAxes)
+# plt.title(spectral_shape)
+plt.text(s=spectral_shape,
+         x=0.6, y=1.05, color='k', ha='right',
+         transform=ax_cum[1].transAxes)
 
 hatches = ['/', '', '']
 yy_positions = 1.1
@@ -342,7 +340,7 @@ for ni, i in enumerate(my_ebl):
 
     plt.hist(hist_distr,
              alpha=0.4, color=color,
-             bins=30, label=labels[i], hatch=hatches[ni],
+             bins=30, label=labelss[i], hatch=hatches[ni],
              histtype='stepfilled')
 
     plt.axvline(asimov_vert_line, ls='-', color=color)
@@ -351,7 +349,7 @@ for ni, i in enumerate(my_ebl):
     plt.subplot(122)
     nn = plt.hist(hist_distr,
                   alpha=0.4, color=color,
-                  bins=30, label=labels[i], hatch=hatches[ni], cumulative=True,
+                  bins=30, label=labelss[i], hatch=hatches[ni], cumulative=True,
                   density=True, histtype='stepfilled')
     bins = np.array(nn[0])
     nn = nn[1]
@@ -374,34 +372,34 @@ for ni, i in enumerate(my_ebl):
         plt.xlim(0, 42.118)
         plt.plot(xx_plot, stats.chi2.cdf(x=xx_plot, df=m_p.values),
                  c=color)
-        # plt.text(s='Fit to cdf:\ndf=%.4f +- %.4f\np-value=%.4f'
-        #            % (m_p.values[0], m_p.errors[0], -m_p.fval),
-        #          x=0.8, y=1.02, color='k',
-        #          transform=ax_cum[1].transAxes,
-        #          fontsize=18, horizontalalignment='center')
+        plt.text(s='Fit to cdf:\ndf=%.4f +- %.4f\np-value=%.4f'
+                   % (m_p.values[0], m_p.errors[0], -m_p.fval),
+                 x=0.8, y=1.02, color='k',
+                 transform=ax_cum[1].transAxes,
+                 fontsize=18, horizontalalignment='center')
 
-    # else:
-    #     xx_int = np.linspace(asimov_vert_line, 150, num=500)
-    #     int_result = simpson(y=stats.chi2.pdf(x=xx_int, df=m_p.values),
-    #                          x=xx_int)
-        # plt.text(s='%.4f' % (1 - int_result),
-        #          x=asimov_vert_line + 3., y=yy_positions, color=color)
-        # yy_positions += 0.1
+    else:
+        xx_int = np.linspace(asimov_vert_line, 150, num=500)
+        int_result = simpson(y=stats.chi2.pdf(x=xx_int, df=m_p.values),
+                             x=xx_int)
+        plt.text(s='%.4f' % (1 - int_result),
+                 x=asimov_vert_line + 3., y=yy_positions, color=color)
+        yy_positions += 0.1
 
     plt.axvline(asimov_vert_line, ls='-', color=color)
 
 plt.legend(framealpha=0.9)
 
 plt.xlabel(r'$- 2 \Delta$log $L$')
-plt.ylim(0, 1.05)
+plt.ylim(0, yy_positions)
 
 plt.subplot(121)
 plt.xlabel(r'$- 2 \Delta$log $L$')
-plt.ylim(0, 1.05)
+plt.ylim(0, yy_positions)
 
-plt.savefig('outputs/lhaaso/cum_hist_3eblmodels_' + aaa + bbb + '_paper.png',
+plt.savefig('outputs/lhaaso_new/cum_hist_3eblmodels_' + aaa + bbb + '_paper.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso/cum_hist_3eblmodels_' + aaa + bbb + '_paper.pdf',
+plt.savefig('outputs/lhaaso_new/cum_hist_3eblmodels_' + aaa + bbb + '_paper.pdf',
             bbox_inches='tight')
 
 
@@ -414,25 +412,25 @@ plt.xlabel(r'$- 2 \Delta$log $L$')
 plt.subplot(121)
 plt.xlabel(r'$- 2 \Delta$log $L$')
 
-plt.savefig('outputs/lhaaso/hist_3eblmodels_' + aaa + bbb + '_paper.png',
+plt.savefig('outputs/lhaaso_new/hist_3eblmodels_' + aaa + bbb + '_paper.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso/hist_3eblmodels_' + aaa + bbb + '_paper.pdf',
+plt.savefig('outputs/lhaaso_new/hist_3eblmodels_' + aaa + bbb + '_paper.pdf',
             bbox_inches='tight')
 
-# plt.show()
-'''
+plt.show()
+
 
 # -------------- Histograms --------------------------------------------
 # Power law + EBL cutoff
-aaa = 'PWandEBL'
-spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma} e^{-\tau}$'
+aaa = 'PL'
+spectral_shape = r'PL + EBL'
 bins_hist = [np.linspace(190, 220., num=40),
              np.linspace(2.04, 2.25, num=40)]
 
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
 plt.rc('ytick.major', size=10, width=1., right=True, pad=5)
 plt.rc('xtick.major', top=True)
@@ -456,7 +454,7 @@ for ni, i in enumerate(my_ebl):
 
     plt.hist(hist_distr,
              alpha=0.4, color=colors[i],
-             bins=30, label=labels[i], hatch=hatches[ni],
+             bins=30, label=labelss[i], hatch=hatches[ni],
              histtype='stepfilled')
 
     plt.axvline(asimov_vert_line, ls='-', color=colors[i], lw=2)
@@ -464,7 +462,7 @@ for ni, i in enumerate(my_ebl):
     plt.subplot(223)
     nn = plt.hist(hist_distr,
                   alpha=0.4, color=colors[i],
-                  bins=30, label=labels[i], hatch=hatches[ni], cumulative=True,
+                  bins=30, label=labelss[i], hatch=hatches[ni], cumulative=True,
                   density=True, histtype='stepfilled')
     bins = np.array(nn[0])
     nn = nn[1]
@@ -492,11 +490,7 @@ for ni, i in enumerate(my_ebl):
 
 # # 2 Power law + EBL cutoff
 aaa = '2PL'
-spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma_1}' \
-                 r' \left[1 + \left(\frac{E}{E_\mathrm{' \
-                 r'break}}\right)^{f_i}\right]^{(' \
-                 r'\Gamma_1-\Gamma_2)/f_i}' \
-                 r' e^{-\tau}$'
+spectral_shape = r'BPL + EBL'
 bins_hist = [np.linspace(190., 340., num=40),
              np.linspace(1.2, 2.1, num=30),
              np.linspace(2.1, 3.4, num=50),
@@ -505,7 +499,7 @@ bins_hist = [np.linspace(190., 340., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
 plt.subplot(222)
 plt.title(spectral_shape)
@@ -525,7 +519,7 @@ for ni, i in enumerate(my_ebl):
 
     plt.hist(hist_distr,
              alpha=0.4, color=color,
-             bins=30, label=labels[i], hatch=hatches[ni],
+             bins=30, label=labelss[i], hatch=hatches[ni],
              histtype='stepfilled')
 
     plt.axvline(asimov_vert_line, ls='-', color=color, lw=2)
@@ -533,7 +527,7 @@ for ni, i in enumerate(my_ebl):
     plt.subplot(224)
     nn = plt.hist(hist_distr,
                   alpha=0.4, color=color,
-                  bins=30, label=labels[i], hatch=hatches[ni], cumulative=True,
+                  bins=30, label=labelss[i], hatch=hatches[ni], cumulative=True,
                   density=True, histtype='stepfilled')
     bins = np.array(nn[0])
     nn = nn[1]
@@ -599,10 +593,10 @@ plt.ylim(0, 1.05)
 plt.xlim(-0.1, 42.118)
 plt.tick_params('y', labelleft=False)
 
-plt.savefig('outputs/lhaaso/histandcum_3eblmodels_'
+plt.savefig('outputs/lhaaso_new/histandcum_3eblmodels_'
             + aaa + bbb + '_paper.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso/histandcum_3eblmodels_'
+plt.savefig('outputs/lhaaso_new/histandcum_3eblmodels_'
             + aaa + bbb + '_paper.pdf',
             bbox_inches='tight')
 
@@ -614,9 +608,9 @@ fig.subplots_adjust(hspace=1.,)  # hspace=1., wspace=0.4
 # fig.tight_layout()
 
 hatches = ['/', '', '']
-colors = {'BOSA.txt': 'tab:blue',
-          '3_grey_bodies.txt': 'tab:green',
-          'Chary.txt': 'darkorange'}
+colors = {'bosa.txt': 'tab:blue',
+          '2bb.txt': 'tab:green',
+          'chary.txt': 'darkorange'}
 
 
 def create_subtitle(fig, grid, title):
@@ -631,8 +625,8 @@ def create_subtitle(fig, grid, title):
 grid = plt.GridSpec(2, 1)
 
 # Power law + EBL cutoff
-aaa = 'PWandEBL'
-spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma} e^{-\tau}$'
+aaa = 'PL'
+spectral_shape = r'PL + EBL'
 create_subtitle(fig, grid[0, :], spectral_shape)
 bins_hist = [np.linspace(191, 217., num=40),
              np.linspace(2.083, 2.25, num=40)]
@@ -640,7 +634,7 @@ bins_hist = [np.linspace(191, 217., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
 number_of_params = len(output_data['param_names'])
 print(output_data['param_names'])
@@ -663,7 +657,7 @@ for param in range(number_of_params):
         if param == number_of_params - 1:
             ax.hist(param_array[:, param], color=color,
                     bins=bins_hist[param], hatch=hatches[ni], alpha=0.4,
-                    label=labels[i], histtype='stepfilled')
+                    label=labelss[i], histtype='stepfilled')
         else:
             ax.hist(param_array[:, param], color=color,
                     bins=bins_hist[param], hatch=hatches[ni], alpha=0.4,
@@ -675,11 +669,7 @@ ax.legend(loc=6, bbox_to_anchor=(1.02, 0.5))
 
 # # 2 Power law + EBL cutoff
 aaa = '2PL'
-spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma_1}' \
-                 r' \left[1 + \left(\frac{E}{E_\mathrm{' \
-                 r'break}}\right)^{f_i}\right]^{(' \
-                 r'\Gamma_1-\Gamma_2)/f_i}' \
-                 r' e^{-\tau}$'
+spectral_shape = r'BPL + EBL'
 create_subtitle(fig, grid[1, :], spectral_shape)
 bins_hist = [np.linspace(190., 270., num=40),
              np.linspace(1.5, 2.08, num=30),
@@ -688,7 +678,7 @@ bins_hist = [np.linspace(190., 270., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
 number_of_params = len(output_data['param_names'])
 
@@ -711,7 +701,7 @@ for param in range(number_of_params):
         if param == number_of_params - 1:
             ax.hist(param_array[:, param], color=color,
                      bins=bins_hist[param], hatch=hatches[ni], alpha=0.4,
-                     label=labels[i], histtype='stepfilled')
+                     label=labelss[i], histtype='stepfilled')
         else:
             ax.hist(param_array[:, param], color=color,
                      bins=bins_hist[param], hatch=hatches[ni], alpha=0.4,
@@ -722,9 +712,9 @@ axes[0, 3].axis("off")
 
 axes[1, 3].set_xticks([1, 5, 10])
 
-plt.savefig('outputs/lhaaso/params_3eblmodels_' + aaa + bbb + '_paper4.png',
+plt.savefig('outputs/lhaaso_new/params_3eblmodels_' + aaa + bbb + '_paper4.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso/params_3eblmodels_' + aaa + bbb + '_paper4.pdf',
+plt.savefig('outputs/lhaaso_new/params_3eblmodels_' + aaa + bbb + '_paper4.pdf',
             bbox_inches='tight')
 
 
