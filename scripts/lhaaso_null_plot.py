@@ -49,9 +49,9 @@ bbb = '_vs_chary'
 vert_lines_against = 'Chary.txt'
 my_ebl = ['Chary.txt', 'BOSA.txt', '3_grey_bodies.txt']
 #
-bbb = '_vs_3body'
-vert_lines_against = '3_grey_bodies.txt'
-my_ebl = ['3_grey_bodies.txt', 'BOSA.txt', 'Chary.txt']
+# bbb = '_vs_3body'
+# vert_lines_against = '3_grey_bodies.txt'
+# my_ebl = ['3_grey_bodies.txt', 'BOSA.txt', 'Chary.txt']
 
 # ------------------------------------------------
 # LogParabola
@@ -88,7 +88,7 @@ bins_hist = [np.linspace(190, 220., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
 number_of_params = len(output_data['param_names'])
 print(output_data['param_names'])
@@ -196,7 +196,7 @@ plt.legend()
 
 plt.xlabel(r'- 2 $\Delta$log $L$')
 plt.ylim(0, yy_positions)
-plt.savefig('outputs/lhaaso/cum_hist_3_eblmodels_' + aaa + bbb + '.png',
+plt.savefig('outputs/lhaaso_new/cum_hist_3_eblmodels_' + aaa + bbb + '.png',
             bbox_inches='tight')
 
 plt.figure(fig_hist)
@@ -204,18 +204,18 @@ plt.legend()
 
 plt.xlabel(r'- 2 $\Delta$log $L$')
 
-plt.savefig('outputs/lhaaso/hist_3_eblmodels_' + aaa + bbb + '.png',
+plt.savefig('outputs/lhaaso_new/hist_3_eblmodels_' + aaa + bbb + '.png',
             bbox_inches='tight')
 
 plt.figure(fig_params)
 plt.subplot(1, number_of_params, param + 1)
 plt.legend(loc=2, bbox_to_anchor=(1.02, 0.99))
-plt.savefig('outputs/lhaaso/params_3_eblmodels_' + aaa + bbb + '.png',
+plt.savefig('outputs/lhaaso_new/params_3_eblmodels_' + aaa + bbb + '.png',
             bbox_inches='tight')
 
 # plt.subplot(1, 4, 4)
 # plt.ylim(top=100)
-# plt.savefig('outputs/lhaaso/params_3_eblmodels_'
+# plt.savefig('outputs/lhaaso_new/params_3_eblmodels_'
 #                 + aaa + bbb + '_zoom.png',
 #                 bbox_inches='tight')
 

@@ -32,8 +32,8 @@ plt.rc('legend', fontsize=18)
 plt.rc('figure', titlesize=17)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=7, width=1.5, top=True)
-plt.rc('ytick.major', size=7, width=1.5, right=True)
+plt.rc('xtick.major', size=7, width=1.5, top=True, pad=7)
+plt.rc('ytick.major', size=7, width=1.5, right=True, pad=5)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
@@ -380,36 +380,36 @@ for nkey, key in enumerate(config_data['ssp_models']):
                                    color=color_ssp[i]))
 
     plt.figure(fig_dustabs)
+    if nkey == 0:
+        for ni, ii in enumerate(zz_dustabs):
+            if ni == 0:
+                color_dustabs.append(plt.cm.CMRmap(ni / float(len(zz_dustabs))))
 
-    for ni, ii in enumerate(zz_dustabs):
-        if ni == 0:
-            color_dustabs.append(plt.cm.CMRmap(ni / float(len(zz_dustabs))))
+                plt.plot(wv_dustabs,
+                         calculate_dust(
+                             wv_array=wv_dustabs,
+                             models=config_data['ssp_models'][key][
+                                 'dust_abs_models'],
+                             z_array=zz_dustabs[ni],
+                             dust_params=config_data['ssp_models'][key][
+                                 'dust_abs_params'],
+                             verbose=False),
+                         ls=linstyles_ssp[nkey], c=color_dustabs[ni],
+                         alpha=1, label=key)
 
-            plt.plot(wv_dustabs,
-                     calculate_dust(
-                         wv_array=wv_dustabs,
-                         models=config_data['ssp_models'][key][
-                             'dust_abs_models'],
-                         z_array=zz_dustabs[ni],
-                         dust_params=config_data['ssp_models'][key][
-                             'dust_abs_params'],
-                         verbose=False),
-                     ls=linstyles_ssp[nkey], c=color_dustabs[ni],
-                     alpha=0.5, label=key)
-
-        else:
-            color_dustabs.append(plt.cm.CMRmap(ni / float(len(zz_dustabs))))
-            plt.plot(wv_dustabs,
-                     calculate_dust(
-                         wv_array=wv_dustabs,
-                         models=config_data['ssp_models'][key][
-                             'dust_abs_models'],
-                         z_array=zz_dustabs[ni],
-                         dust_params=config_data['ssp_models'][key][
-                             'dust_abs_params'],
-                         verbose=False),
-                     ls=linstyles_ssp[nkey], c=color_dustabs[ni],
-                     alpha=0.5)
+            else:
+                color_dustabs.append(plt.cm.CMRmap(ni / float(len(zz_dustabs))))
+                plt.plot(wv_dustabs,
+                         calculate_dust(
+                             wv_array=wv_dustabs,
+                             models=config_data['ssp_models'][key][
+                                 'dust_abs_models'],
+                             z_array=zz_dustabs[ni],
+                             dust_params=config_data['ssp_models'][key][
+                                 'dust_abs_params'],
+                             verbose=False),
+                         ls=linstyles_ssp[nkey], c=color_dustabs[ni],
+                         alpha=1)
 
 
 print('%.3f' %(memory_usage_psutil()))
@@ -483,17 +483,17 @@ plt.figure(fig_dustabs)
 plt.ylabel('Escape fraction of photons')
 plt.xlabel(r'Wavelength ($\mu$m)')
 
-aa = plt.legend()
+# aa = plt.legend()
 bb = plt.legend([plt.Line2D([], [], linewidth=2,
                        linestyle='-', color=color_dustabs[i])
                  for i in range(len(zz_dustabs))],
                 zz_dustabs, title='Redshift')
-ax_dustabs.add_artist(aa)
+# ax_dustabs.add_artist(aa)
 ax_dustabs.add_artist(bb)
 
 plt.xscale('log')
 
-plt.ylim(0., 1.2)
+plt.ylim(0., 1.1)
 plt.xlim(0.05, 10)
 
 
@@ -524,6 +524,13 @@ fig_emiss_z.savefig(
     bbox_inches='tight')
 fig_emiss_z.savefig(
     input_file_dir + '/emiss_redshift_bare' + '.pdf',
+    bbox_inches='tight')
+
+fig_dustabs.savefig(
+    input_file_dir + '/dustabs' + '.png',
+    bbox_inches='tight', dpi=500)
+fig_dustabs.savefig(
+    input_file_dir + '/dustabs' + '.pdf',
     bbox_inches='tight')
 
 plt.show()

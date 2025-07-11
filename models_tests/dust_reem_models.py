@@ -104,8 +104,9 @@ fig, ax1 = plt.subplots(figsize=(7.5, 5))
 
 metalls = [6.99103, 7.99103, 8.29205999, 8.69, 9.08794001]
 # metalls_Ztot = 10**(np.array(metalls) - 12)/4.89778819e-04*0.02
-metalls_Ztot = [r'$\leq$'+str(0.0004), 0.004,  0.008,  0.02,
-                r'$\geq$'+str(0.05)]
+# metalls_Ztot = [r'$\leq$'+str(0.0004), 0.004,  0.008,  0.02,
+#                 r'$\geq$'+str(0.05)]
+metalls_Ztot = [0.0004, 0.004,  0.008,  0.02, 0.05]
 print(metalls)
 print(metalls_Ztot)
 print(metalls_Ztot)
@@ -133,7 +134,7 @@ plt.yticks(np.arange(15, 22, 1),
 plt.savefig('outputs/dust_reem/bosaZ_plot.pdf',
             bbox_inches='tight')
 plt.savefig('outputs/dust_reem/bosaZ_plot.png',
-            bbox_inches='tight')
+            bbox_inches='tight', dpi=500)
 # ---------------------------------------------------------------------
 
 fig, ax1 = plt.subplots(figsize=(8.5, 6))

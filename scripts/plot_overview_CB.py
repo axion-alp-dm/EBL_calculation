@@ -166,7 +166,7 @@ upper_lims_all, _ = import_cb_data(
 
 
 
-# ax1.set_xlim(5e-6, 1e1)
+ax1.set_xlim(5e-6, 1e1)
 ax1.set_ylim(5e-3, 120)
 # ax1.set_xlim(0.08, 1235)
 # ax1.set_ylim(0.13, 120)
@@ -202,7 +202,7 @@ legend11 = plt.legend(handles, labels,
 #                       title_fontsize=15, bbox_to_anchor=(1.01, 1.05))
 
 ax1.add_artist(legend11)
-ax1.add_artist(legend22)
+# ax1.add_artist(legend22)
 
 plt.annotate(text='', xy=(3e-3, 7e-3), xytext=(5e-6, 7e-3),
              arrowprops=dict(arrowstyle='<->', color='grey'),
@@ -237,7 +237,7 @@ ax3.set_xlabel('Photon energy (eV)', labelpad=12)
 
 plt.savefig('outputs/figures_paper/cb.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
-
+plt.show()
 
 
 list_working_models = {
@@ -283,7 +283,7 @@ list_working_models = {
     'ModelChary': {'label': 'Chary',
                'callable_func': 'chary',
                'color': 'orange'},
-    'Model3body': {'label': '3 grey body',
+    'Model3body': {'label': '2BB',
                'callable_func': '2bb',
                'color': 'g'},
 }
@@ -332,8 +332,10 @@ ax3.tick_params(axis='x', direction='in', pad=0)
 ax3.set_xlabel('Photon energy (eV)', labelpad=12)
 
 
-plt.savefig('outputs/figures_paper/cb_manydust.pdf', bbox_inches='tight')
-plt.savefig('outputs/figures_paper/cb_manydust.png', bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb_manydust.pdf',
+            bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb_manydust.png',
+            bbox_inches='tight', dpi=500)
 
 plt.show()
 

@@ -104,7 +104,7 @@ import_cb_data(
     plot_measurs=True, ax1=axes_ebl)
 
 # FIGURE: sfr fit ------------------------------------------------
-fig_sfr = plt.figure(figsize=(12, 9))
+fig_sfr = plt.figure(figsize=(12, 10.5))
 axes_sfr = fig_sfr.gca()
 
 x_sfr = np.linspace(0, 10, num=100)
@@ -439,7 +439,7 @@ fig_ebl.savefig(direct_name + '/ebl' + '.pdf',
                 bbox_inches='tight')
 
 fig_sfr.savefig(direct_name + '/sfr' + '.png',
-                bbox_inches='tight')
+                bbox_inches='tight', dpi=500)
 fig_sfr.savefig(direct_name + '/sfr' + '.pdf',
                 bbox_inches='tight')
 

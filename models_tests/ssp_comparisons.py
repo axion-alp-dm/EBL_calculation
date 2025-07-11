@@ -33,7 +33,7 @@ plt.rc('legend', fontsize=12)
 plt.rc('figure', titlesize=all_size)
 plt.rc('xtick', top=True, direction='in')
 plt.rc('ytick', right=True, direction='in')
-plt.rc('xtick.major', size=10, width=2, top=False, pad=10)
+plt.rc('xtick.major', size=10, width=2, top=False, pad=13)
 plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
 plt.rc('xtick.minor', size=7, width=1.5, top=False)
 plt.rc('ytick.minor', size=7, width=1.5)
@@ -368,8 +368,8 @@ plt.ylabel(r'log$_{10}$(L$_{\lambda}$ '  # /Lsun '
            r'[erg s$^{-1}$ $\mathrm{\AA}^{-1}$ M$_{\odot}^{-1}$])')
 
 plt.savefig('outputs/figures_paper/ssp_final.pdf', bbox_inches='tight')
-plt.savefig('outputs/figures_paper/ssp_final.jpg',
-            bbox_inches='tight')
+plt.savefig('outputs/figures_paper/ssp_final.png',
+            bbox_inches='tight', dpi=500)
 plt.show()
 
 lambda_array = np.logspace(2., 6., num=2000)

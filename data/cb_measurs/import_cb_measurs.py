@@ -331,7 +331,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
     if plot_measurs:
         markers = ['>', 'H', '^', 'd', 'h', 'o', 'p', 's', 'v']
         colors_nh = ['lime', '#00A2FF']
-        colors_nh = ['grey', 'white']
+        colors_nh = ['grey', 'grey', 'white']
         i = 0
         i_nh = 0
 
@@ -366,7 +366,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                  )
 
                 elif datatype == 2:
-                    if i_nh == 0:
+                    # if i_nh == 0:
                         ax1.errorbar(x=data['lambda'], y=data['nuInu'],
                                      linestyle='', color='w',
                                      marker='*',
@@ -390,7 +390,7 @@ def import_cb_data(lambda_min_total=0., lambda_max_total=5.,
                                      mfc='k',
                                      markersize=8, zorder=0, alpha=0.8
                                      )
-                    i_nh += 1
+                        i_nh += 1
 
                 elif datatype == 0:
                     # continue
