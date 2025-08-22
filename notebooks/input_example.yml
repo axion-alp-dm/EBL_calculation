@@ -83,7 +83,7 @@ ssp_models:
 #    metall_formula: 'tanikawa22'
 #    metall_params: [ -0.147, 0.207, 0.819, 0.02]
 #
-#    sfr_formula: 'madau14'
+#    sfr_formula: 'sfr_madau14'
 #    sfr_params: [0.015, 2.7, 2.9, 5.6]
 #
 #    dust_reem: True
@@ -113,7 +113,7 @@ ssp_models:
 #    metall_formula: 'tanikawa22'
 #    metall_params: [ -0.147, 0.207, 0.819, 0.02]
 #
-#    sfr_formula: 'madau14'
+#    sfr_formula: 'sfr_madau14'
 #    sfr_params: [0.015, 2.7, 2.9, 5.6]
 #
 #    dust_reem: True
@@ -140,7 +140,7 @@ ssp_models:
 #    metall_formula: 'constant'
 #    metall_params: [0.02]
 #
-#    sfr_formula: 'madau14'
+#    sfr_formula: 'sfr_madau14'
 #    sfr_params: [0.015, 2.7, 2.9, 5.6]
 #
 #    dust_reem: True
@@ -182,7 +182,7 @@ ssp_models:
       - 1.0750514513578506
       - 0.02
     name: Bosa quasi fit
-    sfr_formula: 'madau14'
+    sfr_formula: 'sfr_madau14'
     sfr_params:
       - 0.015915657766652082
       - 2.303543288627401
@@ -224,7 +224,7 @@ ssp_models:
 #      - 1.0750514513578506
 #      - 0.02
 #    name: Bosa quasi fit
-#    sfr_formula: 'madau14'
+#    sfr_formula: 'sfr_madau14'
 #    sfr_params:
 #      - 0.015915657766652082
 #      - 2.303543288627401

@@ -1,4 +1,7 @@
-def madau14(zz_array, params=None, verbose=True):
+import numpy as np
+
+
+def sfr_madau14(zz_array, params=None, verbose=True):
     """
     Eq. 15](https://www.annualreviews.org/content/journals/10.1146/annurev-astro-081811-125615#f9
     :param zz_array:
@@ -65,13 +68,22 @@ def sfr_cuba(zz_array, params=None, verbose=True):
             / (1. + (zz_array / params[4]) ** params[5]))
 
 
+def sfr_constant(zz_array, params=None, verbose=True):
+    if params is None:
+        params = [1.]
+        if verbose:
+            print('   -> SFR: default parameters chosen: ',
+                  params)
+    return np.ones(np.shape(zz_array)) * params
+
+
 # -----------------------------------------------------------------------------
 model_list = {
-    'madau14': madau14,
+    'sfr_madau14': sfr_madau14,
     'sfr_finke22a': sfr_finke22a,
-    'sfr_cuba': sfr_cuba
+    'sfr_cuba': sfr_cuba,
+    'sfr_constant': sfr_constant
 }
-
 
 def sfr_model(zz_array, sfr_model=None, sfr_params=None, verbose=True):
     if sfr_model in model_list.keys():
@@ -81,6 +93,3 @@ def sfr_model(zz_array, sfr_model=None, sfr_params=None, verbose=True):
         ValueError('No sfr model chosen.\n'
                    + 'Accepted models: ' + str(model_list.keys()) + '\n'
                    + 'Model not recognized: ' + sfr_model)
-
-
-sfr_model(0., sfr_model='mada14')

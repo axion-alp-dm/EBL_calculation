@@ -111,10 +111,10 @@ class EBL_model(object):
         self._shifted_zz_emiss = None
         self._log_t_ssp_intcube = None
         self._process_time = time.process_time()
-        logging.basicConfig(level='INFO',
-                            format='%(asctime)s - %(levelname)s'
-                                   ' - %(message)s',
-                            datefmt='%Y-%m-%d %H:%M:%S')
+        logging.basicConfig(
+            level='INFO',
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
         self._log_prints = log_prints
 
         self._cube = (len(lambda_array), len(z_array), t_intsteps)
@@ -241,8 +241,6 @@ class EBL_model(object):
         change the calculation of emissivity of '-6.' to
         log10(new total mass).
 
-        Popstar output:
-        on progress
         """
         if yaml_file['ssp_type'] == 'SB99':
 
@@ -292,96 +290,6 @@ class EBL_model(object):
                     - float(yaml_file['total_stellar_mass'])
                     + np.log10(1e10 * c.c.value)
                     - 2. * ssp_log_freq[:, np.newaxis, np.newaxis])
-
-        elif yaml_file['ssp_type'] == 'Popstar09':
-            list_files = os.listdir(yaml_file['path_ssp'])
-
-            numbers = []
-            for listt in list_files:
-                numbers.append(
-                    float(listt.replace(pop_filename, '')))
-
-            indexes = np.argsort(numbers)
-            ssp_log_time = np.sort(numbers)
-            ssp_wavelenghts = np.loadtxt(
-                yaml_file['path_ssp'] + list_files[0])[:, 0]
-            pop09_lumin_cube = np.zeros((len(ssp_wavelenghts),
-                                         len(list_files)))
-
-            self._ssp_log_freq = self.log10_safe(  # log(frequency/Hz)
-                c.c.value / ssp_wavelenghts[::-1] / 1E-10)
-
-            x_is_1e4 = np.argmin(np.abs(ssp_wavelenghts - 1e4))
-            cut = 5e27 / 3.828e33
-
-            for nind, ind in enumerate(indexes):
-                yyy = np.loadtxt(
-                    yaml_file['path_ssp']
-                    + pop_filename
-                    + str('%.2f' % numbers[ind])
-                )[:, 1]
-
-                if np.shape(np.where(yyy[:x_is_1e4] < cut))[1] == 0:
-                    min_x = 0
-                else:
-                    min_x = np.where(yyy[:x_is_1e4] < cut)[0][-1]
-
-                if cut_popstar:
-                    pop09_lumin_cube[min_x:, nind] = yyy[min_x:]
-                else:
-                    pop09_lumin_cube[:, nind] = yyy
-
-            # log(em[erg/s/Hz/M_solar])
-            ssp_log_emis = self.log10_safe(pop09_lumin_cube[::-1]
-                                           * 3.828e33)
-            ssp_log_emis[np.isnan(ssp_log_emis)] = -43.
-            ssp_log_emis[
-                np.invert(np.isfinite(ssp_log_emis))] = -43.
-            ssp_log_emis += (np.log10(1E10 * c.c.value)
-                             - 2. * self._ssp_log_freq[:, np.newaxis])
-
-            self._ssp_log_freq = (self._ssp_log_freq[1:]
-                                  + self._ssp_log_freq[:-1]) / 2.
-            ssp_log_emis = (ssp_log_emis[1:, :]
-                            + ssp_log_emis[:-1, :]) / 2.
-
-            del pop09_lumin_cube
-
-        elif yaml_file['ssp_type'] == 'pegase3':
-            ssp_metall = [0.1, 0.05, 0.02, 0.008,
-                          0.004, 0.0004, 0.0001]
-            # print(ssp_metall)
-
-            data_pegase = np.loadtxt(
-                yaml_file['path_ssp'] + 'spectral_resultsZ0.0001.txt')
-            t_pegase = np.unique(data_pegase[:, 0])
-            l_pegase = np.unique(data_pegase[:, 1])
-
-            ssp_log_freq = self.log10_safe(  # log(frequency/Hz)
-                c.c.value / l_pegase[::-1] * 1e10)
-
-            dd_pegase = np.zeros((l_pegase.shape[0],
-                                  t_pegase.shape[0],
-                                  len(ssp_metall) + 1))
-
-            for n_met, met in enumerate(ssp_metall):
-                data_pegase = np.loadtxt(
-                    yaml_file['path_ssp'] +
-                    'spectral_resultsZ' + str(met) + '.txt')
-
-                dd_pegase[:, :, n_met] = data_pegase[:, 2].reshape(
-                    t_pegase.shape[0],
-                    l_pegase.shape[0]).T[::-1]
-
-            ssp_metall = np.append(ssp_metall, 1e-43)
-            dd_pegase[:, :, -1] = dd_pegase[:, :, -2]
-
-            ssp_log_time = self.log10_safe(t_pegase * 1e6)  # log(time/yrs)
-
-            ssp_log_emis = self.log10_safe(dd_pegase)
-            ssp_log_emis += (np.log10(1E10 * c.c.value)
-                             - 2. * ssp_log_freq
-                             [:, np.newaxis, np.newaxis])
 
 
         elif yaml_file['ssp_type'] == 'generic':
