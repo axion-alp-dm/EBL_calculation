@@ -4,7 +4,7 @@ import yaml
 import psutil
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.interpolate import UnivariateSpline, RegularGridInterpolator
+from scipy.interpolate import UnivariateSpline, RegularGridInterpolator,RectBivariateSpline
 
 from ebl_codes.metall_models import metall_model
 from ebl_codes.sfr_models import sfr_model
@@ -57,6 +57,9 @@ def memory_usage_psutil():
     mem = process.memory_info()[0] / float(10 ** 6)
     return mem
 
+def chi2_measurs(x_model, x_obs, err_obs):
+    return sum(((x_obs - x_model) / err_obs) ** 2.)
+
 # Configuration file reading and data input/output ---------#
 def read_config_file(ConfigFile):
     with open(ConfigFile, 'r') as stream:
@@ -96,9 +99,14 @@ plt.ylabel('Z')
 # FIGURE: COB FOR DIFFERENT MODELS -------------------------------------
 fig_cob, ax_cob = plt.subplots(figsize=(10, 8))
 
-waves_ebl = np.logspace(-1, 3, num=205)
+waves_ebl = np.geomspace(0.1, 1e3, num=205)
 freq_array_ebl = c.value / (waves_ebl * 1e-6)
 
+_, igl_ebldata = import_cb_data(plot_measurs=False, lambda_max_total=1e3,
+                          lambda_min_total=0.1)
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ISO/ISOCAM (Clements+ ‘99)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'SCUBA-2 (Hsu+ ‘16)']
+igl_ebldata = igl_ebldata[igl_ebldata['ref'] != 'ALMA (Fujimoto+ ‘16)']
 
 # Axion component calculation
 
@@ -143,12 +151,51 @@ plt.yscale('log')
 
 fig_emiss_lambda, (ax_emiss_lambda0, ax_emiss_lambda1) = plt.subplots(
     2, 1, figsize=(10, 14))
+
+
+list_zz_finke = os.listdir('/home/porrassa/Downloads/lumdens/')
+
+zz_bare = []
+for i in list_zz_finke:
+    i = i.replace('.dat', '')
+    i = i.replace('lumdens_total_z', '')
+    zz_bare.append(i)
+
+zz_bare = np.array(zz_bare, dtype=str)
+zz_floats = np.array(zz_bare, dtype=float)
+
+zz_order = np.argsort(zz_floats)
+zz_floats = zz_floats[zz_order]
+zz_bare = zz_bare[zz_order]
+
+wavelengths = np.loadtxt(
+    '/home/porrassa/Downloads/lumdens/lumdens_total_z0.00.dat')
+wavelengths = wavelengths[:, 0]
+
+array_lumin = np.zeros((len(wavelengths), len(zz_bare)))
+
+for ni, ii in enumerate(zz_bare):
+    data = np.loadtxt(
+    '/home/porrassa/Downloads/lumdens/lumdens_total_z' + ii + '.dat')
+    array_lumin[:, ni] = data[:, 1]
+
+spline_emiss_finke = RectBivariateSpline(
+    x=np.log10(wavelengths), y=zz_floats, z=array_lumin,
+    kx=1, ky=1, s=0)
+
 plt.subplot(211)
+print(np.shape(emiss_data))
 for nz, zz in enumerate(np.unique(emiss_data['z'])):
     ax_emiss_lambda0.scatter(x=emiss_data['lambda'][emiss_data['z'] == zz],
                 y=emiss_data['eje'][emiss_data['z'] == zz],
             color=plt.cm.CMRmap(nz / float(len(np.unique(emiss_data['z'])))),
                 )
+
+    plt.plot(waves_ebl, spline_emiss_finke(x=np.log10(waves_ebl),
+                       y=zz, grid=False),
+                    color=plt.cm.CMRmap(
+                        nz / float(len(np.unique(emiss_data['z'])))),
+                    zorder=0, alpha=0.75, ls='-')
 
 ax_emiss_lambda0.set_xscale('log')
 ax_emiss_lambda0.set_yscale('log')
@@ -162,6 +209,22 @@ ax_emiss_lambda1.set_xscale('log')
 
 plt.axhline(1, c='grey', zorder=0)
 plt.axhline(-1, c='grey', zorder=0)
+
+for nz, zz in enumerate(np.unique(emiss_data['z'])):
+
+    plt.plot(
+        emiss_data['lambda'][emiss_data['z'] == zz],
+        (spline_emiss_finke(
+            x=np.log10(emiss_data['lambda'][emiss_data['z'] == zz]),
+            y=zz, grid=False)
+         - emiss_data['eje'][emiss_data['z'] == zz])
+        / ((emiss_data['eje_n'][emiss_data['z'] == zz]
+            + emiss_data['eje_p'][emiss_data['z'] == zz]) / 2.),
+        color=plt.cm.CMRmap(
+            nz / float(len(np.unique(emiss_data['z'])))),
+        ls='', marker='*'
+    )
+
 
 plt.xlabel(r'Wavelength ($\mu$m)')
 plt.ylabel(
@@ -180,7 +243,7 @@ for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                4.5, 5.8, 8.0]):
     plt.subplot(4, 3, n_lambda + 1)
     emissivity_data(z_min=None, z_max=None,
-                    lambda_min=ll - 0.05, lambda_max=ll + 0.05,
+                    lambda_min=ll - 0.01, lambda_max=ll + 0.01,
                     take1ref=None, plot_fig=True)
 
     # if n_lambda != 8:
@@ -192,6 +255,7 @@ for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
     plt.yscale('log')
 
 handles_emiss, labels_emiss = [], []
+handles_emiss_markers, labels_emiss_markers = [], []
 
 plt.subplot(4, 3, 11)
 plt.xlabel(r'redshift z', fontsize=34)
@@ -263,7 +327,7 @@ color_dustabs = []
 
 print('%.3f' %(memory_usage_psutil()))
 # ebl_class.logging_prints = False
-
+# plt.show()
 # SSPs component calculation (all models listed in the input file)
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
@@ -310,6 +374,12 @@ for nkey, key in enumerate(config_data['ssp_models']):
                         nz / float(len(np.unique(emiss_data['z'])))),
             ls='', marker=markers[nkey]
                     )
+        if nz == 0:
+            labels_emiss_markers.append(
+                config_data['ssp_models'][key]['name'])
+            handles_emiss_markers.append(plt.Line2D(
+                [], [], linestyle='',
+                color='k', marker=markers[nkey]))
 
     plt.figure(fig_emiss_z)
     for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
@@ -410,6 +480,82 @@ for nkey, key in enumerate(config_data['ssp_models']):
                              verbose=False),
                          ls=linstyles_ssp[nkey], c=color_dustabs[ni],
                          alpha=1)
+
+    print('Chi2 for each component')
+    print('CB data: ' + str(chi2_measurs(
+        ebl_class.ebl_ssp_spline(
+            wv_array=igl_ebldata['lambda'], zz_array=0.),
+        igl_ebldata['nuInu'], igl_ebldata['1 sigma'])))
+    print(
+        'emissivities data: ' + str(chi2_measurs(
+            ebl_class.emiss_ssp_spline(
+                emiss_data['lambda'], emiss_data['z'])
+            * (c.value / (emiss_data['lambda'] * 1e-6)) * 1e-7,
+            emiss_data['eje'],
+            (emiss_data['eje_n'] + emiss_data['eje_p']) / 2.))
+        )
+    data_emiss_small = emiss_data[emiss_data['lambda']<10.]
+    print(
+        'emissivities data <10: ' + str(chi2_measurs(
+            ebl_class.emiss_ssp_spline(
+                data_emiss_small['lambda'], data_emiss_small['z'])
+            * (c.value / (data_emiss_small['lambda'] * 1e-6)) * 1e-7,
+            data_emiss_small['eje'],
+            (data_emiss_small['eje_n'] + data_emiss_small['eje_p']) / 2.))
+        )
+
+    data_emiss_small = emiss_data[emiss_data['lambda']>=10.]
+    print(
+        'emissivities data >10: ' + str(chi2_measurs(
+            ebl_class.emiss_ssp_spline(
+                data_emiss_small['lambda'], data_emiss_small['z'])
+            * (c.value / (data_emiss_small['lambda'] * 1e-6)) * 1e-7,
+            data_emiss_small['eje'],
+            (data_emiss_small['eje_n'] + data_emiss_small['eje_p']) / 2.))
+        )
+    print(
+        'sfr data: ' + str(chi2_measurs(
+            sfr_model(
+                zz_array=sfr_data[:, 0],
+                sfr_model=config_data['ssp_models'][key]['sfr_formula'],
+                sfr_params=config_data['ssp_models'][key]['sfr_params']),
+            sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.))
+        )
+    print(
+        'metallicity data: ' + str(chi2_measurs(
+            metall_model(
+                zz_array=aa[:, 0],
+                metall_model=config_data['ssp_models'][key]['metall_formula'],
+                metall_params=config_data['ssp_models'][key]['metall_params']
+            ),
+            aa[:, 1], (aa[:, 2] + aa[:, 3]) / 2.))
+        )
+    print(
+        'total data: ' + str(
+            chi2_measurs(
+                ebl_class.ebl_ssp_spline(
+                    wv_array=igl_ebldata['lambda'], zz_array=0.),
+                igl_ebldata['nuInu'], igl_ebldata['1 sigma'])
+            + chi2_measurs(
+            ebl_class.emiss_ssp_spline(
+                emiss_data['lambda'], emiss_data['z'])
+            * (c.value / (emiss_data['lambda'] * 1e-6)) * 1e-7,
+            emiss_data['eje'],
+            (emiss_data['eje_n'] + emiss_data['eje_p']) / 2.)
+            + chi2_measurs(
+            sfr_model(
+                zz_array=sfr_data[:, 0],
+                sfr_model=config_data['ssp_models'][key]['sfr_formula'],
+                sfr_params=config_data['ssp_models'][key]['sfr_params']),
+            sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.)
+            + chi2_measurs(
+            metall_model(
+                zz_array=aa[:, 0],
+                metall_model=config_data['ssp_models'][key]['metall_formula'],
+                metall_params=config_data['ssp_models'][key]['metall_params']
+            ),
+            aa[:, 1], (aa[:, 2] + aa[:, 3]) / 2.))
+        + '\n')
 
 
 print('%.3f' %(memory_usage_psutil()))
@@ -531,6 +677,16 @@ fig_dustabs.savefig(
     bbox_inches='tight', dpi=500)
 fig_dustabs.savefig(
     input_file_dir + '/dustabs' + '.pdf',
+    bbox_inches='tight')
+
+plt.figure(fig_emiss_lambda)
+print(np.shape(emiss_data))
+plt.legend(handles_emiss_markers, labels_emiss_markers)
+fig_emiss_lambda.savefig(
+    input_file_dir + '/emiss_lambda' + '.png',
+    bbox_inches='tight', dpi=500)
+fig_emiss_lambda.savefig(
+    input_file_dir + '/emiss_lambda' + '.pdf',
     bbox_inches='tight')
 
 plt.show()

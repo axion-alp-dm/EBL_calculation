@@ -31,7 +31,7 @@ plt.rc('xtick.major', size=7, width=1.5, top=True, pad=10)
 plt.rc('ytick.major', size=7, width=1.5, right=True, pad=10)
 plt.rc('xtick.minor', size=5, width=1.)
 plt.rc('ytick.minor', size=5, width=1.)
-
+os.chdir("..")
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
@@ -69,7 +69,7 @@ labelss = {'bosa.txt': 'BOSA',
           'chary.txt': 'Chary'}
 
 xx_array = np.geomspace(0.5, 25.)
-
+'''
 # -------------HEGRA spectrum fits -------------------------------------
 # ----------------------------------------------------------------------
 mkr501_flux_1 = np.loadtxt(
@@ -130,6 +130,11 @@ plt.errorbar(mkr501_flux[:, 0], mkr501_flux[:, 1],
 xx_plot = np.linspace(0, 150, num=500)
 
 print('\nPL + EBL cutoff')
+
+# We initialize the class with the input file
+output_data = read_config_file(
+    'outputs/lhaaso_new/asimov_dict_PL' + bbb + '.yaml')
+
 for nd, d in enumerate(my_ebl):
     print(d)
 
@@ -151,6 +156,8 @@ for nd, d in enumerate(my_ebl):
     m.migrad()
     m.hesse()
 
+    print(m.params)
+
     print(f"{m.fval:.1f} / {m.ndof:.0f} = {m.fmin.reduced_chi2:.1f}")
     print(1 - stats.chi2.cdf(x=m.fval, df=m.ndof))
 
@@ -163,50 +170,50 @@ for nd, d in enumerate(my_ebl):
                      funct_mk501_inside(xx_array, *m.values),
                      c=colors[d], lw=1)
 
-# print('\nPL1 + CPL12 + EBL absorption')
-# for nd, d in enumerate(my_ebl):
-#     print(d)
-#
-#     opacity = opacities_array[d]
-#
-#     def funct_mk501_inside(xx, N0, gamma1, gamma2, Ebreak, fi):
-#         return (N0 * xx ** 2.
-#                 * xx ** (-gamma1)
-#                 * (1. + (xx / Ebreak) ** fi) ** ((gamma1 - gamma2) / fi)
-#                 * np.exp(-opacity(np.log10(xx)))
-#                 )
-#
-#     combined_likelihood = LeastSquares(
-#         mkr501_flux[:, 0], mkr501_flux[:, 1],
-#         mkr501_flux[:, 2], funct_mk501_inside)
-#
-#     m = Minuit(combined_likelihood,
-#                N0=200, gamma1=2., gamma2=2.45, Ebreak=2.1, fi=2.)
-#
-#     m.limits['gamma1'] = (0., 10.)
-#     m.limits['gamma2'] = (0., 10.)
-#     m.limits['fi'] = (0., 10.)
-#     m.limits['Ebreak'] = (1., 10.)
-#
-#     m.fixed['fi'] = True
-#
-#     m.migrad()
-#     m.hesse()
-#
-#     print(m.params)
-#
-#     print(f"{m.fval:.1f} / {m.ndof:.0f} = {m.fmin.reduced_chi2:.1f}")
-#     print(1 - stats.chi2.cdf(x=m.fval, df=m.ndof))
-#
-#     ax_spectrum.plot(xx_array,
-#                      funct_mk501_inside(xx_array, *m.values),
-#                      c=colors[d],
-#                      ls=':', lw=1)
-#
-#     ax_spectrum2[1].plot(xx_array,
-#                      funct_mk501_inside(xx_array, *m.values),
-#                      c=colors[d],
-#                      label=labelss[d], lw=1)
+print('\nPL1 + CPL12 + EBL absorption')
+for nd, d in enumerate(my_ebl):
+    print(d)
+
+    opacity = opacities_array[d]
+
+    def funct_mk501_inside(xx, N0, gamma1, gamma2, Ebreak, fi):
+        return (N0 * xx ** 2.
+                * xx ** (-gamma1)
+                * (1. + (xx / Ebreak) ** fi) ** ((gamma1 - gamma2) / fi)
+                * np.exp(-opacity(np.log10(xx)))
+                )
+
+    combined_likelihood = LeastSquares(
+        mkr501_flux[:, 0], mkr501_flux[:, 1],
+        mkr501_flux[:, 2], funct_mk501_inside)
+
+    m = Minuit(combined_likelihood,
+               N0=200, gamma1=2., gamma2=2.45, Ebreak=2.1, fi=2.)
+
+    # m.limits['gamma1'] = (0., 10.)
+    # m.limits['gamma2'] = (0., 10.)
+    # m.limits['fi'] = (0., 10.)
+    # m.limits['Ebreak'] = (1., 10.)
+
+    m.fixed['fi'] = True
+
+    m.migrad()
+    m.hesse()
+
+    print(m.params)
+
+    print(f"{m.fval:.1f} / {m.ndof:.0f} = {m.fmin.reduced_chi2:.1f}")
+    print(1 - stats.chi2.cdf(x=m.fval, df=m.ndof))
+
+    ax_spectrum.plot(xx_array,
+                     funct_mk501_inside(xx_array, *m.values),
+                     c=colors[d],
+                     ls=':', lw=1)
+
+    ax_spectrum2[1].plot(xx_array,
+                     funct_mk501_inside(xx_array, *m.values),
+                     c=colors[d],
+                     label=labelss[d], lw=1)
 
 plt.xscale('log')
 plt.yscale('log')
@@ -250,8 +257,10 @@ plt.yscale('log')
 plt.xlim(0.5, 23)
 plt.ylim(1, 200)
 
-plt.xlabel('E [TeV]')
-plt.ylabel(r'$E^2dN/dE$ [10$^{−12}$ erg cm$^{−2}$ s$^{−1}$]',
+plt.xlabel(r'E $\left(\mathrm{TeV}\right)$')
+plt.ylabel(r'$E^2dN/dE$ '
+           r'$\left(10^{-12}\, \mathrm{erg} \,\mathrm{cm}^{'
+           r'-2}\,\mathrm{s}^{-1}\right)$',
            size=20)
 
 plt.text(x=1, y=10, s='PL + EBL')
@@ -266,7 +275,7 @@ plt.ylim(1, 200)
 plt.tick_params('y', labelleft=False)
 
 plt.text(x=1, y=10, s='BPL + EBL')
-plt.xlabel('E [TeV]')
+plt.xlabel(r'E $\left(\mathrm{TeV}\right)$')
 
 legend22 = plt.legend(loc=2, bbox_to_anchor=(1.01, 0.95))
 # handles, labels = ax_spectrum2[1].get_legend_handles_labels()
@@ -291,8 +300,8 @@ plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum2.png',
 plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum2.pdf',
             bbox_inches='tight')
 plt.show()
-
-all_size = 24
+'''
+all_size = 20
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
 plt.rcParams['axes.labelsize'] = all_size
@@ -311,6 +320,7 @@ plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
 plt.rc('xtick.minor', size=7, width=1.5)
 plt.rc('ytick.minor', size=7, width=1.5)
 
+'''
 # -------------- Histograms --------------------------------------------
 # Power law + EBL cutoff
 aaa = 'PL'
@@ -373,7 +383,7 @@ for ni, i in enumerate(my_ebl):
 
         m_p = Minuit(cost_funct_kstest, df=16.)
 
-        m_p.limits['df'] = (0., 25.)
+        # m_p.limits['df'] = (0., 25.)
 
         m_p.migrad()
         m_p.hesse()
@@ -462,7 +472,7 @@ for ni, i in enumerate(my_ebl):
 
         m_p = Minuit(cost_funct_kstest, df=16.)
 
-        m_p.limits['df'] = (0., 25.)
+        # m_p.limits['df'] = (0., 25.)
 
         m_p.migrad()
         m_p.hesse()
@@ -822,11 +832,11 @@ plt.savefig('outputs/lhaaso_new/histandcum_3eblmodels_'
             bbox_inches='tight')
 
 plt.show()
-
+'''
 # -----------------------------------------------------------------------------
 plt.rc('ytick.major', size=5, width=1., right=False, pad=5)
 fig, axes = plt.subplots(2, 4, layout="constrained", figsize=(14, 8))
-fig.subplots_adjust(hspace=0.7)  # hspace=1., wspace=0.4
+fig.subplots_adjust(hspace=0.8)  # hspace=1., wspace=0.4
 # fig.tight_layout()
 
 hatches = ['/', '', '']
@@ -834,23 +844,15 @@ colors = {'bosa.txt': 'tab:blue',
           '2bb.txt': 'tab:green',
           'chary.txt': 'darkorange'}
 
-
-def create_subtitle(fig, grid, title):
-    "Sign sets of subplots with title"
-    row = fig.add_subplot(grid)
-    # the '\n' is important
-    row.set_title(f'{title}\n')#, fontweight='bold')
-    # hide subplot
-    row.set_frame_on(False)
-    row.axis('off')
-
-grid = plt.GridSpec(2, 1)
-
 # Power law + EBL cutoff
 aaa = 'PL'
 spectral_shape = r'PL + EBL'
-create_subtitle(fig, grid[0, :], spectral_shape)
-bins_hist = [np.linspace(194, 220., num=40),
+
+plt.text(x=1.13, y=1.1, s=spectral_shape, fontweight='bold',
+         horizontalalignment='center',
+         transform=axes[0][1].transAxes, fontsize=22)
+
+bins_hist = [np.linspace(194, 220., num=40) * (u.erg.to(u.TeV)),
              np.linspace(2.0875, 2.266, num=40)]
 
 
@@ -858,42 +860,77 @@ bins_hist = [np.linspace(194, 220., num=40),
 output_data = read_config_file(
     'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
-number_of_params = len(output_data['param_names'])
-print(output_data['param_names'])
+number_of_params = 2
 
+plt.rc('text', usetex=False)
+param_names = [
+    r'$\phi_0$',
+    r'$\Gamma$']
 
-for param in range(number_of_params):
-    ax = axes[0][1 + param]
-    ax.set_xlabel(output_data['param_names'][param])
-    ax.set_xlim(bins_hist[param][0], bins_hist[param][-1])
+plt.text(x=0.5, y=-0.45,
+         s=r'$\left(10^{-12}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}\,\mathrm{TeV}^{-1}\right)$',
+         horizontalalignment='center',
+         transform=axes[0][1].transAxes, fontsize=18)
 
-    for ni, i in enumerate(my_ebl):
-        color = colors[i]
-        param_array = np.array(output_data[i]['params_values' + bbb])
+ax = axes[0][1]
+ax.set_xlabel(param_names[0])
+ax.set_xlim(bins_hist[0][0], bins_hist[0][-1])
 
-        if vert_lines_against == i:
-            ax.axvline(
-                output_data[i]['asimov']['params_values'][param],
-                c='k', lw=1, ls=':')
+for ni, i in enumerate(my_ebl):
+    color = colors[i]
+    param_array = np.array(output_data[i]['params_values' + bbb])
 
-        if param == number_of_params - 1:
-            ax.hist(param_array[:, param], color=color,
-                    bins=bins_hist[param], hatch=hatches[ni], alpha=0.4,
-                    label=labelss[i], histtype='stepfilled')
-        else:
-            ax.hist(param_array[:, param], color=color,
-                    bins=bins_hist[param], hatch=hatches[ni], alpha=0.4,
-                    histtype='stepfilled')
+    if vert_lines_against == i:
+        ax.axvline(
+            output_data[i]['asimov']['params_values'][0]* (u.erg.to(u.TeV)),
+            c='k', lw=1, ls=':')
 
-    ax.tick_params(axis='y', labelsize=14)
+    if number_of_params - 1 == 0:
+        ax.hist(param_array[:, 0] * (u.erg.to(u.TeV)), color=color,
+                bins=bins_hist[0], hatch=hatches[ni], alpha=0.4,
+                label=labelss[i], histtype='stepfilled')
+    else:
+        ax.hist(param_array[:, 0] * (u.erg.to(u.TeV)), color=color,
+                bins=bins_hist[0], hatch=hatches[ni], alpha=0.4,
+                histtype='stepfilled')
+
+ax.tick_params(axis='y', labelsize=18)
+
+ax = axes[0][2]
+ax.set_xlabel(param_names[1])
+ax.set_xlim(bins_hist[1][0], bins_hist[1][-1])
+
+for ni, i in enumerate(my_ebl):
+    color = colors[i]
+    param_array = np.array(output_data[i]['params_values' + bbb])
+
+    if vert_lines_against == i:
+        ax.axvline(
+            output_data[i]['asimov']['params_values'][1],
+            c='k', lw=1, ls=':')
+
+    if number_of_params - 1 == 1:
+        ax.hist(param_array[:, 1], color=color,
+                bins=bins_hist[1], hatch=hatches[ni], alpha=0.4,
+                label=labelss[i], histtype='stepfilled')
+    else:
+        ax.hist(param_array[:, 1], color=color,
+                bins=bins_hist[1], hatch=hatches[ni], alpha=0.4,
+                histtype='stepfilled')
+
+ax.tick_params(axis='y', labelsize=18)
 
 ax.legend(loc=6, bbox_to_anchor=(1.02, 0.5))
 
 # # 2 Power law + EBL cutoff
 aaa = '2PL'
 spectral_shape = r'BPL + EBL'
-create_subtitle(fig, grid[1, :], spectral_shape)
-bins_hist = [np.linspace(188., 300., num=40),
+
+plt.text(x=1.13, y=1.1, s=spectral_shape, fontweight='bold',
+         horizontalalignment='center',
+         transform=axes[1][1].transAxes, fontsize=22)
+
+bins_hist = [np.linspace(188., 300., num=40)* (u.erg.to(u.TeV)),
              np.linspace(1.3, 2.09, num=40),
              np.linspace(2.2, 3.5, num=40),
              np.linspace(0.77, 10., num=40)]
@@ -902,12 +939,47 @@ bins_hist = [np.linspace(188., 300., num=40),
 output_data = read_config_file(
     'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
-number_of_params = len(output_data['param_names'])
+param_names = [
+    r'$\phi_0$',
+    r'$\Gamma_1$',
+    r'$\Gamma_2$',
+    r'$E_\mathrm{break}$ $\left(\mathrm{TeV}\right)$']
 
-for param in range(number_of_params):
+
+plt.text(x=0.5, y=-0.45,
+         s=r'$\left(10^{-12}\,\mathrm{cm}^{-2}\,\mathrm{s}^{-1}\,\mathrm{TeV}^{-1}\right)$',
+         horizontalalignment='center',
+         transform=axes[1][0].transAxes, fontsize=18)
+
+ax = axes[1][0]
+ax.set_xlabel(param_names[0])
+ax.tick_params(axis='y', labelsize=18)  # labelrotation=90
+ax.set_xlim(bins_hist[0][0], bins_hist[0][-1])
+
+for ni, i in enumerate(my_ebl):
+    color = colors[i]
+
+    param_array = np.array(output_data[i]['params_values' + bbb])
+
+    if vert_lines_against == i:
+        ax.axvline(
+            output_data[i]['asimov']['params_values'][0]
+            * (u.erg.to(u.TeV)),
+            c='k', lw=1, ls=':')
+
+    if number_of_params - 1 == 0:
+        ax.hist(param_array[:, 0]* (u.erg.to(u.TeV)), color=color,
+                 bins=bins_hist[0], hatch=hatches[ni], alpha=0.4,
+                 label=labelss[i], histtype='stepfilled')
+    else:
+        ax.hist(param_array[:, 0]* (u.erg.to(u.TeV)), color=color,
+                 bins=bins_hist[0], hatch=hatches[ni], alpha=0.4,
+                histtype='stepfilled')
+
+for param in range(1, 4):
     ax = axes[1][param]
-    ax.set_xlabel(output_data['param_names'][param])
-    ax.tick_params(axis='y', labelsize=14)  # labelrotation=90
+    ax.set_xlabel(param_names[param])
+    ax.tick_params(axis='y', labelsize=18)  # labelrotation=90
     ax.set_xlim(bins_hist[param][0], bins_hist[param][-1])
 
     for ni, i in enumerate(my_ebl):
@@ -940,4 +1012,4 @@ plt.savefig('outputs/lhaaso_new/params_3eblmodels_' + aaa + bbb + '_paper4.pdf',
             bbox_inches='tight')
 
 
-plt.show()
+# plt.show()

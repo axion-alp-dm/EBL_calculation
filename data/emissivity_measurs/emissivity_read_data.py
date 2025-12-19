@@ -35,7 +35,7 @@ def emissivity_data(directory=None, z_min=None, z_max=None, lambda_min=0,
                                data_individual['eje_p']),
                          marker=markers[nref % len(markers)],
                          label=ref,
-                         linestyle='', zorder=1e4)
+                         linestyle='', zorder=1e4, alpha=0.8)
 
     return data
 

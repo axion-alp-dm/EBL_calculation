@@ -118,7 +118,7 @@ for iii in range(len(metalls)):
 handles, labels = ax1.get_legend_handles_labels()
 leg1 = plt.legend(handles[::-1], labels[::-1], title='Z')
 
-plt.xlabel('Wavelength ($\mu$m)')
+plt.xlabel('Wavelength (µm)')
 plt.ylabel(r'log$_{10}$(L$_{\nu}$ '  # /Lsun '
            r'[erg s$^{-1}$ $\mathrm{Hz}^{-1}$ M$_{\odot}^{-1}$])')
 
@@ -153,7 +153,7 @@ plt.plot(ir_wv, ir_lum[:, -2],
 plt.plot(ir_wv, ir_lum[:, -1], ls='--',
          label=r'%.1f' % l_tir[-1], c=plt.cm.CMRmap(5/6.))
 
-plt.xlabel('Wavelength ($\mu$m)')
+plt.xlabel('Wavelength (µm)')
 plt.ylabel(r'log$_{10}(L_{\nu}$ '  # /Lsun '
            r'[erg s$^{-1}$ $\mathrm{Hz}^{-1}$ M$_{\odot}^{-1}$])')
 
@@ -163,12 +163,41 @@ leg1 = plt.legend(handles[::-1], labels[::-1],
                   title=r'log$_{10}\left(L_\mathrm{TIR}\right)$',
                   framealpha=1, fontsize=16, title_fontsize=17)
 
-plt.text(x=0.2, y=26.5, s=r'$f_i = 3\times10^9$')
+# plt.text(x=0.2, y=26.5,
+#          s=r'$f_\mathrm{TIR} = 3\times10^9$',
+#          backgroundcolor='white',
+#          bbox=dict(facecolor='w', alpha=1, edgecolor='gainsboro'),
+#          fontsize=20)
+
+# plt.text(x=0.15, y=26.5,
+#          s=r'$\lambda_\mathrm{TIR, cut}=5.5\,$µm',
+#          backgroundcolor='white',
+#          bbox=dict(facecolor='w', alpha=1, edgecolor='lightgrey'),
+#          fontsize=16)
+#
+# plt.text(x=20, y=13.5,
+#          s=r'$f_\mathrm{TIR} = 3\times10^9$',
+#          backgroundcolor='white',
+#          bbox=dict(facecolor='w', alpha=1, edgecolor='gainsboro'),
+#          fontsize=18)
+
+plt.text(x=0.8, y=26,
+         s=r'$f_\mathrm{TIR} = 3\times10^9$'
+         '\n'
+         r'$\lambda_\mathrm{TIR, cut}=5.5\,$µm'
+         ,
+         backgroundcolor='white',
+         bbox=dict(facecolor='w', alpha=1, edgecolor='lightgrey'),
+         fontsize=16,
+         horizontalalignment='center',
+)
 
 plt.xscale('log')
 
 plt.xlim(0.1, 3e5)
 # plt.ylim(16, 25.5)
+
+plt.axvspan(1e-2, 5.5, color='grey', alpha=0.1, zorder=0, ls='')
 
 aaa = np.arange(13, 29, 1)
 bbb = []
@@ -184,6 +213,6 @@ plt.yticks(aaa, labels=bbb)
 plt.savefig('outputs/dust_reem/chary2001_plot.pdf',
             bbox_inches='tight')
 plt.savefig('outputs/dust_reem/chary2001_plot.png',
-            bbox_inches='tight')
+            bbox_inches='tight', dpi=500)
 
 plt.show()

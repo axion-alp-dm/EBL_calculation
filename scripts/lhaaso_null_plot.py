@@ -42,28 +42,25 @@ def read_config_file(ConfigFile):
 
 
 bbb = '_vs_bosa'
-vert_lines_against = 'BOSA.txt'
-my_ebl = ['BOSA.txt', '3_grey_bodies.txt', 'Chary.txt']
+vert_lines_against = 'bosa.txt'
+my_ebl = ['bosa.txt', '2bb.txt', 'chary.txt']
 #
-bbb = '_vs_chary'
-vert_lines_against = 'Chary.txt'
-my_ebl = ['Chary.txt', 'BOSA.txt', '3_grey_bodies.txt']
-#
-# bbb = '_vs_3body'
-# vert_lines_against = '3_grey_bodies.txt'
-# my_ebl = ['3_grey_bodies.txt', 'BOSA.txt', 'Chary.txt']
+# bbb = '_vs_chary'
+# vert_lines_against = 'chary.txt'
+# my_ebl = ['chary.txt', 'bosa.txt', '2bb.txt']
+
+# bbb = '_vs_2bb'
+# vert_lines_against = '2bb.txt'
+# my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
 
 # ------------------------------------------------
-# LogParabola
-# aaa = 'logParabola'
+# Power law + EBL
+# aaa = 'PL'
+# spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma} e^{-\tau}$'
+# bins_hist = [np.linspace(190, 220., num=40),
+#              np.linspace(2.04, 2.25, num=40)]
 
-# Power law + EBL cutoff
-aaa = 'PWandEBL'
-spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma} e^{-\tau}$'
-bins_hist = [np.linspace(190, 220., num=40),
-             np.linspace(2.04, 2.25, num=40)]
-
-# # 2 Power law + EBL cutoff
+# # 2 Power law + EBL
 # aaa = '2PL'
 # spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma_1}' \
 #                  r' \left[1 + \left(\frac{E}{E_\mathrm{' \
@@ -75,21 +72,33 @@ bins_hist = [np.linspace(190, 220., num=40),
 #              np.linspace(2.1, 3.4, num=50),
 #              np.linspace(1., 10., num=40)]
 
-# Power law + exp cutoff + EBL cutoff
-# aaa = 'PWandEXPandEBL'
+# Power law + exp cutoff + EBL
+# aaa = 'PLE'
 # spectral_shape = (r'$\phi(E) = \phi_0 '
 #                   r'\left(\frac{E}{E_0}\right)^{-\Gamma}'
 #                   r' e^{-E/E_\mathrm{cut} - \tau}$')
-# bins_hist = [np.linspace(135., 160., num=40),
+# bins_hist = [np.linspace(135., 250., num=40),
 #              np.linspace(1.8, 2.1, num=30),
-#              np.linspace(1.18, 1.23, num=50),
+#              np.linspace(0.9, 1.23, num=50),
 #              np.linspace(0., 60., num=70)]
+
+# LogParabola + EBL
+aaa = 'LP'
+spectral_shape = (
+    r'$\phi(E) = \phi_0 e^{-\tau} $'
+    r'$ \left(\frac{E}{E_0}\right)^{- \Gamma -\beta  ln(E/E_0))}$')
+bins_hist = [np.linspace(150., 170., num=40),
+             np.linspace(1.06, 1.17, num=30),
+             np.linspace(1.7, 2.15, num=50),
+             np.linspace(0., 0.25, num=70)]
+param_names = ['$\phi_0$', '$E_0$', '$\Gamma$', r'$\beta$']
 
 
 # We initialize the class with the input file
 output_data = read_config_file(
     'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
 
+output_data['param_names'] = ['$\phi_0$', '$E_0$', '$\Gamma$', r'$\beta$']
 number_of_params = len(output_data['param_names'])
 print(output_data['param_names'])
 
@@ -110,9 +119,9 @@ plt.text(s=spectral_shape,
          transform=ax_cum.transAxes)
 
 hatches = ['/', '', '']
-colors = {'BOSA.txt': 'tab:blue',
-          '3_grey_bodies.txt': 'tab:green',
-          'Chary.txt': 'darkorange'}
+colors = {'bosa.txt': 'tab:blue',
+          '2bb.txt': 'tab:green',
+          'chary.txt': 'darkorange'}
 yy_positions = 1.1
 
 for ni, i in enumerate(my_ebl):
@@ -168,7 +177,7 @@ for ni, i in enumerate(my_ebl):
 
         m_p = Minuit(cost_funct_kstest, df=16.)
 
-        m_p.limits['df'] = (0., 25.)
+        # m_p.limits['df'] = (0., 25.)
 
         m_p.migrad()
         m_p.hesse()
@@ -186,7 +195,7 @@ for ni, i in enumerate(my_ebl):
         xx_int = np.linspace(asimov_vert_line, 150, num=500)
         int_result = simpson(y=stats.chi2.pdf(x=xx_int, df=m_p.values),
                              x=xx_int)
-        plt.text(s='%.4f' % (1 - int_result),
+        plt.text(s='%.8f' % (1 - int_result),
                  x=asimov_vert_line + 3., y=yy_positions, color=color)
         yy_positions += 0.1
 

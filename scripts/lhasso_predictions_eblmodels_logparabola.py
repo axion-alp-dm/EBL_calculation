@@ -101,7 +101,7 @@ plt.ylabel('E2dN/dE [10−12 erg cm−2 s−1]')
 
 plt.yscale('log')
 plt.xscale('log')
-# plt.show()
+plt.show()
 plt.savefig('outputs/lhaaso/mk501flare_logparabola.png',
             bbox_inches='tight')
 # ----------------------------------------------------------------------

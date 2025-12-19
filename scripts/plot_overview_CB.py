@@ -7,14 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerTuple
 
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, RectBivariateSpline
 
 from ebl_codes.EBL_class import EBL_model
 from data.cb_measurs.import_cb_measurs import import_cb_data, dictionary_datatype
 
 from astropy import units as u
-from astropy.constants import c
-from astropy.constants import h as h_plank
+import astropy.constants as c
 
 from ebltable.ebl_from_model import EBL
 
@@ -94,7 +93,7 @@ def read_config_file(ConfigFile):
 
 waves_ebl = np.geomspace(5e-6, 1e4, num=int(1e6))
 # waves_ebl = np.geomspace(0.08, 1e4, num=int(1e6))
-freq_array_ebl = np.log10(c.value / (waves_ebl * 1e-6))
+freq_array_ebl = np.log10(c.c.value / (waves_ebl * 1e-6))
 
 # We introduce the Finke22 and CUBA splines
 ebl = {}
@@ -111,7 +110,7 @@ spline_cuba = UnivariateSpline(waves_ebl, nuInu['cuba'], s=0, k=1)
 
 # def spline_starburst(lambda_array):
 #     return 10 ** ebl_class.ebl_ssp_spline(
-#         np.log10(c.value * 1e6 / lambda_array), 0.,
+#         np.log10(c.c.value * 1e6 / lambda_array), 0.,
 #                           grid=False)
 
 
@@ -123,6 +122,90 @@ list_working_models = {
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
              'color': 'k', 'linewidth': 2.5, 'ls': 'dotted'}
 }
+
+plt.figure(figsize=(12, 3))
+
+plt.text(x=0.05, y=0.5,
+         s=r'$\nu I_{\nu}(\lambda,z) = $'
+           r'$\frac{c^2}{4\pi\lambda}\int_{z}^{z_\mathrm{max}}$'
+           r'$ \varepsilon_{\nu\prime }$'
+           r'$\left(\lambda\frac{1+z}{1+z\prime }, z\prime \right)$'
+           r'$\,\frac{1}{(1+z\prime ) H(z\prime )}\, $'
+             r'$\mathrm{d}z\prime $',
+         fontsize=35
+         )
+
+plt.xlim(0., 1.)
+plt.ylim(0., 1.)
+plt.savefig('outputs/figures_paper/nuInu_formula.png',
+            bbox_inches='tight', dpi=500)
+# plt.show()
+
+plt.figure(figsize=(12, 3))
+
+plt.text(x=0.05, y=0.5,
+         s=r'$\varepsilon_{\nu_\mathrm{stellar}}(\lambda, z) $'
+           r'$= \int^{z_\mathrm{max}}_{z}L_{\nu}^\mathrm{SSP}$'
+           r'$\left(\lambda, \tau_\star, Z\right)$'
+           r'$\,\rho_{\star}(z\prime )$'
+           r'$\,\frac{1}{(1+z\prime ) H(z\prime )}\, \mathrm{d}z\prime $',
+         fontsize=30
+         )
+
+plt.xlim(0., 1.)
+plt.ylim(0., 1.)
+plt.savefig('outputs/figures_paper/emissivity_formula.png',
+            bbox_inches='tight', dpi=500)
+
+plt.figure(figsize=(10, 10))
+xx = np.linspace(0.15, 0.5, num=200)
+yy = np.sin((xx-0.5) * 70) * 0.02 + 0.5
+plt.plot(xx, yy, c='k', lw=3)
+yy = np.cos((xx) * 70) * 0.02 + 0.52
+plt.plot(yy, xx, c='k', lw=3)
+plt.annotate(text='', xy=(0.5, 0.5), xytext=(0.8, 0.6),
+             arrowprops=dict(arrowstyle='<-', color='k', lw=3),
+             alpha=1, zorder=-10)
+plt.annotate(text='', xy=(0.5, 0.5), xytext=(0.8, 0.4),
+             arrowprops=dict(arrowstyle='<-', color='k', lw=3),
+             alpha=1, zorder=-10)
+
+plt.annotate(text=r'$\gamma$ (VHE)', xy=(0.26, 0.55), color='k',
+             fontsize=28)
+plt.annotate(text=r'$\gamma$ (EBL)', xy=(0.57, 0.21), color='k',
+             fontsize=28)
+plt.annotate(text=r'e$^{+}$', xy=(0.82, 0.6), color='k',
+             fontsize=28)
+plt.annotate(text=r'e$^{-}$', xy=(0.82, 0.38), color='k',
+             fontsize=28)
+plt.xlim(0., 1.)
+plt.ylim(0., 1.)
+plt.savefig('outputs/figures_paper/pair_production.png',
+            bbox_inches='tight', dpi=500)
+# plt.show()
+
+plt.figure(figsize=(8, 8))
+plt.text(0.05, 0.5, s=r'$\tau (E_0, z_0) = \int_0 ^{z_0} \mathrm{d}z\,$'
+                      r'$ \frac{\mathrm{d} L}{\mathrm{d} z}(z)$'
+                     r'$ \int_0 ^{\infty} \mathrm{d}\epsilon$'
+                      r' $\frac{\mathrm{d} n}{\mathrm{d} \epsilon}$'
+                     r'$ (\epsilon, z)$')
+plt.text(0.3, 0.38, s=r'$\int_{-1} ^{1} \mathrm{d}\mu \,\frac{1 - \mu}{2} $'
+                      r'$\,\sigma_{\gamma \gamma} $'
+                     r'$\left[\beta\left(E_0, z, \epsilon, \mu\right)\right]$')
+
+plt.savefig('outputs/figures_paper/tau_from_ebl.png',
+            bbox_inches='tight', dpi=500)
+
+plt.figure(figsize=(8, 8))
+plt.text(0.05, 0.5, s=r' $\frac{\mathrm{d} n}{\mathrm{d} \epsilon}$'
+                     r'$ = \frac{c}{4 \pi} \epsilon^2 \, \nu I_{\nu}$',
+         fontsize=60)
+
+plt.savefig('outputs/figures_paper/dnde_nuInu.png',
+            bbox_inches='tight', dpi=500)
+
+# plt.show()
 
 # Beginning of figure specifications
 fig, ax1 = plt.subplots(figsize=(16, 10))  # figsize=(16, 10))
@@ -223,10 +306,10 @@ ax1.set_xscale('log')
 ax1.set_yscale('log')
 def tick_function(X):
     # return 17.5/X
-    return (h_plank * c / X / u.micron).to(u.eV).value
+    return (c.h * c.c / X / u.micron).to(u.eV).value
 def tick_function_2(X):
     # return 2.48/X
-    return (h_plank * c / X / u.eV).to(u.micron).value
+    return (c.h * c.c / X / u.eV).to(u.micron).value
 aaa = tick_function(2.48)
 print(aaa)
 print(tick_function_2(aaa))
@@ -237,20 +320,271 @@ ax3.set_xlabel('Photon energy (eV)', labelpad=12)
 
 plt.savefig('outputs/figures_paper/cb.pdf', bbox_inches='tight')
 plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
+
+
+# Beginning of figure specifications
+fig, ax1 = plt.subplots(figsize=(12, 8))
+
+# We introduce all the EBL measurements
+upper_lims_all, igl_ebldata = import_cb_data(
+    lambda_min_total=0.08,
+    lambda_max_total=1e4,
+    ax1=ax1, plot_measurs=True,
+obs_not_taken=['ALMA (Fujimoto+ ‘16)',
+               'SCUBA-2 (Hsu+ ‘16)',
+               'ISO/ISOCAM (Clements+ ‘99)',
+               'NH/LORRI (Symons+ ‘23)'])
+
+upper_lims_all.sort(['lambda'])
+aaa = np.where(upper_lims_all['lambda'][1:] == upper_lims_all['lambda'][:-1])[0]
+upper_lims_all['nuInu'][aaa] = np.min(
+    (upper_lims_all['nuInu'][aaa], upper_lims_all['nuInu'][aaa+1]), axis=0)
+upper_lims_all.remove_rows([aaa+1])
+upper_lims_all.remove_row(
+    np.where(upper_lims_all['ref']=='NH/LORRI (Postman+ ‘24)')[0][0])
+aaa = np.where(upper_lims_all['nuInu'] < 1e-6)[0]
+upper_lims_all['nuInu'][aaa] = upper_lims_all['1 sigma'][aaa]
+
+spline_upper = UnivariateSpline(
+    np.log10(upper_lims_all['lambda']),
+    np.log10(upper_lims_all['nuInu']), #+upper_lims_all['1 sigma']),
+    k=1, s=0, ext=3)
+
+
+igl_ebldata.sort(['lambda'])
+aaa = np.where(igl_ebldata['lambda'][1:] == igl_ebldata['lambda'][:-1])[0]
+igl_ebldata['nuInu'][aaa] = np.min(
+    (igl_ebldata['nuInu'][aaa], igl_ebldata['nuInu'][aaa+1]), axis=0)
+igl_ebldata.remove_rows([aaa+1])
+
+spline_lower = UnivariateSpline(
+    np.log10(igl_ebldata['lambda']),
+    np.log10(igl_ebldata['nuInu']), #+igl_ebldata['1 sigma']),
+    k=1, s=0, ext=3)
+
+handles, labels = ax1.get_legend_handles_labels()
+handles = [h[0] for h in handles]
+
+# legend11 = plt.legend(handles, labels,
+#                       ncol=1, loc=6,
+#                       fontsize=14,
+#                       bbox_to_anchor=(1.03, 0.5))
+
+waves_fine = np.geomspace(0.09, 1e3, num=500)
+
+# plt.fill_between(
+#     x=waves_fine,
+#     y1=10**spline_lower(np.log10(waves_fine)),
+#     y2=10**spline_upper(np.log10(waves_fine)),
+# color='gray', zorder=0, alpha=0.2, lw=0)
+
+plt.annotate(text='', xy=(0.09, 0.9), xytext=(5, 0.9),
+             arrowprops=dict(arrowstyle='<->', color='grey'),
+             alpha=0.7, zorder=-10)
+plt.annotate(text='', xy=(5, 0.9), xytext=(1e3, 0.9),
+             arrowprops=dict(arrowstyle='<->', color='grey'),
+             alpha=0.7, zorder=-10)
+plt.annotate(text='Optical', xy=(1, 1), alpha=0.7, color='grey')
+plt.annotate(text='Infrared', xy=(60, 1), alpha=0.7, color='grey')
+
+ax1.set_xlim(0.09, 1e3)
+ax1.set_ylim(0.8, 120)
+
+# ax1.add_artist(legend11)
+
+ax1.set_xlabel(r'Wavelength (µm)')
+
+ax1.set_xscale('log')
+# ax1.set_yscale('log')
+def tick_function(X):
+    return (c.h * c.c / X / u.micron).to(u.eV).value
+def tick_function_2(X):
+    return (c.h * c.c / X / u.eV).to(u.micron).value
+
+aaa = tick_function(2.48)
+ax3 = ax1.secondary_xaxis('top',
+                         functions=(tick_function, tick_function_2))
+ax3.tick_params(axis='x', direction='in', pad=0)
+ax3.set_xlabel('Photon energy (eV)', labelpad=12)
+
+
+plt.savefig('outputs/figures_paper/cb_measursIGL.pdf',
+            bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb_measursIGL.png',
+            bbox_inches='tight', dpi=1000)
+
+# Beginning of figure specifications
+fig, ax1 = plt.subplots(figsize=(12, 8))
+
+# We introduce all the EBL measurements
+upper_lims_all, igl_ebldata = import_cb_data(
+    lambda_min_total=0.08,
+    lambda_max_total=1e4,
+    ax1=ax1, plot_measurs=True,
+obs_not_taken=['ALMA (Fujimoto+ ‘16)',
+               'SCUBA-2 (Hsu+ ‘16)',
+               'ISO/ISOCAM (Clements+ ‘99)',
+               'NH/LORRI (Symons+ ‘23)'])
+
+upper_lims_all.sort(['lambda'])
+aaa = np.where(upper_lims_all['lambda'][1:] == upper_lims_all['lambda'][:-1])[0]
+upper_lims_all['nuInu'][aaa] = np.min(
+    (upper_lims_all['nuInu'][aaa], upper_lims_all['nuInu'][aaa+1]), axis=0)
+upper_lims_all.remove_rows([aaa+1])
+upper_lims_all.remove_row(
+    np.where(upper_lims_all['ref']=='NH/LORRI (Postman+ ‘24)')[0][0])
+aaa = np.where(upper_lims_all['nuInu'] < 1e-6)[0]
+upper_lims_all['nuInu'][aaa] = upper_lims_all['1 sigma'][aaa]
+
+spline_upper = UnivariateSpline(
+    np.log10(upper_lims_all['lambda']),
+    np.log10(upper_lims_all['nuInu']), #+upper_lims_all['1 sigma']),
+    k=1, s=0, ext=3)
+
+
+igl_ebldata.sort(['lambda'])
+aaa = np.where(igl_ebldata['lambda'][1:] == igl_ebldata['lambda'][:-1])[0]
+igl_ebldata['nuInu'][aaa] = np.min(
+    (igl_ebldata['nuInu'][aaa], igl_ebldata['nuInu'][aaa+1]), axis=0)
+igl_ebldata.remove_rows([aaa+1])
+
+spline_lower = UnivariateSpline(
+    np.log10(igl_ebldata['lambda']),
+    np.log10(igl_ebldata['nuInu']), #+igl_ebldata['1 sigma']),
+    k=1, s=0, ext=3)
+
+handles, labels = ax1.get_legend_handles_labels()
+handles = [h[0] for h in handles]
+
+# legend11 = plt.legend(handles, labels,
+#                       ncol=1, loc=6,
+#                       fontsize=14,
+#                       bbox_to_anchor=(1.03, 0.5))
+
+waves_fine = np.geomspace(0.09, 1e3, num=500)
+
+plt.fill_between(
+    x=waves_fine,
+    y1=10**spline_lower(np.log10(waves_fine)),
+    y2=10**spline_upper(np.log10(waves_fine)),
+color='gray', zorder=0, alpha=0.2, lw=0)
+
+plt.annotate(text='', xy=(0.09, 0.9), xytext=(5, 0.9),
+             arrowprops=dict(arrowstyle='<->', color='grey'),
+             alpha=0.7, zorder=-10)
+plt.annotate(text='', xy=(5, 0.9), xytext=(1e3, 0.9),
+             arrowprops=dict(arrowstyle='<->', color='grey'),
+             alpha=0.7, zorder=-10)
+plt.annotate(text='Optical', xy=(1, 1), alpha=0.7, color='grey')
+plt.annotate(text='Infrared', xy=(60, 1), alpha=0.7, color='grey')
+
+ax1.set_xlim(0.09, 1e3)
+ax1.set_ylim(0.8, 120)
+
+# ax1.add_artist(legend11)
+
+ax1.set_xlabel(r'Wavelength (µm)')
+
+ax1.set_xscale('log')
+# ax1.set_yscale('log')
+def tick_function(X):
+    return (c.h * c.c / X / u.micron).to(u.eV).value
+def tick_function_2(X):
+    return (c.h * c.c / X / u.eV).to(u.micron).value
+
+aaa = tick_function(2.48)
+ax3 = ax1.secondary_xaxis('top',
+                         functions=(tick_function, tick_function_2))
+ax3.tick_params(axis='x', direction='in', pad=0)
+ax3.set_xlabel('Photon energy (eV)', labelpad=12)
+
+
+plt.savefig('outputs/figures_paper/cb_measurs.pdf',
+            bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb_measurs.png',
+            bbox_inches='tight', dpi=1000)
+
+my_ebl = ['bosa.txt', 'chary.txt', '2bb.txt']
+
+
+waves_ebl = np.geomspace(0.05, 1e3, num=int(1e4))
+
+
+ebl_finke = EBL.readmodel('finke2022')
+ebl_SL = EBL.readmodel('saldana-lopez')
+
+direct_franceschini_data = '/home/porrassa/Downloads/franceschini2017/'
+
+table1 = np.loadtxt(
+    direct_franceschini_data + 'table1.txt', dtype=float)
+table2 = np.loadtxt(
+    direct_franceschini_data + 'table2.txt', dtype=float)
+table3 = np.loadtxt(
+    direct_franceschini_data + 'table3.txt', dtype=float)
+
+# []  ''  _  {}  p
+
+zz_array1 = np.unique(table1[0, :])
+table1 = table1[1:, :]
+zz_array2 = np.unique(table2[0, :])
+table2 = table2[1:, :]
+zz_array3 = np.unique(table3[0, :])
+table3 = table3[1:, :]
+
+zz_array = np.concatenate((zz_array1, zz_array2, zz_array3))
+table = np.concatenate((table1, table2, table3), axis=1)
+
+energyarray = np.linspace(-3, 1.5, num=500)
+dataarray = np.zeros((len(zz_array), len(energyarray)))
+
+for ni, ii in enumerate(zz_array):
+    xx = np.concatenate(
+        ([table[0, 2*ni]*1.001], table[:, 2*ni], [table[-1, 2*ni]*1.001]))
+    yy = np.concatenate(([-43], table[:, 2*ni+1], [-43]))
+    aa = UnivariateSpline(xx, yy, k=1, s=0, ext=3)
+    dataarray[ni, :] = aa(energyarray)
+
+dataarray = c.c / 4. / np.pi * 10**energyarray * u.eV * 10**dataarray / u.cm**3
+dataarray = dataarray.to(u.nW*u.m**-2) / (1 + zz_array[:, np.newaxis])**3
+wavelength_array = (c.h*c.c/(10**(energyarray)*u.eV)).to(u.micron)
+
+
+sort_array = np.argsort(wavelength_array)
+dataarray = (dataarray.value)[:, sort_array]
+wavelength_array = (wavelength_array.value)[sort_array]
+
+aabigsline = RectBivariateSpline(
+    x=zz_array, y=wavelength_array, z=dataarray, kx=1, ky=1, s=0)
+
+ebl_franccc = EBL(z=zz_array, lmu=wavelength_array,
+                nuInu=dataarray.T, model='franc')
+
+plt.plot(waves_fine,
+         ebl_finke.ebl_array(z=0, lmu=waves_fine),
+                 linestyle='dotted', lw=3, label='Finke+22', c='fuchsia')
+plt.plot(waves_fine,
+                 ebl_SL.ebl_array(z=0, lmu=waves_fine),
+                 linestyle='-.', lw=3, label='Saldana-Lopez+21', c='r')
+waves_fran = np.geomspace(0.1, 250)
+plt.plot(waves_fran,
+                 ebl_franccc.ebl_array(z=0, lmu=waves_fran),
+                 label='Franceschini+17', linestyle='--', lw=3, c='k')
+
+legend33 = ax1.legend([
+    plt.Line2D([], [], linewidth=3, linestyle='dotted', color='fuchsia'),
+    plt.Line2D([], [], linewidth=3, linestyle='-.', color='r'),
+    plt.Line2D([], [], linewidth=3, linestyle='--', color='k')],
+    ['Finke+22', 'Saldana-Lopez+21', 'Franceschini+17'],
+    loc=1, fontsize=18
+    )
+ax1.add_artist(legend33)
+
+plt.savefig('outputs/figures_paper/cb_measurs_models.pdf',
+            bbox_inches='tight')
+plt.savefig('outputs/figures_paper/cb_measurs_models.png',
+            bbox_inches='tight', dpi=1000)
 plt.show()
-
-
-list_working_models = {
-    'ModelBosa': {'label': 'BOSA',
-               'callable_func': 'SB99_dustFinke_bosa',
-               'color': 'b'},
-    'ModelChary': {'label': 'Chary',
-               'callable_func': 'SB99_dustFinke_2params',
-               'color': 'orange'},
-    'Model3body': {'label': '3 grey body',
-               'callable_func': 'SB99_3body_fittodata_70K450Kfixed',
-               'color': 'g'},
-}
+# ----------------------------------------------------------------------
 
 # Beginning of figure specifications
 fig, ax1 = plt.subplots(figsize=(10, 6.5))
@@ -321,9 +655,9 @@ ax1.set_xlabel(r'Wavelength (µm)')
 ax1.set_xscale('log')
 # ax1.set_yscale('log')
 def tick_function(X):
-    return (h_plank * c / X / u.micron).to(u.eV).value
+    return (c.h * c.c / X / u.micron).to(u.eV).value
 def tick_function_2(X):
-    return (h_plank * c / X / u.eV).to(u.micron).value
+    return (c.h * c.c / X / u.eV).to(u.micron).value
 
 aaa = tick_function(2.48)
 ax3 = ax1.secondary_xaxis('top',
@@ -355,7 +689,7 @@ ax.set_prop_cycle(get_cycle(cividis_mine, N))
 
 def spline_starburst(lambda_array, z_value):
     return 10 ** ebl_class.ebl_ssp_spline(
-        np.log10(c.value * 1e6 / lambda_array), z_value,
+        np.log10(c.c.value * 1e6 / lambda_array), z_value,
                           grid=False)
 
 nuInu = {}

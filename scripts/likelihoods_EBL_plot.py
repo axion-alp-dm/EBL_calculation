@@ -5,6 +5,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+from scipy.interpolate import RectBivariateSpline
+
 from scipy.interpolate import UnivariateSpline
 from ebl_codes.metall_models import metall_model
 from ebl_codes.sfr_models import sfr_model
@@ -127,22 +129,57 @@ plt.yscale('log')
 plt.xlim(0, 10)
 plt.ylim(1e-3, 0.5)
 
-plt.xlabel('redshift z')
+plt.xlabel('redshift $z$')
 plt.ylabel(r'$\rho_{\star}$ (M$_{\odot}$ / yr / Mpc$^{3}$)')
 
 # FIGURE: Z IN DIFFERENT REDSHIFTS ------------------
 
-fig_Z, ax_met = plt.subplots(figsize=(9, 9))
+fig_Z, ax_met = plt.subplots(figsize=(8, 5))
 plt.yscale('log')
 aa = import_met_data(ax=ax_met)
 plt.xlim(0, 5)
 plt.ylim(1e-3, 2.5e-2)
 
-plt.xlabel('redshift z')
-plt.ylabel('Z')
+plt.xlabel(r'redshift $z$', fontsize=26)
+plt.ylabel(r'Z($z$)', fontsize=26)
+
+plt.xticks(fontsize=26)
+plt.yticks(fontsize=26)
 
 
 # FIGURE: EMISSIVITIES IN DIFFERENT REDSHIFTS ------------------
+
+list_zz_finke = os.listdir('/home/porrassa/Downloads/lumdens/')
+
+zz_bare = []
+for i in list_zz_finke:
+    i = i.replace('.dat', '')
+    i = i.replace('lumdens_total_z', '')
+    zz_bare.append(i)
+
+zz_bare = np.array(zz_bare, dtype=str)
+zz_floats = np.array(zz_bare, dtype=float)
+
+zz_order = np.argsort(zz_floats)
+zz_floats = zz_floats[zz_order]
+zz_bare = zz_bare[zz_order]
+
+wavelengths = np.loadtxt(
+    '/home/porrassa/Downloads/lumdens/lumdens_total_z0.00.dat')
+wavelengths = wavelengths[:, 0]
+
+array_lumin = np.zeros((len(wavelengths), len(zz_bare)))
+
+for ni, ii in enumerate(zz_bare):
+    data = np.loadtxt(
+    '/home/porrassa/Downloads/lumdens/lumdens_total_z' + ii + '.dat')
+    array_lumin[:, ni] = data[:, 1]
+
+spline_emiss_finke = RectBivariateSpline(
+    x=np.log10(wavelengths), y=zz_floats, z=array_lumin,
+    kx=1, ky=1, s=0)
+
+
 fig_emiss_z, axes_emiss_z = plt.subplots(4, 3, figsize=(12, 16))
 
 z_array = np.linspace(0, 10)
@@ -153,10 +190,13 @@ for n_lambda, ll in enumerate([0.15, 0.17, 0.28,
                                4.5, 5.8, 8.0]):
     plt.subplot(4, 3, n_lambda + 1)
     emissivity_data(z_min=None, z_max=None,
-                    lambda_min=ll - 0.05, lambda_max=ll + 0.05,
+                    lambda_min=ll - 0.01, lambda_max=ll + 0.01,
                     take1ref=None, plot_fig=True)
 
-    plt.annotate(r'%r$\,\mu m$' % ll, xy=(5, 1e35), fontsize=28)
+    plt.plot(z_array, spline_emiss_finke(np.log10(ll), z_array, grid=False),
+             ls='--', c='k')
+
+    plt.annotate(r'%r$\,$µm' % ll, xy=(5, 1e35), fontsize=28)
 
     plt.xlim(min(z_array), max(z_array))
     plt.ylim(1e33, 3e35)
@@ -168,7 +208,7 @@ fig_emiss_z.subplots_adjust(wspace=0, hspace=0)
 handles_emiss, labels_emiss = [], []
 
 plt.subplot(4, 3, 11)
-plt.xlabel(r'redshift z', fontsize=34)
+plt.xlabel(r'redshift $z$', fontsize=34)
 
 plt.subplot(4, 3, 4)
 # plt.ylabel(r'$_{\nu} \varepsilon_{_{\nu} \,\,(\mathrm{W\, / \, Mpc}^3)}$',
@@ -202,7 +242,7 @@ a.set_xticks([0, 2, 4, 6, 8, 10])
 
 emiss_data = emissivity_data()
 freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
-
+# plt.show()
 
 for nkey, key in enumerate(config_data['ssp_models']):
 
@@ -405,13 +445,14 @@ plt.legend(handles_cob, labels_cob,
 
 plt.figure(fig_Z)
 plt.legend(handles_sfr, labels_sfr,
-           title='Models', loc=3, bbox_to_anchor=(0.01, 0.),
-                     fontsize=26, title_fontsize=28)
+           title='Models', loc=1,# bbox_to_anchor=(0.01, 0.),
+                     fontsize=20, title_fontsize=22,
+           ncol=1)
 
 plt.figure(fig_sfr)
 
 axes_sfr.plot(x_sfr, sfr_model(
-    zz_array=x_sfr, sfr_model='madau14'),
+    zz_array=x_sfr, sfr_model='sfr_madau14'),
               color='k', linestyle='--', lw=2)
 
 labels_sfr.append('MD14')
@@ -429,7 +470,7 @@ axes_sfr.add_artist(legend2)
 plt.figure(fig_emiss_z)
 plt.subplot(4, 3, 2)
 plt.legend(handles_emiss, labels_emiss,
-           loc=8, fontsize=24, bbox_to_anchor=(0.5, 1.1),
+           loc=8, fontsize=28, bbox_to_anchor=(0.5, 1.01),
            ncol=3)
 
 # Save the figures
@@ -455,5 +496,5 @@ fig_emiss_z.savefig(
 fig_emiss_z.savefig(
     direct_name + '/emiss_redshift' + '.pdf',
     bbox_inches='tight')
-plt.show()
+# plt.show()
 

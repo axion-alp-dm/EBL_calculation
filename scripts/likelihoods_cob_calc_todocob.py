@@ -92,6 +92,7 @@ print(np.shape(sfr_data))
 emiss_data = emissivity_data(lambda_max=1e5)
 freq_emiss = c.value / (emiss_data['lambda'] * 1e-6)
 print(np.shape(emiss_data))
+plt.show()
 # MINIMIZATION OF CHI2 OF SSPs
 for nkey, key in enumerate(config_data['ssp_models']):
     print()
