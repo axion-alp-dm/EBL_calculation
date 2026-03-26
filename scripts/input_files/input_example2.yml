@@ -35,8 +35,8 @@ ihl_params:
   alpha: 1
 
 ssp_models:
-  bosa:
-    name: 'bosa'
+  2bb:
+    name: '2bb'
 
     ssp:
       path_ssp: data/ssp_synthetic_spectra/starburst99/kroupa_padova/
@@ -60,21 +60,21 @@ ssp_models:
     metall_formula: tanikawa22
     metall_params: [ -0.01, 0.207, 1., 0.02]
 
-    sfr_formula: madau14
+    sfr_formula: sfr_madau14
     sfr_params: [ 0.0150, 2.254, 3.347, 6.56 ]
 
     dust_reem: True
     dust_reem_params:
-      library: bosa
+#      library: bosa
 #      library: three_grey_body
-#      library: chary2001
-      file_path: outputs/dust_reem/Z.fits
-      T:
-      - 450.0
-      - 68.
-      fracts:
-      - 0.15
-#      file_path: data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits
+      library: chary2001
+#      file_path: outputs/dust_reem/Z.fits
+#      T:
+#      - 450.0
+#      - 68.
+#      fracts:
+#      - 0.15
+      file_path: data/ssp_synthetic_spectra/chary2001/chary_elbaz.fits
       wv_reem_min: 5.3310413290679435
       f_tir: 9.682735225155035
 

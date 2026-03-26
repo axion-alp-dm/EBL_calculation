@@ -37,11 +37,12 @@ plt.rc('ytick.major', size=7, width=1.5, right=True, pad=5)
 plt.rc('xtick.minor', size=4, width=1)
 plt.rc('ytick.minor', size=4, width=1)
 
-input_file_dir = ('outputs/outputs_dust_final_new/')
+# input_file_dir = ('outputs/outputs_dust_final_new/')
 # input_file_dir = ('outputs/outputs_3body_many/')
 # input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints_dustfree 2024-11-22 10:24:12/')
 # input_file_dir = ('scripts/input_files/')
 # input_file_dir = 'notebooks/'
+input_file_dir = 'outputs/outputs_systematics_10perct/'
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -57,8 +58,12 @@ def memory_usage_psutil():
     mem = process.memory_info()[0] / float(10 ** 6)
     return mem
 
-def chi2_measurs(x_model, x_obs, err_obs):
+def chi2_measurs_no_sys(x_model, x_obs, err_obs):
     return sum(((x_obs - x_model) / err_obs) ** 2.)
+
+def chi2_measurs(x_model, x_obs, err_obs):
+    err_with_sys = np.sqrt((err_obs)**2. + (0.1*x_obs)**2.)
+    return sum(((x_obs - x_model) / err_with_sys) ** 2.)
 
 # Configuration file reading and data input/output ---------#
 def read_config_file(ConfigFile):
@@ -555,6 +560,31 @@ for nkey, key in enumerate(config_data['ssp_models']):
                 metall_params=config_data['ssp_models'][key]['metall_params']
             ),
             aa[:, 1], (aa[:, 2] + aa[:, 3]) / 2.))
+        + '\n'
+    + 'total reduced: ' + str((
+            chi2_measurs(
+                ebl_class.ebl_ssp_spline(
+                    wv_array=igl_ebldata['lambda'], zz_array=0.),
+                igl_ebldata['nuInu'], igl_ebldata['1 sigma'])
+            + chi2_measurs(
+            ebl_class.emiss_ssp_spline(
+                emiss_data['lambda'], emiss_data['z'])
+            * (c.value / (emiss_data['lambda'] * 1e-6)) * 1e-7,
+            emiss_data['eje'],
+            (emiss_data['eje_n'] + emiss_data['eje_p']) / 2.)
+            + chi2_measurs(
+            sfr_model(
+                zz_array=sfr_data[:, 0],
+                sfr_model=config_data['ssp_models'][key]['sfr_formula'],
+                sfr_params=config_data['ssp_models'][key]['sfr_params']),
+            sfr_data[:, 3], (sfr_data[:, 4] + sfr_data[:, 5]) / 2.)
+            + chi2_measurs(
+            metall_model(
+                zz_array=aa[:, 0],
+                metall_model=config_data['ssp_models'][key]['metall_formula'],
+                metall_params=config_data['ssp_models'][key]['metall_params']
+            ),
+            aa[:, 1], (aa[:, 2] + aa[:, 3]) / 2.))/525)
         + '\n')
 
 

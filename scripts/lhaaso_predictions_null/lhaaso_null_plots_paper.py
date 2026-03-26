@@ -96,7 +96,7 @@ e_array = np.geomspace(
 opacities_array = {}
 for d in my_ebl:
     ebl_finke = EBL.readascii(
-            'outputs/lhaaso_new/' + d, model_name='mine')
+            'outputs/lhaaso_syst10percent/' + d, model_name='mine')
     opacityy = ebl_finke.optical_depth(z0=zz, ETeV=e_array)
     opacities_array[d] = UnivariateSpline(
             np.log10(e_array), opacityy, k=1, s=0)
@@ -133,7 +133,7 @@ print('\nPL + EBL cutoff')
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_PL' + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_PL' + bbb + '.yaml')
 
 for nd, d in enumerate(my_ebl):
     print(d)
@@ -243,9 +243,9 @@ plt.text(x=1.3, y=50, s='PL + EBL')
 plt.xlabel('E [TeV]')
 plt.ylabel(r'$E^2dN/dE$ [10$^{−12}$ erg cm$^{−2}$ s$^{−1}$]')
 
-plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum.png',
+plt.savefig('outputs/lhaaso_syst10percent/fit_to_hegra_spectrum.png',
             bbox_inches='tight', dpi=300)
-plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum.pdf',
+plt.savefig('outputs/lhaaso_syst10percent/fit_to_hegra_spectrum.pdf',
             bbox_inches='tight')
 
 
@@ -295,9 +295,9 @@ legend22 = plt.legend(loc=2, bbox_to_anchor=(1.01, 0.95))
 # ax_spectrum2.add_artist(legend22)
 
 
-plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum2.png',
+plt.savefig('outputs/lhaaso_syst10percent/fit_to_hegra_spectrum2.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso_new/fit_to_hegra_spectrum2.pdf',
+plt.savefig('outputs/lhaaso_syst10percent/fit_to_hegra_spectrum2.pdf',
             bbox_inches='tight')
 plt.show()
 '''
@@ -320,7 +320,7 @@ plt.rc('ytick.major', size=10, width=2, right=True, pad=10)
 plt.rc('xtick.minor', size=7, width=1.5)
 plt.rc('ytick.minor', size=7, width=1.5)
 
-'''
+
 # -------------- Histograms --------------------------------------------
 # Power law + EBL cutoff
 aaa = 'PL'
@@ -331,7 +331,7 @@ bins_hist = [np.linspace(190, 220., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_' + aaa + bbb + '.yaml')
 
 
 fig_hist, ax_hist = plt.subplots(1, 2, figsize=(12, 4))
@@ -389,7 +389,7 @@ for ni, i in enumerate(my_ebl):
         m_p.hesse()
 
         xx_plot = np.linspace(0, 141., num=500)
-        plt.xlim(0, 141)
+        plt.xlim(0, 89)
         plt.plot(xx_plot, stats.chi2.cdf(x=xx_plot, df=m_p.values),
                  c=colors[i])
         plt.text(s='Fit to cdf:\ndf=%.4f +- %.4f\np-value=%.4f'
@@ -420,7 +420,7 @@ bins_hist = [np.linspace(190., 340., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_' + aaa + bbb + '.yaml')
 
 plt.figure(fig_hist)
 plt.subplot(122)
@@ -458,7 +458,8 @@ for ni, i in enumerate(my_ebl):
     plt.subplot(122)
     nn = plt.hist(hist_distr,
                   alpha=0.4, color=color,
-                  bins=30, label=labelss[i], hatch=hatches[ni], cumulative=True,
+                  bins=30, label=labelss[i], hatch=hatches[ni],
+                  cumulative=True,
                   density=True, histtype='stepfilled')
     bins = np.array(nn[0])
     nn = nn[1]
@@ -478,7 +479,7 @@ for ni, i in enumerate(my_ebl):
         m_p.hesse()
 
         xx_plot = np.linspace(0, 42.118, num=500)
-        plt.xlim(0, 42.118)
+        plt.xlim(0, 37.05)
         plt.plot(xx_plot, stats.chi2.cdf(x=xx_plot, df=m_p.values),
                  c=color)
         plt.text(s='Fit to cdf:\ndf=%.4f +- %.4f\np-value=%.4f'
@@ -506,9 +507,11 @@ plt.subplot(121)
 plt.xlabel(r'$- 2 \Delta$log $L$')
 plt.ylim(0, yy_positions)
 
-plt.savefig('outputs/lhaaso_new/cum_hist_3eblmodels_' + aaa + bbb + '_paper.png',
+plt.savefig('outputs/lhaaso_syst10percent/cum_hist_3eblmodels_'
+            + aaa + bbb + '_paper.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso_new/cum_hist_3eblmodels_' + aaa + bbb + '_paper.pdf',
+plt.savefig('outputs/lhaaso_syst10percent/cum_hist_3eblmodels_'
+            + aaa + bbb + '_paper.pdf',
             bbox_inches='tight')
 
 
@@ -521,9 +524,11 @@ plt.xlabel(r'$- 2 \Delta$log $L$')
 plt.subplot(121)
 plt.xlabel(r'$- 2 \Delta$log $L$')
 
-plt.savefig('outputs/lhaaso_new/hist_3eblmodels_' + aaa + bbb + '_paper.png',
+plt.savefig('outputs/lhaaso_syst10percent/hist_3eblmodels_'
+            + aaa + bbb + '_paper.png',
             bbox_inches='tight')
-plt.savefig('outputs/lhaaso_new/hist_3eblmodels_' + aaa + bbb + '_paper.pdf',
+plt.savefig('outputs/lhaaso_syst10percent/hist_3eblmodels_'
+            + aaa + bbb + '_paper.pdf',
             bbox_inches='tight')
 
 # plt.show()
@@ -539,7 +544,7 @@ bins_hist = [np.linspace(190, 220., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_' + aaa + bbb + '.yaml')
 
 plt.rc('ytick.major', size=10, width=1., right=True, pad=5)
 plt.rc('xtick.major', top=True)
@@ -590,7 +595,7 @@ for ni, i in enumerate(my_ebl):
         m_p.migrad()
         m_p.hesse()
 
-        xx_plot = np.linspace(0, 141., num=500)
+        xx_plot = np.linspace(0, 95., num=500)
         plt.plot(xx_plot, stats.chi2.cdf(x=xx_plot, df=m_p.values),
                  c='k')
 
@@ -602,7 +607,7 @@ for ni, i in enumerate(my_ebl):
                    # 'p-value=%.3f'
                    # % (m_p.values[0], m_p.errors[0], -m_p.fval),
                    % (m_p.values[0], m_p.errors[0]),
-                 x=85, y=0.15, color='k',
+                 x=69, y=0.15, color='k',
                  fontsize=18, horizontalalignment='center',
                  bbox=dict(facecolor='w', alpha=1, edgecolor='grey'),)
 
@@ -620,7 +625,7 @@ bins_hist = [np.linspace(190., 340., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_' + aaa + bbb + '.yaml')
 
 plt.subplot(222)
 plt.title(spectral_shape)
@@ -667,7 +672,7 @@ for ni, i in enumerate(my_ebl):
         m_p.migrad()
         m_p.hesse()
 
-        xx_plot = np.linspace(0, 60., num=500)
+        xx_plot = np.linspace(0, 38, num=500)
         plt.plot(xx_plot, stats.chi2.cdf(x=xx_plot, df=m_p.values),
                  c='k')
 
@@ -676,7 +681,7 @@ for ni, i in enumerate(my_ebl):
                    r' $\pm$ '
                    '%.4f'
                    % (m_p.values[0], m_p.errors[0]),
-                 x=30, y=0.15, color='k',
+                 x=23, y=0.15, color='k',
                  fontsize=18, horizontalalignment='center',
                  bbox=dict(facecolor='w', alpha=1, edgecolor='grey'), )
 
@@ -685,7 +690,7 @@ for ni, i in enumerate(my_ebl):
 
 plt.subplot(221)
 plt.ylim(0, 130)
-plt.xlim(-0.5, 117)
+plt.xlim(-0.5, 89)
 plt.tick_params('x', labelbottom=False)
 
 plt.ylabel('Histogram')
@@ -699,7 +704,7 @@ for nn, label in enumerate(ax_hist[0][0].yaxis.get_majorticklabels()):
 
 plt.subplot(222)
 plt.ylim(0, 130)
-plt.xlim(-0.1, 54.8)
+plt.xlim(-0.1, 37.05)
 plt.tick_params('y', labelleft=False)
 plt.tick_params('x', labelbottom=False)
 plt.legend(framealpha=0.9)
@@ -708,31 +713,32 @@ plt.legend(framealpha=0.9)
 plt.subplot(223)
 plt.xlabel(r'$- 2 \Delta$log $L$')
 plt.ylim(0, 1.05)
-plt.xlim(-0.5, 117)
+plt.xlim(-0.5, 89)
 plt.tick_params('x', top=True)
 
 plt.ylabel('Cumulative histogram')
 
-offset = trans.ScaledTranslation(0, 6/72., fig_hist.dpi_scale_trans)
-for nn, label in enumerate(ax_hist[1][0].yaxis.get_majorticklabels()):
-    if nn == 4:
-        label.set_transform(label.get_transform() - offset)
+# offset = trans.ScaledTranslation(0, 6/72., fig_hist.dpi_scale_trans)
+# for nn, label in enumerate(ax_hist[1][0].yaxis.get_majorticklabels()):
+#     if nn == 4:
+#         label.set_transform(label.get_transform() - offset)
 
 plt.subplot(224)
 plt.xlabel(r'$- 2 \Delta$log $L$')
 plt.ylim(0, 1.05)
-plt.xlim(-0.1, 54.8)
+plt.xlim(-0.1, 37.05)
 plt.tick_params('y', labelleft=False)
 plt.tick_params('x', top=True)
 
-plt.savefig('outputs/lhaaso_new/histandcum_3eblmodels_'
+plt.savefig('outputs/lhaaso_syst10percent/histandcum_3eblmodels_'
             + aaa + bbb + '_paper.png',
             bbox_inches='tight', dpi=200)
-plt.savefig('outputs/lhaaso_new/histandcum_3eblmodels_'
+plt.savefig('outputs/lhaaso_syst10percent/histandcum_3eblmodels_'
             + aaa + bbb + '_paper.pdf',
             bbox_inches='tight')
 
 # -------------- Histograms --------------------------------------------
+'''
 # Power law + EBL cutoff
 aaa = 'PL'
 spectral_shape = r'PL + EBL'
@@ -742,7 +748,7 @@ bins_hist = [np.linspace(190, 220., num=40),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_' + aaa + bbb + '.yaml')
 
 plt.rc('ytick.major', size=10, width=1., right=True, pad=5)
 plt.rc('xtick.major', top=True)
@@ -824,10 +830,10 @@ for nn, label in enumerate(ax_hist[1].yaxis.get_majorticklabels()):
         label.set_transform(label.get_transform() - offset)
 
 
-plt.savefig('outputs/lhaaso_new/histandcum_3eblmodels_'
+plt.savefig('outputs/lhaaso_syst10percent/histandcum_3eblmodels_'
             + aaa + bbb + '_poster.png',
             bbox_inches='tight', dpi=300)
-plt.savefig('outputs/lhaaso_new/histandcum_3eblmodels_'
+plt.savefig('outputs/lhaaso_syst10percent/histandcum_3eblmodels_'
             + aaa + bbb + '_poster.pdf',
             bbox_inches='tight')
 
@@ -836,7 +842,7 @@ plt.show()
 # -----------------------------------------------------------------------------
 plt.rc('ytick.major', size=5, width=1., right=False, pad=5)
 fig, axes = plt.subplots(2, 4, layout="constrained", figsize=(14, 8))
-fig.subplots_adjust(hspace=0.8)  # hspace=1., wspace=0.4
+fig.subplots_adjust(hspace=0.8, wspace=0.22)  # hspace=1., wspace=0.4
 # fig.tight_layout()
 
 hatches = ['/', '', '']
@@ -858,7 +864,7 @@ bins_hist = [np.linspace(194, 220., num=40) * (u.erg.to(u.TeV)),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_' + aaa + bbb + '.yaml')
 
 number_of_params = 2
 
@@ -937,7 +943,7 @@ bins_hist = [np.linspace(188., 300., num=40)* (u.erg.to(u.TeV)),
 
 # We initialize the class with the input file
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    'outputs/lhaaso_syst10percent/asimov_dict_' + aaa + bbb + '.yaml')
 
 param_names = [
     r'$\phi_0$',
@@ -1006,10 +1012,10 @@ axes[0, 3].axis("off")
 
 axes[1, 3].set_xticks([1, 5, 10])
 
-plt.savefig('outputs/lhaaso_new/params_3eblmodels_' + aaa + bbb + '_paper4.png',
+plt.savefig('outputs/lhaaso_syst10percent/params_3eblmodels_' + aaa + bbb + '_paper4.png',
             bbox_inches='tight', dpi=500)
-plt.savefig('outputs/lhaaso_new/params_3eblmodels_' + aaa + bbb + '_paper4.pdf',
+plt.savefig('outputs/lhaaso_syst10percent/params_3eblmodels_' + aaa + bbb + '_paper4.pdf',
             bbox_inches='tight')
 
 
-# plt.show()
+plt.show()

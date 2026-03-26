@@ -85,6 +85,7 @@ def read_config_file(ConfigFile):
 
 
 my_ebl = ['bosa.txt', 'chary.txt', '2bb.txt']
+# my_ebl = ['chary.txt']
 
 
 waves_ebl = np.geomspace(0.05, 1e3, num=int(1e4))
@@ -202,7 +203,8 @@ for ni, zi in enumerate(z_array):
     if ni == 0:
         for d in my_ebl:
             bbb = EBL.readascii(
-                'outputs/lhaaso_new/' + d, model_name='mine')
+                'outputs/outputs_systematics_10perct/' + d,
+                model_name='mine')
             plt.plot(waves_ebl,
                      bbb.ebl_array(z=zi, lmu=waves_ebl),
                      linestyle='-', lw=1, label=labels[d], c=colors[d])
@@ -218,7 +220,8 @@ for ni, zi in enumerate(z_array):
     else:
         for d in my_ebl:
             bbb = EBL.readascii(
-                'outputs/lhaaso_new/' + d, model_name='mine')
+                'outputs/outputs_systematics_10perct/' + d,
+                model_name='mine')
             plt.plot(waves_ebl,
                      bbb.ebl_array(z=zi, lmu=waves_ebl),
                      linestyle='-', lw=1, c=colors[d])
@@ -263,7 +266,9 @@ for nn, label in enumerate(ax[2][1].xaxis.get_majorticklabels()):
         label.set_transform(label.get_transform() - offset)
 
 plt.subplot(3, 2, 1)
-
+plt.legend(loc=8, bbox_to_anchor=(1., 1.01),
+           ncol=3,
+           fontsize=16)
 handles, legends = ax[0][0].get_legend_handles_labels()
 sort_legend = [0, 5, 1, 4, 2, 3]
 plt.legend([handles[i] for i in sort_legend],
@@ -289,35 +294,58 @@ plt.savefig('outputs/outputs_dust_final_new/cb_redshifs.pdf',
 plt.savefig('outputs/outputs_dust_final_new/cb_redshifs.png',
             bbox_inches='tight')
 plt.show()
-'''
+
 plt.figure(figsize=(10, 10))
 energy_array = np.geomspace(0.1, 1e2)
 
-webplot = np.loadtxt(direct_franceschini_data + 'z1_webdigitizer.csv',
-                     skiprows=1, delimiter=','
-                     )
-print(webplot)
+# webplot = np.loadtxt(direct_franceschini_data + 'z1_webdigitizer.csv',
+#                      skiprows=1, delimiter=','
+#                      )
+# print(webplot)
+zz_array = [0.1, 0.2, 0.3, 0.4, 0.5]
 
 for ni, zi in enumerate(zz_array):
     print(zi)
 
-    franc_opt = OptDepth.readmodel(model='franceschini2017')
-
+    bbb = EBL.readascii(
+        'outputs/outputs_systematics_10perct_chary/2bb.txt', model_name='mine')
     plt.plot(energy_array,
-            franc_opt.opt_depth(z=zi, ETeV=energy_array),
-                 linestyle='-', lw=2, label='ebltable z='+str(zi))
+             bbb.optical_depth(z0=zi, ETeV=energy_array),
+             linestyle='-', lw=2,
+             c='k', alpha=1 - zi, label=zi)
+    for d in my_ebl:
+        bbb = EBL.readascii(
+            'outputs/outputs_systematics_10perct/' + d, model_name='mine')
+        plt.plot(energy_array,
+                 bbb.optical_depth(z0=zi, ETeV=energy_array),
+                 linestyle='-', lw=1, c=colors[d],
+                 alpha=1 - zi)
+
+    # franc_opt = OptDepth.readmodel(model='franceschini2017')
+
+    # plt.plot(energy_array,
+    #         franc_opt.opt_depth(z=zi, ETeV=energy_array),
+    #              linestyle='-', lw=2, label='ebltable z='+str(zi))
 
 
-    opacityy = ebl_franccc.optical_depth(z0=zi, ETeV=energy_array)
-    plt.scatter(energy_array, opacityy, label='Franceschini17',
-                s=20)
+    # opacityy = ebl_franccc.optical_depth(z0=zi, ETeV=energy_array)
+    # plt.scatter(energy_array, opacityy, label='Franceschini17',
+    #             s=20)
 
-plt.scatter(webplot[:, 0], webplot[:, 1], marker='+', s=25,
-            label='Webplot z=1', c='k')
+# plt.scatter(webplot[:, 0], webplot[:, 1], marker='+', s=25,
+#             label='Webplot z=1', c='k')
 
 plt.xscale('log')
 plt.yscale('log')
 plt.xlim(0.1, 1e2)
 plt.legend(fontsize=10, ncol=3, )
-'''
-# plt.show()
+
+plt.xlabel('Energy (TeV)')
+plt.ylabel(r'Optical depth $\tau$')
+
+plt.savefig('outputs/outputs_dust_final_new/optdepth_redshifs.pdf',
+            bbox_inches='tight')
+plt.savefig('outputs/outputs_dust_final_new/optdepth_redshifs.png',
+            bbox_inches='tight')
+
+plt.show()

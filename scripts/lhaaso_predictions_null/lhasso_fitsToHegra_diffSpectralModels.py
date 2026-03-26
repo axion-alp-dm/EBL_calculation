@@ -50,7 +50,7 @@ my_ebl = ['bosa.txt', 'chary.txt', '2bb.txt']
 opacities_array = {}
 for d in my_ebl:
     ebl_finke = EBL.readascii(
-            'outputs/lhaaso_new/' + d, model_name='mine')
+            'outputs/lhaaso_syst10percent/' + d, model_name='mine')
     opacityy = ebl_finke.optical_depth(z0=zz, ETeV=e_array)
 
     # ebl_finke = OptDepth.readmodel('finke2022')

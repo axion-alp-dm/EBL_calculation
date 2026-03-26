@@ -44,14 +44,14 @@ def read_config_file(ConfigFile):
 bbb = '_vs_bosa'
 vert_lines_against = 'bosa.txt'
 my_ebl = ['bosa.txt', '2bb.txt', 'chary.txt']
-#
-# bbb = '_vs_chary'
-# vert_lines_against = 'chary.txt'
-# my_ebl = ['chary.txt', 'bosa.txt', '2bb.txt']
 
-# bbb = '_vs_2bb'
-# vert_lines_against = '2bb.txt'
-# my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
+bbb = '_vs_chary'
+vert_lines_against = 'chary.txt'
+my_ebl = ['chary.txt', 'bosa.txt', '2bb.txt']
+
+bbb = '_vs_2bb'
+vert_lines_against = '2bb.txt'
+my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
 
 # ------------------------------------------------
 # Power law + EBL
@@ -73,10 +73,10 @@ my_ebl = ['bosa.txt', '2bb.txt', 'chary.txt']
 #              np.linspace(1., 10., num=40)]
 
 # Power law + exp cutoff + EBL
-# aaa = 'PLE'
-# spectral_shape = (r'$\phi(E) = \phi_0 '
-#                   r'\left(\frac{E}{E_0}\right)^{-\Gamma}'
-#                   r' e^{-E/E_\mathrm{cut} - \tau}$')
+aaa = 'PLE'
+spectral_shape = (r'$\phi(E) = \phi_0 '
+                  r'\left(\frac{E}{E_0}\right)^{-\Gamma}'
+                  r' e^{-E/E_\mathrm{cut} - \tau}$')
 # bins_hist = [np.linspace(135., 250., num=40),
 #              np.linspace(1.8, 2.1, num=30),
 #              np.linspace(0.9, 1.23, num=50),
@@ -87,18 +87,19 @@ aaa = 'LP'
 spectral_shape = (
     r'$\phi(E) = \phi_0 e^{-\tau} $'
     r'$ \left(\frac{E}{E_0}\right)^{- \Gamma -\beta  ln(E/E_0))}$')
-bins_hist = [np.linspace(150., 170., num=40),
-             np.linspace(1.06, 1.17, num=30),
-             np.linspace(1.7, 2.15, num=50),
-             np.linspace(0., 0.25, num=70)]
-param_names = ['$\phi_0$', '$E_0$', '$\Gamma$', r'$\beta$']
+# bins_hist = [np.linspace(150., 170., num=40),
+#              np.linspace(1.06, 1.17, num=30),
+#              np.linspace(1.7, 2.15, num=50),
+#              np.linspace(0., 0.25, num=70)]
+# param_names = ['$\phi_0$', '$E_0$', '$\Gamma$', r'$\beta$']
 
 
 # We initialize the class with the input file
+direct_inputs = 'outputs/lhaaso_syst10percent/'
 output_data = read_config_file(
-    'outputs/lhaaso_new/asimov_dict_' + aaa + bbb + '.yaml')
+    direct_inputs + 'asimov_dict_' + aaa + bbb + '.yaml')
 
-output_data['param_names'] = ['$\phi_0$', '$E_0$', '$\Gamma$', r'$\beta$']
+# output_data['param_names'] = ['$\phi_0$', '$E_0$', '$\Gamma$', r'$\beta$']
 number_of_params = len(output_data['param_names'])
 print(output_data['param_names'])
 
@@ -140,11 +141,13 @@ for ni, i in enumerate(my_ebl):
 
         if param == number_of_params - 1:
             plt.hist(param_array[:, param], color=color,
-                     bins=bins_hist[param], hatch=hatches[ni], alpha=0.4,
+                     # bins=bins_hist[param],
+                     hatch=hatches[ni], alpha=0.4,
                      label=i)
         else:
             plt.hist(param_array[:, param], color=color,
-                     bins=bins_hist[param], hatch=hatches[ni], alpha=0.4)
+                     # bins=bins_hist[param],
+                     hatch=hatches[ni], alpha=0.4)
 
     # --------------------------------------------------------
     plt.figure(fig_hist)
@@ -192,11 +195,9 @@ for ni, i in enumerate(my_ebl):
                  fontsize=18, horizontalalignment='center')
 
     else:
-        xx_int = np.linspace(asimov_vert_line, 150, num=500)
-        int_result = simpson(y=stats.chi2.pdf(x=xx_int, df=m_p.values),
-                             x=xx_int)
-        plt.text(s='%.8f' % (1 - int_result),
-                 x=asimov_vert_line + 3., y=yy_positions, color=color)
+        plt.text(
+            s='%.12f' % stats.chi2.cdf(x=asimov_vert_line, df=m_p.values),
+            x=asimov_vert_line + 3., y=yy_positions, color=color)
         yy_positions += 0.1
 
     plt.axvline(asimov_vert_line, ls='-', color=color)
@@ -205,7 +206,7 @@ plt.legend()
 
 plt.xlabel(r'- 2 $\Delta$log $L$')
 plt.ylim(0, yy_positions)
-plt.savefig('outputs/lhaaso_new/cum_hist_3_eblmodels_' + aaa + bbb + '.png',
+plt.savefig(direct_inputs + 'cum_hist_3_eblmodels_' + aaa + bbb + '.png',
             bbox_inches='tight')
 
 plt.figure(fig_hist)
@@ -213,19 +214,19 @@ plt.legend()
 
 plt.xlabel(r'- 2 $\Delta$log $L$')
 
-plt.savefig('outputs/lhaaso_new/hist_3_eblmodels_' + aaa + bbb + '.png',
+plt.savefig(direct_inputs + 'hist_3_eblmodels_' + aaa + bbb + '.png',
             bbox_inches='tight')
 
 plt.figure(fig_params)
 plt.subplot(1, number_of_params, param + 1)
 plt.legend(loc=2, bbox_to_anchor=(1.02, 0.99))
-plt.savefig('outputs/lhaaso_new/params_3_eblmodels_' + aaa + bbb + '.png',
+plt.savefig(direct_inputs + 'params_3_eblmodels_' + aaa + bbb + '.png',
             bbox_inches='tight')
 
 # plt.subplot(1, 4, 4)
 # plt.ylim(top=100)
-# plt.savefig('outputs/lhaaso_new/params_3_eblmodels_'
+# plt.savefig(direct_inputs + 'lhaaso_new/params_3_eblmodels_'
 #                 + aaa + bbb + '_zoom.png',
 #                 bbox_inches='tight')
 
-plt.show()
+# plt.show()
