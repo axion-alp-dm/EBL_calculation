@@ -45,13 +45,13 @@ bbb = '_vs_bosa'
 vert_lines_against = 'bosa.txt'
 my_ebl = ['bosa.txt', '2bb.txt', 'chary.txt']
 
-bbb = '_vs_chary'
-vert_lines_against = 'chary.txt'
-my_ebl = ['chary.txt', 'bosa.txt', '2bb.txt']
+# bbb = '_vs_chary'
+# vert_lines_against = 'chary.txt'
+# my_ebl = ['chary.txt', 'bosa.txt', '2bb.txt']
 
-bbb = '_vs_2bb'
-vert_lines_against = '2bb.txt'
-my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
+# bbb = '_vs_2bb'
+# vert_lines_against = '2bb.txt'
+# my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
 
 # ------------------------------------------------
 # Power law + EBL
@@ -61,32 +61,32 @@ my_ebl = ['2bb.txt', 'bosa.txt', 'chary.txt']
 #              np.linspace(2.04, 2.25, num=40)]
 
 # # 2 Power law + EBL
-# aaa = '2PL'
-# spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma_1}' \
-#                  r' \left[1 + \left(\frac{E}{E_\mathrm{' \
-#                  r'break}}\right)^{f_i}\right]^{(' \
-#                  r'\Gamma_1-\Gamma_2)/f_i}' \
-#                  r' e^{-\tau}$'
+aaa = '2PL'
+spectral_shape = r'$\phi (E) = \phi_0  E^{-\Gamma_1}' \
+                 r' \left[1 + \left(\frac{E}{E_\mathrm{' \
+                 r'break}}\right)^{f_i}\right]^{(' \
+                 r'\Gamma_1-\Gamma_2)/f_i}' \
+                 r' e^{-\tau}$'
 # bins_hist = [np.linspace(190., 340., num=40),
 #              np.linspace(1.2, 2.1, num=30),
 #              np.linspace(2.1, 3.4, num=50),
 #              np.linspace(1., 10., num=40)]
 
 # Power law + exp cutoff + EBL
-aaa = 'PLE'
-spectral_shape = (r'$\phi(E) = \phi_0 '
-                  r'\left(\frac{E}{E_0}\right)^{-\Gamma}'
-                  r' e^{-E/E_\mathrm{cut} - \tau}$')
+# aaa = 'PLE'
+# spectral_shape = (r'$\phi(E) = \phi_0 '
+#                   r'\left(\frac{E}{E_0}\right)^{-\Gamma}'
+#                   r' e^{-E/E_\mathrm{cut} - \tau}$')
 # bins_hist = [np.linspace(135., 250., num=40),
 #              np.linspace(1.8, 2.1, num=30),
 #              np.linspace(0.9, 1.23, num=50),
 #              np.linspace(0., 60., num=70)]
 
 # LogParabola + EBL
-aaa = 'LP'
-spectral_shape = (
-    r'$\phi(E) = \phi_0 e^{-\tau} $'
-    r'$ \left(\frac{E}{E_0}\right)^{- \Gamma -\beta  ln(E/E_0))}$')
+# aaa = 'LP'
+# spectral_shape = (
+#     r'$\phi(E) = \phi_0 e^{-\tau} $'
+#     r'$ \left(\frac{E}{E_0}\right)^{- \Gamma -\beta  ln(E/E_0))}$')
 # bins_hist = [np.linspace(150., 170., num=40),
 #              np.linspace(1.06, 1.17, num=30),
 #              np.linspace(1.7, 2.15, num=50),

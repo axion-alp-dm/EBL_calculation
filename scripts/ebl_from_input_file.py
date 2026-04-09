@@ -62,7 +62,7 @@ def chi2_measurs_no_sys(x_model, x_obs, err_obs):
     return sum(((x_obs - x_model) / err_obs) ** 2.)
 
 def chi2_measurs(x_model, x_obs, err_obs):
-    err_with_sys = np.sqrt((err_obs)**2. + (0.1*x_obs)**2.)
+    err_with_sys = np.sqrt((err_obs)**2. + (0.13*x_obs)**2.)
     return sum(((x_obs - x_model) / err_with_sys) ** 2.)
 
 # Configuration file reading and data input/output ---------#

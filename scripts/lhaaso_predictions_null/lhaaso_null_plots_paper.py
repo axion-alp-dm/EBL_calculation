@@ -600,9 +600,9 @@ for ni, i in enumerate(my_ebl):
                  c='k')
 
         plt.text(s='Fit to cdf:\n'
-                   'k = %.3f'
+                   'k = %.1f'
                    r' $\pm$ '
-                   '%.3f'
+                   '%.1f'
                    # '\n'
                    # 'p-value=%.3f'
                    # % (m_p.values[0], m_p.errors[0], -m_p.fval),

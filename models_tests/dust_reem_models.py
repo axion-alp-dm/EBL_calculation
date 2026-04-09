@@ -160,7 +160,8 @@ plt.ylabel(r'log$_{10}(L_{\nu}$ '  # /Lsun '
 handles, labels = ax1.get_legend_handles_labels()
 leg1 = plt.legend(handles[::-1], labels[::-1],
                   ncol=1, loc=1,
-                  title=r'log$_{10}\left(L_\mathrm{TIR}\right)$',
+                  title=
+                  r'log$_{10}\left(L_\mathrm{TIR}^\mathrm{ULIRG}\right)$',
                   framealpha=1, fontsize=16, title_fontsize=17)
 
 # plt.text(x=0.2, y=26.5,
@@ -181,8 +182,8 @@ leg1 = plt.legend(handles[::-1], labels[::-1],
 #          bbox=dict(facecolor='w', alpha=1, edgecolor='gainsboro'),
 #          fontsize=18)
 
-plt.text(x=0.8, y=26,
-         s=r'$f_\mathrm{TIR} = 3\times10^9$'
+plt.text(x=0.9, y=26,
+         s=r'$f_\mathrm{TIR} = 3\times10^9$ M$_{\odot}^{-1}$'
          '\n'
          r'$\lambda_\mathrm{TIR, cut}=5.5\,$µm'
          ,

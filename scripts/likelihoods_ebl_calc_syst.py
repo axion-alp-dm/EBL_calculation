@@ -34,11 +34,11 @@ from ebltable.ebl_from_model import EBL
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
     os.chdir("..")
-direct_name = str('outputs_systematics_chary_10perct'
+direct_name = str('outputs_systematics_13perct_2BB'
                   + time.strftime(" %Y-%m-%d %H:%M:%S", time.gmtime())
                   )
 print(direct_name)
-sys_percentage = 0.1
+sys_percentage = 0.13
 
 # If the directory for outputs is not present, create it.
 if not os.path.exists("outputs/"):
@@ -104,14 +104,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
     def fit_igl(lambda_igl, params):
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-            params[8]
-        config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
-            params[9]
-        # config_data['ssp_models'][key]['dust_reem_params']['T'] = \
-        #     params[8:10].copy()
-        # config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
-        #     params[10]
+        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+        #     params[8]
+        # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+        #     params[9]
+        config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+            params[8:10].copy()
+        config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+            params[10]
 
         # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = \
         #     params[11:16].copy()
@@ -127,14 +127,14 @@ for nkey, key in enumerate(config_data['ssp_models']):
 
         config_data['ssp_models'][key]['sfr_params'] = params[0:4].copy()
         config_data['ssp_models'][key]['metall_params'] = params[4:8].copy()
-        config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-            params[8]
-        config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
-            params[9]
-        # config_data['ssp_models'][key]['dust_reem_params']['T'] = \
-        #     params[8:10].copy()
-        # config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
-        #     params[10]
+        # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+        #     params[8]
+        # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+        #     params[9]
+        config_data['ssp_models'][key]['dust_reem_params']['T'] = \
+            params[8:10].copy()
+        config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+            params[10]
 
         # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = \
         #     params[11:16].copy()
@@ -193,10 +193,10 @@ for nkey, key in enumerate(config_data['ssp_models']):
     aaa = np.concatenate((
         config_data['ssp_models'][key]['sfr_params'],
         config_data['ssp_models'][key]['metall_params'],
-        [config_data['ssp_models'][key]['dust_reem_params']['f_tir']],
-        [config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min']],
-        # config_data['ssp_models'][key]['dust_reem_params']['T'],
-        # config_data['ssp_models'][key]['dust_reem_params']['fracts'],
+        # [config_data['ssp_models'][key]['dust_reem_params']['f_tir']],
+        # [config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min']],
+        config_data['ssp_models'][key]['dust_reem_params']['T'],
+        config_data['ssp_models'][key]['dust_reem_params']['fracts'],
         # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'],
     ))
     print(aaa)
@@ -204,23 +204,17 @@ for nkey, key in enumerate(config_data['ssp_models']):
     m = Minuit(combined_likelihood, aaa)
     m.limits = [[0., 5.], [0., 10.], [0., 10.], [0., 10.],
                 [-3., 1], [0., 2.], [0.5, 5.], [0., 0.25],
-                [7, 11], [3., 10.],
-                # [10, 1000], [10, 450],
-                # [0., 1.]
+                # [7, 11], [3., 10.],
+                [10, 1000], [10, 450],
+                [0., 1.]
                 # [0., 1.], [0., 1.], [0., 1.], [0., 1.], [0., 1.],
                 ]
 
     # BOSA
     m.fixed[7] = True
 
-    # # Chary
-    # for i in range(7, 25, 1):
-    #     m.fixed[i] = True
-
     # # 2BB
-    # m.fixed[8] = True
-    # for i in range(7, 10, 1):
-    #     m.fixed[i] = True
+    m.fixed[8] = True
 
     print(m.params)
 
@@ -307,16 +301,16 @@ for nkey, key in enumerate(config_data['ssp_models']):
         m.params[4].value, m.params[5].value,
         m.params[6].value, m.params[7].value]
 
-    config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
-        float(m.params[8].value)
-    config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
-        float(m.params[9].value)
+    # config_data['ssp_models'][key]['dust_reem_params']['f_tir'] = \
+    #     float(m.params[8].value)
+    # config_data['ssp_models'][key]['dust_reem_params']['wv_reem_min'] = \
+    #     float(m.params[9].value)
     #
-    # config_data['ssp_models'][key]['dust_reem_params']['T'] = [
-    #     m.params[8].value, m.params[9].value]
-    # config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
-    #     float(m.params[10].value)
-    #
+    config_data['ssp_models'][key]['dust_reem_params']['T'] = [
+        m.params[8].value, m.params[9].value]
+    config_data['ssp_models'][key]['dust_reem_params']['fracts'] = \
+        float(m.params[10].value)
+
     # config_data['ssp_models'][key]['dust_abs_params']['fesc_steps_fn22'] = [
     #     m.params[11].value, m.params[12].value,
     #     m.params[13].value, m.params[14].value, m.params[15].value]
