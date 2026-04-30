@@ -90,6 +90,8 @@ my_ebl = ['bosa.txt', 'chary.txt', '2bb.txt']
 
 waves_ebl = np.geomspace(0.05, 1e3, num=int(1e4))
 
+my_directory = 'outputs/outputs_systematics_14perct/'
+
 
 ebl_finke = EBL.readmodel('finke2022')
 ebl_SL = EBL.readmodel('saldana-lopez')
@@ -201,39 +203,56 @@ for ni, zi in enumerate(z_array):
         waves_fran = np.geomspace(0.1, 100)
 
     if ni == 0:
+
         for d in my_ebl:
             bbb = EBL.readascii(
-                'outputs/outputs_systematics_10perct/' + d,
+                'outputs/outputs_dust_final_new/' + d,
                 model_name='mine')
             plt.plot(waves_ebl,
                      bbb.ebl_array(z=zi, lmu=waves_ebl),
-                     linestyle='-', lw=1, label=labels[d], c=colors[d])
-        plt.plot(waves_ebl,
-                 ebl_finke.ebl_array(z=zi, lmu=waves_ebl),
-                 linestyle='dotted', lw=1, label='Finke+22', c='fuchsia')
-        plt.plot(waves_ebl,
-                 ebl_SL.ebl_array(z=zi, lmu=waves_ebl),
-                 linestyle='-.', lw=1, label='Saldana-Lopez+21', c='r')
-        plt.plot(waves_fran,
-                 ebl_franccc.ebl_array(z=zi, lmu=waves_fran),
-                 label='Franceschini+17', linestyle='--', lw=1, c='k')
+                     linestyle='--', lw=1,
+                     # label='10% ' + labels[d],
+                     label='No syst',
+                     c='k')
+            bbb = EBL.readascii(
+                my_directory + d,
+                model_name='mine')
+            plt.plot(waves_ebl,
+                     bbb.ebl_array(z=zi, lmu=waves_ebl),
+                     linestyle='-', lw=1, label='14% ' + labels[d],
+                     c=colors[d])
+        # plt.plot(waves_ebl,
+        #          ebl_finke.ebl_array(z=zi, lmu=waves_ebl),
+        #          linestyle='dotted', lw=1, label='Finke+22', c='fuchsia')
+        # plt.plot(waves_ebl,
+        #          ebl_SL.ebl_array(z=zi, lmu=waves_ebl),
+        #          linestyle='-.', lw=1, label='Saldana-Lopez+21', c='r')
+        # plt.plot(waves_fran,
+        #          ebl_franccc.ebl_array(z=zi, lmu=waves_fran),
+        #          label='Franceschini+17', linestyle='--', lw=1, c='k')
     else:
         for d in my_ebl:
             bbb = EBL.readascii(
-                'outputs/outputs_systematics_10perct/' + d,
+                'outputs/outputs_dust_final_new/' + d,
+                model_name='mine')
+            plt.plot(waves_ebl,
+                     bbb.ebl_array(z=zi, lmu=waves_ebl),
+                     linestyle='--', lw=1, c='k')
+            bbb = EBL.readascii(
+                my_directory + d,
                 model_name='mine')
             plt.plot(waves_ebl,
                      bbb.ebl_array(z=zi, lmu=waves_ebl),
                      linestyle='-', lw=1, c=colors[d])
-        plt.plot(waves_ebl,
-                 ebl_finke.ebl_array(z=zi, lmu=waves_ebl),
-                 linestyle='dotted', lw=1, c='fuchsia')
-        plt.plot(waves_ebl,
-                 ebl_SL.ebl_array(z=zi, lmu=waves_ebl),
-                 linestyle='-.', lw=1, c='r')
-        plt.plot(waves_fran,
-                 ebl_franccc.ebl_array(z=zi, lmu=waves_fran),
-                 linestyle='--', lw=1, c='k')
+        # plt.plot(waves_ebl,
+        #          ebl_finke.ebl_array(z=zi, lmu=waves_ebl),
+        #          linestyle='dotted', lw=1, c='fuchsia')
+        # plt.plot(waves_ebl,
+        #          ebl_SL.ebl_array(z=zi, lmu=waves_ebl),
+        #          linestyle='-.', lw=1, c='r')
+        # plt.plot(waves_fran,
+        #          ebl_franccc.ebl_array(z=zi, lmu=waves_fran),
+        #          linestyle='--', lw=1, c='k')
 
 
 plt.subplot(3, 2, 3)
@@ -271,10 +290,10 @@ plt.legend(loc=8, bbox_to_anchor=(1., 1.01),
            fontsize=16)
 handles, legends = ax[0][0].get_legend_handles_labels()
 sort_legend = [0, 5, 1, 4, 2, 3]
-plt.legend([handles[i] for i in sort_legend],
-           [legends[i] for i in sort_legend],
-           loc=8, bbox_to_anchor=(1., 1.01),
-           ncol=3, fontsize=16)
+# plt.legend([handles[i] for i in sort_legend],
+#            [legends[i] for i in sort_legend],
+#            loc=8, bbox_to_anchor=(1., 1.01),
+#            ncol=3, fontsize=16)
 
 # lines = ['-', 'dotted']
 # legend1 = plt.legend(ncol=3, loc=3,
@@ -308,14 +327,14 @@ for ni, zi in enumerate(zz_array):
     print(zi)
 
     bbb = EBL.readascii(
-        'outputs/outputs_systematics_10perct_chary/2bb.txt', model_name='mine')
+        'outputs/outputs_systematics_10perct/chary.txt', model_name='mine')
     plt.plot(energy_array,
              bbb.optical_depth(z0=zi, ETeV=energy_array),
              linestyle='-', lw=2,
              c='k', alpha=1 - zi, label=zi)
     for d in my_ebl:
         bbb = EBL.readascii(
-            'outputs/outputs_systematics_10perct/' + d, model_name='mine')
+            my_directory + d, model_name='mine')
         plt.plot(energy_array,
                  bbb.optical_depth(z0=zi, ETeV=energy_array),
                  linestyle='-', lw=1, c=colors[d],

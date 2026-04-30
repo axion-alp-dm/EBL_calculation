@@ -42,7 +42,7 @@ plt.rc('ytick.minor', size=4, width=1)
 # input_file_dir = ('outputs/outputs_dust_reem_wto_LOWdatapoints_dustfree 2024-11-22 10:24:12/')
 # input_file_dir = ('scripts/input_files/')
 # input_file_dir = 'notebooks/'
-input_file_dir = 'outputs/outputs_systematics_10perct/'
+input_file_dir = 'outputs/outputs_systematics_14perct/'
 
 # Check that the working directory is correct for the paths
 if os.path.basename(os.getcwd()) == 'scripts':
@@ -62,7 +62,7 @@ def chi2_measurs_no_sys(x_model, x_obs, err_obs):
     return sum(((x_obs - x_model) / err_obs) ** 2.)
 
 def chi2_measurs(x_model, x_obs, err_obs):
-    err_with_sys = np.sqrt((err_obs)**2. + (0.13*x_obs)**2.)
+    err_with_sys = np.sqrt((err_obs)**2. + (0.14*x_obs)**2.)
     return sum(((x_obs - x_model) / err_with_sys) ** 2.)
 
 # Configuration file reading and data input/output ---------#
