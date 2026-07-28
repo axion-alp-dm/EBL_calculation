@@ -122,7 +122,34 @@ list_working_models = {
     'CUBA': {'label': 'CUBA', 'callable_func': spline_cuba,
              'color': 'k', 'linewidth': 2.5, 'ls': 'dotted'}
 }
+plt.figure(figsize=(12, 3))
 
+plt.text(x=0.05, y=0.5,
+         s=r'$\langle \sigma v \rangle = \frac{8\pi\, \phi^\mathrm{min}_\mathrm{det}}{J_\mathrm{sub}\,N_\gamma}\,m_\chi^2$',
+         fontsize=35
+         )
+plt.axis('off')
+plt.xlim(0., 1.)
+plt.ylim(0., 1.)
+plt.savefig('outputs/figures_paper/Jfact_cross.png',
+            bbox_inches='tight', dpi=500)
+
+plt.figure(figsize=(12, 3))
+
+plt.text(x=0.05, y=0.5,
+         s=r'$\phi = \frac{1}{D_\mathrm{Earth}^2} \int_{'
+           r'\Delta\Omega}d\Omega \int_{l.o.s.}dr\, r^2 \rho_\mathrm{DM}^2'
+            r'\times \frac{1}{4 \pi} \frac{\langle\sigma '
+           r'v\rangle}{2 m_{\chi}^2}\sum_f \,B_f\int'
+           r'\,\,\frac{dN_f}{dE}dE$',
+         fontsize=35
+         )
+plt.axis('off')
+plt.xlim(0., 1.)
+plt.ylim(0., 1.)
+plt.savefig('outputs/figures_paper/wimp_flux_formula.png',
+            bbox_inches='tight', dpi=500)
+plt.show()
 plt.figure(figsize=(12, 3))
 
 plt.text(x=0.05, y=0.5,
@@ -323,7 +350,7 @@ plt.savefig('outputs/figures_paper/cb.png', bbox_inches='tight')
 
 
 # Beginning of figure specifications
-fig, ax1 = plt.subplots(figsize=(12, 8))
+fig, ax1 = plt.subplots(figsize=(10, 8))
 
 # We introduce all the EBL measurements
 upper_lims_all, igl_ebldata = import_cb_data(
@@ -414,7 +441,7 @@ plt.savefig('outputs/figures_paper/cb_measursIGL.png',
             bbox_inches='tight', dpi=1000)
 
 # Beginning of figure specifications
-fig, ax1 = plt.subplots(figsize=(12, 8))
+fig, ax1 = plt.subplots(figsize=(10, 8))
 
 # We introduce all the EBL measurements
 upper_lims_all, igl_ebldata = import_cb_data(
@@ -463,11 +490,11 @@ handles = [h[0] for h in handles]
 
 waves_fine = np.geomspace(0.09, 1e3, num=500)
 
-plt.fill_between(
-    x=waves_fine,
-    y1=10**spline_lower(np.log10(waves_fine)),
-    y2=10**spline_upper(np.log10(waves_fine)),
-color='gray', zorder=0, alpha=0.2, lw=0)
+# plt.fill_between(
+#     x=waves_fine,
+#     y1=10**spline_lower(np.log10(waves_fine)),
+#     y2=10**spline_upper(np.log10(waves_fine)),
+# color='gray', zorder=0, alpha=0.2, lw=0)
 
 plt.annotate(text='', xy=(0.09, 0.9), xytext=(5, 0.9),
              arrowprops=dict(arrowstyle='<->', color='grey'),

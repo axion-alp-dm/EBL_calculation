@@ -41,7 +41,7 @@ def read_config_file(ConfigFile):
     return parsed_yaml
 
 
-direct_name = ('../outputs/outputs_systematics_10perct')
+direct_name = ('../outputs/outputs_systematics_14perct')
 print(direct_name)
 
 # Configuration file reading and data input/output ---------#
@@ -83,8 +83,12 @@ for ni, key in enumerate(config_data['ssp_models']):
     new_len = np.shape(corr_matrix)[0]
     for ii in range(new_len):
         for jj in range(new_len):
-            if jj <= ii:
+            if jj < ii:
                 aa = aa + ('%.2f'
+                           % np.around(corr_matrix[ii, jj],
+                                       decimals=2))
+            elif jj == ii:
+                aa = aa + ('%.0f'
                            % np.around(corr_matrix[ii, jj],
                                        decimals=2))
             aa = aa + ' & '
@@ -101,6 +105,146 @@ for ni, key in enumerate(config_data['ssp_models']):
 
     plt.xlim(-0.5, new_len-0.5)
     plt.ylim(new_len-0.5, -0.5)
+
+direct_name = ('../outputs/outputs_dust_final_new')
+print(direct_name)
+
+# Configuration file reading and data input/output ---------#
+with open(direct_name + '/input_data.yml', 'r') as file:
+    config_data = yaml.safe_load(file)
+
+key = 'chary'
+print('\n', key)
+copy_cov = np.array(config_data['ssp_models'][key]['cov_matrix'])
+len_cov = int(np.rint(len(copy_cov) ** 0.5))
+copy_cov = copy_cov.reshape((len_cov, len_cov))
+
+corr_matrix = np.zeros((len_cov, len_cov))
+
+for ii in range(len_cov):
+    for jj in range(len_cov):
+        corr_matrix[ii, jj] = (
+                copy_cov[ii, jj]
+                / copy_cov[ii, ii]**0.5
+                / copy_cov[jj, jj]**0.5)
+
+for aa in range(24, 6, -1):
+    corr_matrix = np.delete(corr_matrix, aa, axis=0)
+    corr_matrix = np.delete(corr_matrix, aa, axis=1)
+
+print(np.shape(corr_matrix))
+
+plt.figure()
+plt.title(key)
+plt.imshow(corr_matrix.T, cmap='RdBu', vmin=-1, vmax=1)
+plt.colorbar()
+
+aa = ''
+new_len = np.shape(corr_matrix)[0]
+for ii in range(new_len):
+    for jj in range(new_len):
+        aa = aa + ' & '
+        if jj < ii:
+            aa = aa + ('%.2f'
+                       % np.around(corr_matrix[ii, jj],
+                                   decimals=2))
+        elif jj == ii:
+            aa = aa + ('%.0f'
+                       % np.around(corr_matrix[ii, jj],
+                                   decimals=2))
+    print(aa)
+    aa = ''
+
+key = 'bosa'
+print('\n', key)
+copy_cov = np.array(config_data['ssp_models'][key]['cov_matrix'])
+len_cov = int(np.rint(len(copy_cov) ** 0.5))
+copy_cov = copy_cov.reshape((len_cov, len_cov))
+
+corr_matrix = np.zeros((len_cov, len_cov))
+
+for ii in range(len_cov):
+    for jj in range(len_cov):
+        corr_matrix[ii, jj] = (
+                copy_cov[ii, jj]
+                / copy_cov[ii, ii]**0.5
+                / copy_cov[jj, jj]**0.5)
+
+corr_matrix = np.delete(corr_matrix, 7, axis=0)
+corr_matrix = np.delete(corr_matrix, 7, axis=1)
+
+plt.figure()
+plt.title(key)
+plt.imshow(corr_matrix.T, cmap='RdBu', vmin=-1, vmax=1)
+plt.colorbar()
+
+
+print(np.shape(corr_matrix))
+
+
+aa = ''
+new_len = np.shape(corr_matrix)[0]
+for ii in range(new_len):
+    for jj in range(new_len):
+        aa = aa + ' & '
+        if jj < ii:
+            aa = aa + ('%.2f'
+                       % np.around(corr_matrix[ii, jj],
+                                   decimals=2))
+        elif jj == ii:
+            aa = aa + ('%.0f'
+                       % np.around(corr_matrix[ii, jj],
+                                   decimals=2))
+    print(aa)
+    aa = ''
+
+key = '2bb'
+print('\n', key)
+copy_cov = np.array(config_data['ssp_models'][key]['cov_matrix'])
+len_cov = int(np.rint(len(copy_cov) ** 0.5))
+copy_cov = copy_cov.reshape((len_cov, len_cov))
+
+corr_matrix = np.zeros((len_cov, len_cov))
+
+for ii in range(len_cov):
+    for jj in range(len_cov):
+        corr_matrix[ii, jj] = (
+                copy_cov[ii, jj]
+                / copy_cov[ii, ii]**0.5
+                / copy_cov[jj, jj]**0.5)
+
+corr_matrix = np.delete(corr_matrix, 26, axis=0)
+corr_matrix = np.delete(corr_matrix, 26, axis=1)
+corr_matrix = np.delete(corr_matrix, 25, axis=0)
+corr_matrix = np.delete(corr_matrix, 25, axis=1)
+
+for aa in range(22, 6, -1):
+    corr_matrix = np.delete(corr_matrix, aa, axis=0)
+    corr_matrix = np.delete(corr_matrix, aa, axis=1)
+
+print(np.shape(corr_matrix))
+
+plt.figure()
+plt.title(key)
+plt.imshow(corr_matrix.T, cmap='RdBu', vmin=-1, vmax=1)
+plt.colorbar()
+
+aa = ''
+new_len = np.shape(corr_matrix)[0]
+for ii in range(new_len):
+    for jj in range(new_len):
+        aa = aa + ' & '
+        if jj < ii:
+            aa = aa + ('%.2f'
+                       % np.around(corr_matrix[ii, jj],
+                                   decimals=2))
+        elif jj == ii:
+            aa = aa + ('%.0f'
+                       % np.around(corr_matrix[ii, jj],
+                                   decimals=2))
+    print(aa)
+    aa = ''
+
 
 # plt.show()
 # ----------------------------------------------------------------------
@@ -147,7 +291,7 @@ def kroupa01(m):
 plt.figure(figsize=(6, 5))
 m_array = np.logspace(-2, 2, 400)
 
-labelss = ['Salpeter55', 'Kroupa', 'Chabrier+03, Eq.17',
+labelss = ['Salpeter+55', 'Kroupa', 'Chabrier+03',
            'Chabrier+03, Eq.18']
 i=0
 
@@ -156,7 +300,7 @@ for label, imf in zip(''
                       # 'MillerScalo79'
                       ' Kroupa01 '
                       'Chabrier03individual'
-                      ' Chabrier03system '
+                      # ' Chabrier03system '
                       # 'Mine'
                       ''.split(), \
                       [
@@ -164,7 +308,7 @@ for label, imf in zip(''
                        # millerscalo79,
                        kroupa01,
                        chabrier03individual,
-                       chabrier03system,
+                       # chabrier03system,
                        # chabrier03_mine
                        ]):
     plt.plot(m_array, imf(m_array) / imf(1), label=labelss[i])
